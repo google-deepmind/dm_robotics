@@ -1,0 +1,136 @@
+<mujoco model='sawyer'>
+  <compiler angle='radian' meshdir='../meshes/sawyer_pv/' />
+
+  <asset>
+    <material name='black' rgba='0 0 0 1'/>
+    <material name='darkgray' rgba='.2 .2 .2 1'/>
+    <material name='darkred' rgba='.5 .1 .1 1'/>
+    <material name='sawyer_red' rgba='.5 .1 .1 1'/>
+    <material name='sawyer_gray' rgba='0.75294 0.75294 0.75294 1'/>
+    <mesh name="base" file="base.STL" />
+    <mesh name="l0" file="l0.STL" />
+    <mesh name="head" file="head.STL" />
+    <mesh name="l1" file="l1.STL" />
+    <mesh name="l2" file="l2.STL" />
+    <mesh name="l3" file="l3.STL" />
+    <mesh name="l4" file="l4.STL" />
+    <mesh name="l5" file="l5.STL" />
+    <mesh name="l6" file="l6.STL" />
+  </asset>
+
+  <default>
+    <geom contype='1' conaffinity='1' condim='3' friction='.1 .1' solimp='.95 .98 .0005' solref='0.02 1.1' density='1' group='1' type='mesh'/>
+    <site rgba='.5 .5 .5 .3' size='0.001'/>
+    <joint type='hinge' armature='0' damping='0' solimpfriction='.95 .95 0' solreffriction='.02 1' solimplimit='0 .99 .01' solreflimit='.02 1'/>
+
+    <default class='torque-sensor'>
+      <site type='box' size='0.01 0.01 0.1' rgba='1 0 0 0.' />
+    </default>
+  </default>
+
+  <worldbody>
+    <site name='pedestal_attachment' pos='0 0 0'/>
+    <body name='arm_base_link' pos='0 0 0' quat='1 0 0 0'>
+      <inertial diaginertia='0.00740351 0.00681776 0.00672942' mass='2.0687' pos='-0.0006241 -2.8025e-05 0.065404' quat='-0.209285 0.674441 0.227335 0.670558'/>
+      <geom name='arm_base_link' material='sawyer_red' mesh='base'/>
+      <!-- <geom size='0.08 0.12' pos='0 0 0.12' type='cylinder' material='sawyer_red'/>-->
+      <body name='l0' pos='0 0 0.08'>
+        <inertial diaginertia='0.0651588 0.0510944 0.0186218' mass='5.3213' pos='0.024366 0.010969 0.14363' quat='0.894823 0.00899958 -0.170275 0.412573'/>
+        <site class='torque-sensor' name='j0_site'/>
+        <joint axis='0 0 1' class='large_joint' limited='true' name='right_j0' pos='0 0 0' range='-3.0503 3.0503'/>
+        <geom name='l0' material='sawyer_red' mesh='l0'/>
+        <!-- <geom size='0.07' pos='0.081 0 0.237' material='sawyer_red'/>-->
+        <body name='head' pos='0 0 0.2965'>
+          <inertial diaginertia='0.0118334 0.00827089 0.00496574' mass='1.5795' pos='0.0053207 -2.6549e-05 0.1021' quat='0.999993 7.08405e-05 -0.00359857 -0.000626247'/>
+          <!-- Uncomment to add head DOF: -->
+          <!-- <joint name='head_pan' class='little_joint' pos='0 0 0' axis='0 0 1' limited='true' range='-5.1477 0.9559' />-->
+          <geom name='head' material='sawyer_gray' mesh='head'/>
+          <!-- <geom size='0.18' pos='0 0 0.08' material='sawyer_gray'/>-->
+          <!-- <body name='screen' pos='0.03 0 0.105' quat='0.5 0.5 0.5 0.5'/>
+            <inertial diaginertia='1e-08 1e-08 1e-08' mass='0.0001' pos='0 0 0'/>
+          </body> -->
+          <camera name='head_camera' pos='0.0228027 0 0.216572' quat='0.61872185 0.34232043 -0.34232043 -0.61872185'/>
+        </body>
+        <body name='l1' pos='0.081 0.05 0.237' quat='0.5 -0.5 0.5 0.5'>
+          <inertial diaginertia='0.0224339 0.0221624 0.0097097' mass='4.505' pos='-0.0030849 -0.026811 0.092521' quat='0.424888 0.891987 0.132364 -0.0794296'/>
+          <site class='torque-sensor' name='j1_site'/>
+          <joint axis='0 0 1' class='large_joint' limited='true' name='right_j1' pos='0 0 0' range='-3.8095 2.2736'/>
+          <geom name='l1' material='darkgray' mesh='l1'/>
+          <!-- <geom size='0.07' pos='0 0 0.1225' material='darkgray'/>-->
+          <body name='l2' pos='0 -0.14 0.1325' quat='0.707107 0.707107 0 0'>
+            <!-- note: original body pos was pos='0 -0.14 0.1425' -->
+            <inertial diaginertia='0.0255023 0.025176 0.00285946' mass='1.7251' pos='-0.00016232 -0.015346 0.13445' quat='0.707249 -0.0541564 0.0533441 0.702866'/>
+            <site class='torque-sensor' name='j2_site'/>
+            <joint axis='0 0 1' class='medium_joint' limited='true' name='right_j2' pos='0 0 0' range='-3.0426 3.0426'/>
+            <geom name='l2' material='sawyer_red' mesh='l2'/>
+            <!-- <geom size='0.06 0.175' pos='0 0 0.14' type='cylinder' material='sawyer_red'/>-->
+            <body name='l3' pos='0 -0.042 0.26' quat='0.707107 -0.707107 0 0'>
+              <inertial diaginertia='0.0100572 0.00959393 0.00350313' mass='2.4743' pos='-0.0046678 -0.028394 -0.083127' quat='0.894367 0.380888 -0.106513 0.209016'/>
+              <site class='torque-sensor' name='j3_site'/>
+              <joint axis='0 0 1' class='medium_joint' limited='true' name='right_j3' pos='0 0 0' range='-3.0439 3.0439'/>
+              <geom name='l3' material='darkgray' mesh='l3'/>
+              <!-- <geom size='0.06' pos='0 -0.01 -0.12' material='darkgray'/>-->
+              <body name='l4' pos='0 -0.115 -0.1265' quat='0.707107 0.707107 0 0'>
+                <!-- note: original body pos was pos='0 -0.125 -0.1265' -->
+                <inertial diaginertia='0.013057 0.0129029 0.00113257' mass='1.0433' pos='-0.0027794 0.0076558 0.13273' quat='0.801274 0.0333339 -0.0340185 0.596399'/>
+                <site class='torque-sensor' name='j4_site'/>
+                <joint axis='0 0 1' class='small_joint' limited='true' name='right_j4' pos='0 0 0' range='-2.9761 2.9761'/>
+                <geom name='l4' material='sawyer_red' mesh='l4'/>
+                <!-- <geom size='0.045 0.18' pos='0 0 0.14' type='cylinder' material='sawyer_red'/>-->
+                <body name='l5' pos='0 0.031 0.275' quat='0.707107 -0.707107 0 0'>
+                  <inertial diaginertia='0.00461663 0.0041769 0.00178717' mass='1.5343' pos='0.0062067 -0.024291 0.075564' quat='0.405457 0.912624 0.0521713 0.000995062'/>
+                  <site class='torque-sensor' name='j5_site'/>
+                  <joint axis='0 0 1' class='small_joint' limited='true' name='right_j5' pos='0 0 0' range='-2.9761 2.9761'/>
+                  <geom name='l5' material='darkgray' mesh='l5'/>
+                  <!-- <geom size='0.06' pos='0.01 0 0.09' material='darkgray'/>-->
+                  <camera name='hand_camera' pos='0.039552 -0.033 0.0695' quat='0 0.707107 0 -0.707107'/>
+                  <body name='l6' pos='0 -0.11 0.1053' quat='0.0616248 0.06163 -0.704416 0.704416'>
+                    <inertial diaginertia='0.000360258 0.000311068 0.000214974' mass='0.3292' pos='-8.0726e-06 0.0085838 -0.0049566' quat='0.479044 0.515636 -0.513069 0.491322'/>
+                    <site class='torque-sensor' name='j6_site'/>
+                    <joint axis='0 0 1' class='small_joint' limited='true' name='right_j6' pos='0 0 0' range='-4.7124 4.7124'/>
+                    <geom name='l6' material='sawyer_red' mesh='l6'/>
+                    <!-- <geom size='0.065 0.025' pos='0 0 -0.005' type='cylinder' material='sawyer_red'/>-->
+                    <body name='hand' pos='0 0 0.0245' quat='0.707107 0 0 0.707107'>
+                      <site name='wrist_site' pos='0 0 0'/>
+                      <inertial diaginertia='0.000467469 0.000467469 0.000814301' mass='0.452389' pos='0 0 0.02'/>
+                      <!-- <geom size='0.06 0.02' pos='0 0 0.02' type='cylinder' material='darkgray'/>-->
+                      <!-- <geom group='1' size='0.06 0.02' pos='0 0 0.02' type='cylinder' material='darkgray'/>-->
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <contact>
+    <exclude body1='arm_base_link' body2='l0'/>
+    <exclude body1='l0' body2='l1'/>
+    <exclude body1='l1' body2='l2'/>
+    <exclude body1='l2' body2='l3'/>
+    <exclude body1='l3' body2='l4'/>
+    <exclude body1='l4' body2='l5'/>
+    <exclude body1='l5' body2='l6'/>
+    <exclude body1='l6' body2='hand'/>
+    <exclude body1='l0' body2='head'/>
+    <exclude body1='l1' body2='head'/>
+    <exclude body1='l2' body2='head'/>
+    <exclude body1='l4' body2='l6'/>
+  </contact>
+
+  <sensor>
+    <force site='wrist_site' name='wrist_force'/>
+    <torque site='wrist_site' name='wrist_torque'/>
+    <torque site='j0_site' name='j0_torque'/>
+    <torque site='j1_site' name='j1_torque'/>
+    <torque site='j2_site' name='j2_torque'/>
+    <torque site='j3_site' name='j3_torque'/>
+    <torque site='j4_site' name='j4_torque'/>
+    <torque site='j5_site' name='j5_torque'/>
+    <torque site='j6_site' name='j6_torque'/>
+  </sensor>
+
+</mujoco>

@@ -1,0 +1,35 @@
+<mujoco model="robotiq_fts300">
+  <compiler angle="radian" meshdir="../../vendor/ros_robotiq/robotiq_force_torque_sensor/meshes/visual/" />
+
+  <asset>
+    <mesh name="fts300_base_mesh" file="robotiq_fts300_base.stl" scale="0.001 0.001 0.001" />
+    <mesh name="fts300_top_mesh" file="robotiq_fts300_top.stl" scale="0.001 0.001 0.001" />
+    <mesh name="fts300_coupling_mesh" file="robotiq_fts300_coupling.stl" scale="0.001 0.001 0.001" />
+  </asset>
+
+  <default>
+    <geom contype="2" conaffinity="1" type="mesh" rgba=".149 .149 .149 1"/>
+    <site group="3" type="sphere" rgba="1 .2 .2 1" size="0.001" />
+  </default>
+
+  <worldbody>
+    <body name="base_mount">
+      <geom name="fts300_coupling_geom" mesh="fts300_coupling_mesh" pos="0 0 -0.003" />
+      <body name="fts300_body" pos="0 0 0.0415">
+        <!-- Inertial values used below extracted from manufacturer's datasheet -->
+        <inertial pos="0 0 -0.0205" mass="0.3" diaginertia="0.000262 0.000265 0.000219" />
+        <geom name="fts300_geom" type="mesh" mesh="fts300_base_mesh" />
+        <body name="fts300_sensor_body">
+          <geom name="fts300_sensor_geom" type="mesh" mesh="fts300_top_mesh" />
+          <site name="ft_sensor_frame_site" pos="0 0 -0.02" />
+          <site name="ft_sensor_attachment_site" />
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <sensor>
+    <force name="ft_sensor_force" site="ft_sensor_frame_site"/>
+    <torque name="ft_sensor_torque" site="ft_sensor_frame_site"/>
+  </sensor>
+</mujoco>

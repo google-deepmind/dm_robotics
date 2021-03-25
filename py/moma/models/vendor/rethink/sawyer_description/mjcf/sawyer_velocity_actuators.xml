@@ -1,0 +1,33 @@
+<mujoco model='sawyer'>
+  <compiler angle='radian'/>
+  <default>
+    <velocity kv='50' ctrllimited='true' forcelimited='true'/>
+
+    <default class='large_joint'>
+      <joint frictionloss='0.3' armature='1' damping='0.1'/>
+      <velocity forcerange='-80 80'/>
+    </default>
+
+    <default class='medium_joint'>
+      <joint frictionloss='0.3' armature='1' damping='0.1'/>
+      <velocity forcerange='-40 40'/>
+    </default>
+
+    <default class='small_joint'>
+      <joint frictionloss='0.1' armature='1' damping='0.1'/>
+      <velocity forcerange='-9 9'/>
+    </default>
+  </default>
+
+  <actuator>
+    <!-- ctrlrange values extracted from robot manufacturer's URDF file, which can be found at -->
+    <!-- https://github.com/RethinkRobotics/sawyer_robot/blob/master/sawyer_description/urdf/sawyer_base.urdf.xacro -->
+    <velocity name='j0' joint='right_j0' class='large_joint'  ctrlrange='-1.74 1.74'/>
+    <velocity name='j1' joint='right_j1' class='large_joint'  ctrlrange='-1.328 1.328'/>
+    <velocity name='j2' joint='right_j2' class='medium_joint' ctrlrange='-1.957 1.957'/>
+    <velocity name='j3' joint='right_j3' class='medium_joint' ctrlrange='-1.957 1.957'/>
+    <velocity name='j4' joint='right_j4' class='small_joint'  ctrlrange='-3.485 3.485'/>
+    <velocity name='j5' joint='right_j5' class='small_joint'  ctrlrange='-3.485 3.485'/>
+    <velocity name='j6' joint='right_j6' class='small_joint'  ctrlrange='-4.545 4.545'/>
+  </actuator>
+</mujoco>

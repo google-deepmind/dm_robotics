@@ -1,0 +1,31 @@
+<mujoco model='pedestal'>
+  <compiler meshdir='../meshes/sawyer_pv/' />
+
+  <asset>
+    <material name='darkgray' rgba='.2 .2 .2 1'/>
+    <material name='darkred' rgba='.5 .1 .1 1'/>
+    <mesh name="pedestal" file="pedestal.STL" />
+  </asset>
+
+  <worldbody>
+    <body name='base' pos='0 0 0'>
+      <site name='sawyer_attachment' pos='0 0 0.913' rgba='.5 .5 .5 .3' size='0.001'/>
+      <body name='controller_box' pos='0 0 0.913'>
+        <inertial diaginertia='1.71363 1.27988 0.809981' mass='46.64' pos='-0.325 0 -0.38'/>
+        <geom pos='-0.325 0 -0.38' size='0.11 0.2 0.265' type='box' group='3'/>
+      </body>
+      <body name='pedestal_feet' pos='0 0 0.913'>
+        <inertial diaginertia='8.16095 9.59375 15.0785' mass='167.09' pos='-0.1225 0 -0.758'/>
+        <geom pos='-0.1225 0 -0.758' size='0.385 0.35 0.155' type='box' group='3'/>
+      </body>
+      <body name='torso' pos='0 0 0.913'>
+        <inertial diaginertia='1e-08 1e-08 1e-08' mass='0.0001' pos='0 0 0'/>
+      </body>
+      <body name='pedestal' pos='0 0 0.913'>
+        <inertial diaginertia='6.0869 5.81635 4.20915' mass='60.864' pos='0 0 0' quat='0.659267 -0.259505 -0.260945 0.655692'/>
+        <geom group='1' material='darkgray' mesh='pedestal' pos='0.26 0.345 -0.91488' quat='0.5 0.5 -0.5 -0.5' type='mesh'/>
+        <geom material='darkgray' pos='0 0 -0.3' size='0.18 0.31' type='cylinder' group='3'/>
+      </body>
+    </body>
+  </worldbody>
+</mujoco>

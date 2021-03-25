@@ -1,0 +1,32 @@
+<mujoco model='sawyer'>
+  <default>
+    <general ctrllimited='true' forcelimited='true'/>
+    <!-- ctrlrange values extracted from robot manufacturer's URDF file, which can be found at -->
+    <!-- https://github.com/RethinkRobotics/sawyer_robot/blob/master/sawyer_description/urdf/sawyer_base.urdf.xacro -->
+    <default class='large_joint'>
+      <joint frictionloss='0.3' armature='1' damping='30'/>
+      <motor ctrlrange='-80 80' forcerange='-80 80'/>
+    </default>
+
+    <default class='medium_joint'>
+      <joint frictionloss='0.3' armature='1' damping='30'/>
+      <motor ctrlrange='-40 40' forcerange='-40 40'/>
+    </default>
+
+    <default class='small_joint'>
+      <joint frictionloss='0.1' armature='1' damping='10'/>
+      <motor ctrlrange='-9 9' forcerange='-9 9'/>
+    </default>
+
+  </default>
+
+  <actuator>
+    <motor name='j0' joint='right_j0' class='large_joint' />
+    <motor name='j1' joint='right_j1' class='large_joint' />
+    <motor name='j2' joint='right_j2' class='medium_joint' />
+    <motor name='j3' joint='right_j3' class='medium_joint' />
+    <motor name='j4' joint='right_j4' class='small_joint' />
+    <motor name='j5' joint='right_j5' class='small_joint' />
+    <motor name='j6' joint='right_j6' class='small_joint' />
+  </actuator>
+</mujoco>

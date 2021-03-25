@@ -1,0 +1,459 @@
+<?xml version="1.0"?>
+
+<!-- 
+	Coordinate system convention for grippers:
+	The pin of the gripper is along the y-axis, and z-axis points up. 
+	The resulting x-axis is considered the palm face, so +y is right, and -y is left for 
+	a right-hand gripper, whatever that means in this gripper.
+
+	Coarse and precise models:
+
+	Two granularities for collision are provided, a coarse (default) for quick motion
+	planning purposes, and a precise for grasp simulation. This is selected with the
+	boolean parameter precise_collision = true/false (default to false)
+
+	In the same line, there is the adaptive_transmission parameter that might use
+	pure mimic joints (default and motion does not consider adaptation) for visualization 
+	and update of real hw, and an implementation of the 5-bar transmission with 
+	spring transmission for grasp simulation.
+
+	For grasp simulation, the file 2f85.gazebo.xacro sets additional parameters such as
+	material properties, and simulation parameters.
+-->
+
+<!-- length is along the z-axis! -->
+<!-- xacro:macro name="cylinder_inertia" params="radius length mass">
+	<inertia ixx="${mass * (3 * radius * radius + length * length) / 12}" iyy="${mass * radius* radius / 2}" izz="${mass * (3 * radius * radius + length * length) / 12}" ixy="0" iyz="0" ixz="0"/>
+</xacro:macro -->
+
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+	<xacro:macro name="robotiq_2f_85" params="parent name precise_collision:=false adaptive_transmission:=false with_pads:=true *origin">
+
+		<!-- base -->
+		<joint name="${parent}_${name}_base_joint" type="fixed">
+			<xacro:insert_block name="origin"/>
+			<parent link="${parent}"/>
+			<child link="${name}_base"/>
+		</joint>
+		<link name="${name}_base">
+			<!-- inertial>
+				<mass value="0.1"/>
+				<origin xyz="0 0 0.055"  />
+				<cylinder_inertia radius="0.06" length="0.11" mass="0.1"/>
+			</inertial -->
+			<visual>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/visual/base.dae" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</visual>
+			<xacro:unless value="${precise_collision}">
+			<collision>
+				<origin xyz="0 0 0.015" rpy="0 0 0"/>
+				<geometry>
+					<cylinder radius="0.04" length="0.045"/>
+				</geometry>
+			</collision>
+			<collision>
+				<origin xyz="0 0 0.06" rpy="0 0 0"/>
+				<geometry>
+					<box size="0.03 0.04 0.06"/>
+				</geometry>
+			</collision>
+			</xacro:unless>
+			<xacro:if value="${precise_collision}">
+			<collision>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/collision/base.stl" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</collision>
+			</xacro:if>
+		</link>
+
+		<!-- right finger -->
+
+		<joint name="${name}_right_driver_joint" type="revolute">
+			<origin xyz="0 0.0306011 0.054904" rpy="0 0 0"/>
+			<parent link="${name}_base"/>
+			<child link="${name}_right_driver"/>
+			<axis xyz="1 0 0"/>
+			<limit lower="${0 * 3.141592 / 180}" upper="${50 * 3.141592 / 180}" effort="60" velocity="${110 * 3.141592 / 180}" />
+		</joint>
+		<link name="${name}_right_driver">
+			<!-- inertial>
+				<mass value="0.1"/>
+				<origin xyz="0 0 0.055"  />
+				<cylinder_inertia radius="0.06" length="0.11" mass="0.1"/>
+			</inertial -->
+			<visual>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/visual/driver.dae" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</visual>
+			<xacro:unless value="${precise_collision}">
+			<collision>
+				<origin xyz="0 0.02 0" rpy="-0.1 0 0"/>
+				<geometry>
+					<box size="0.02 0.04 0.02"/>
+				</geometry>
+			</collision>
+			</xacro:unless>
+			<xacro:if value="${precise_collision}">
+			<collision>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/collision/driver.stl" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</collision>
+			</xacro:if>
+		</link>
+
+		<xacro:unless value="${adaptive_transmission}">
+		<joint name="${name}_right_coupler_joint" type="fixed">
+			<origin xyz="0 0.0315 -0.0041" rpy="0 0 0"/>
+			<parent link="${name}_right_driver"/>
+			<child link="${name}_right_coupler"/>
+		</joint>
+		</xacro:unless>
+		<xacro:if value="${adaptive_transmission}">
+			<joint name="${name}_right_coupler_joint" type="revolute">
+			<origin xyz="0 0.0315 -0.0041" rpy="0 0 0"/>
+			<parent link="${name}_right_driver"/>
+			<child link="${name}_right_coupler"/>
+			<axis xyz="1 0 0"/>
+			<limit lower="${-170 * 3.141592 / 180}" upper="${170 * 3.141592 / 180}" effort="176" velocity="${110 * 3.141592 / 180}" />
+		</joint>
+		</xacro:if>
+		<link name="${name}_right_coupler">
+			<!-- inertial>
+				<mass value="0.1"/>
+				<origin xyz="0 0 0.055"  />
+				<cylinder_inertia radius="0.06" length="0.11" mass="0.1"/>
+			</inertial -->
+			<visual>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/visual/coupler.dae" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</visual>
+			<xacro:unless value="${precise_collision}">
+			<collision>
+				<origin xyz="0 0.0 0.025" rpy="-1.7 0 0"/>
+				<geometry>
+					<box size="0.03 0.065 0.02"/>
+				</geometry>
+			</collision>
+			</xacro:unless>
+			<xacro:if value="${precise_collision}">
+				<collision>
+					<geometry>
+						<mesh filename="package://robotiq_2f_model/model/meshes/2f85/collision/coupler.stl" scale="0.001 0.001 0.001"/>
+					</geometry>
+				</collision>
+			</xacro:if>
+		</link>
+
+		<joint name="${name}_right_follower_joint" type="revolute">
+			<origin xyz="0 0.0061 0.0471" rpy="0 0 0"/>
+			<parent link="${name}_right_coupler"/>
+			<child link="${name}_right_follower"/>
+			<axis xyz="1 0 0"/>
+			<limit lower="${-170 * 3.141592 / 180}" upper="${170 * 3.141592 / 180}" effort="176" velocity="${110 * 3.141592 / 180}" />
+
+			<xacro:unless value="${adaptive_transmission}">
+			<mimic joint="${name}_right_driver_joint" multiplier="-1"/>
+			</xacro:unless>
+		</joint>
+		<link name="${name}_right_follower">
+			<visual>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/visual/follower.dae" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</visual>
+			<xacro:unless value="${precise_collision}">
+			<collision>
+				<origin xyz="0 -0.018 0.022" rpy="0 0 0"/>
+				<geometry>
+					<box size="0.02 0.015 0.048"/>
+				</geometry>
+			</collision>
+			</xacro:unless>
+			<xacro:if value="${precise_collision}">
+			<collision>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/collision/follower.stl" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</collision>
+			</xacro:if>
+		</link>
+
+		<joint name="${name}_right_pad_joint" type="fixed">
+			<parent link="${name}_right_follower"/>
+			<child link="${name}_right_pad"/>
+		</joint>
+		<link name="${name}_right_pad">
+			<!-- inertial>
+				<mass value="0.1"/>
+				<origin xyz="0 0 0.055"  />
+				<cylinder_inertia radius="0.06" length="0.11" mass="0.1"/>
+			</inertial -->
+			<visual>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/visual/pad.dae" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</visual>
+			<xacro:unless value="${precise_collision}">
+			<collision>
+				<origin xyz="0 -0.022 0.031" rpy="0 0 0"/>
+				<geometry>
+					<box size="0.02 0.008 0.036"/>
+				</geometry>
+			</collision>
+			</xacro:unless>
+			<xacro:if value="${precise_collision}">
+			<collision>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/collision/pad.stl" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</collision>
+			</xacro:if>
+		</link>
+
+		<joint name="${name}_right_spring_link_joint" type="revolute">
+			<origin xyz="0 0.012 0.0614" rpy="0 0 0"/>
+			<parent link="${name}_base"/>
+			<child link="${name}_right_spring_link"/>
+			<axis xyz="1 0 0"/>
+			<limit lower="${-170 * 3.141592 / 180}" upper="${170 * 3.141592 / 180}" effort="176" velocity="${110 * 3.141592 / 180}" />
+
+			<xacro:unless value="${adaptive_transmission}">
+			<mimic joint="${name}_right_driver_joint" multiplier="1"/>
+			</xacro:unless>
+		</joint>
+		<link name="${name}_right_spring_link">
+			<!-- inertial>
+				<mass value="0.1"/>
+				<origin xyz="0 0 0.055"  />
+				<cylinder_inertia radius="0.06" length="0.11" mass="0.1"/>
+			</inertial -->
+			<visual>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/visual/spring_link.dae" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</visual>
+			<xacro:unless value="${precise_collision}">
+			<collision>
+				<origin xyz="0 0.018 0.018" rpy="-0.7068 0 0"/>
+				<geometry>
+					<box size="0.04 0.02 0.065"/>
+				</geometry>
+			</collision>
+			</xacro:unless>
+			<xacro:if value="${precise_collision}">
+			<collision>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/collision/spring_link.stl" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</collision>
+			</xacro:if>
+		</link>
+
+		<!-- left finger -->
+
+		<joint name="${name}_left_driver_joint" type="revolute">
+			<origin xyz="0 -0.0306011 0.054904" rpy="0 0 3.141592653589793"/>
+			<parent link="${name}_base"/>
+			<child link="${name}_left_driver"/>
+			<axis xyz="1 0 0"/>
+			<limit lower="${0 * 3.141592 / 180}" upper="${41 * 3.141592 / 180}" effort="176" velocity="${110 * 3.141592 / 180}" />
+
+			<xacro:unless value="${adaptive_transmission}">
+			<mimic joint="${name}_right_driver_joint" multiplier="1"/>
+			</xacro:unless>
+		</joint>
+		<link name="${name}_left_driver">
+			<!-- inertial>
+				<mass value="0.1"/>
+				<origin xyz="0 0 0.055"  />
+				<cylinder_inertia radius="0.06" length="0.11" mass="0.1"/>
+			</inertial -->
+			<visual>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/visual/driver.dae" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</visual>
+			<xacro:unless value="${precise_collision}">
+			<collision>
+				<origin xyz="0 0.02 0" rpy="-0.1 0 0"/>
+				<geometry>
+					<box size="0.02 0.04 0.02"/>
+				</geometry>
+			</collision>
+			</xacro:unless>
+			<xacro:if value="${precise_collision}">
+			<collision>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/collision/driver.stl" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</collision>
+			</xacro:if>
+		</link>
+
+		<xacro:unless value="${adaptive_transmission}">
+		<joint name="${name}_left_coupler_joint" type="fixed">
+			<origin xyz="0 0.0315 -0.0041" rpy="0 0 0"/>
+			<parent link="${name}_left_driver"/>
+			<child link="${name}_left_coupler"/>
+		</joint>
+		</xacro:unless>
+		<xacro:if value="${adaptive_transmission}">
+			<joint name="${name}_left_coupler_joint" type="revolute">
+			<origin xyz="0 0.0315 -0.0041" rpy="0 0 0"/>
+			<parent link="${name}_left_driver"/>
+			<child link="${name}_left_coupler"/>
+			<axis xyz="1 0 0"/>
+			<limit lower="${-170 * 3.141592 / 180}" upper="${170 * 3.141592 / 180}" effort="176" velocity="${110 * 3.141592 / 180}" />
+		</joint>
+		</xacro:if>
+		<link name="${name}_left_coupler">
+			<!-- inertial>
+				<mass value="0.1"/>
+				<origin xyz="0 0 0.055"  />
+				<cylinder_inertia radius="0.06" length="0.11" mass="0.1"/>
+			</inertial -->
+			<visual>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/visual/coupler.dae" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</visual>
+			<xacro:unless value="${precise_collision}">
+			<collision>
+				<origin xyz="0 0.0 0.025" rpy="-1.7 0 0"/>
+				<geometry>
+					<box size="0.03 0.065 0.02"/>
+				</geometry>
+			</collision>
+			</xacro:unless>
+			<xacro:if value="${precise_collision}">
+				<collision>
+					<geometry>
+						<mesh filename="package://robotiq_2f_model/model/meshes/2f85/collision/coupler.stl" scale="0.001 0.001 0.001"/>
+					</geometry>
+				</collision>
+			</xacro:if>
+		</link>
+
+		<joint name="${name}_left_follower_joint" type="revolute">
+			<origin xyz="0 0.0061 0.0471" rpy="0 0 0"/>
+			<parent link="${name}_left_coupler"/>
+			<child link="${name}_left_follower"/>
+			<axis xyz="1 0 0"/>
+			<limit lower="${-170 * 3.141592 / 180}" upper="${170 * 3.141592 / 180}" effort="176" velocity="${110 * 3.141592 / 180}" />
+
+			<xacro:unless value="${adaptive_transmission}">
+			<mimic joint="${name}_right_driver_joint" multiplier="-1"/>
+			</xacro:unless>
+		</joint>
+		<link name="${name}_left_follower">
+			<visual>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/visual/follower.dae" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</visual>
+			<xacro:unless value="${precise_collision}">
+			<collision>
+				<origin xyz="0 -0.018 0.022" rpy="0 0 0"/>
+				<geometry>
+					<box size="0.02 0.015 0.048"/>
+				</geometry>
+			</collision>
+			</xacro:unless>
+			<xacro:if value="${precise_collision}">
+			<collision>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/collision/follower.stl" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</collision>
+			</xacro:if>
+		</link>
+
+		<joint name="${name}_left_pad_joint" type="fixed">
+			<parent link="${name}_left_follower"/>
+			<child link="${name}_left_pad"/>
+		</joint>
+		<link name="${name}_left_pad">
+			<!-- inertial>
+				<mass value="0.1"/>
+				<origin xyz="0 0 0.055"  />
+				<cylinder_inertia radius="0.06" length="0.11" mass="0.1"/>
+			</inertial -->
+			<visual>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/visual/pad.dae" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</visual>
+			<xacro:unless value="${precise_collision}">
+			<collision>
+				<origin xyz="0 -0.022 0.031" rpy="0 0 0"/>
+				<geometry>
+					<box size="0.02 0.008 0.036"/>
+				</geometry>
+			</collision>
+			</xacro:unless>
+			<xacro:if value="${precise_collision}">
+			<collision>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/collision/pad.stl" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</collision>
+			</xacro:if>
+		</link>
+
+		<joint name="${name}_left_spring_link_joint" type="revolute">
+			<origin xyz="0 -0.012 0.0614" rpy="0 0 3.141592653589793"/>
+			<parent link="${name}_base"/>
+			<child link="${name}_left_spring_link"/>
+			<axis xyz="1 0 0"/>
+			<limit lower="${-170 * 3.141592 / 180}" upper="${170 * 3.141592 / 180}" effort="176" velocity="${110 * 3.141592 / 180}" />
+
+			<xacro:unless value="${adaptive_transmission}">
+			<mimic joint="${name}_right_driver_joint" multiplier="1"/>
+			</xacro:unless>
+		</joint>
+		<link name="${name}_left_spring_link">
+			<!-- inertial>
+				<mass value="0.1"/>
+				<origin xyz="0 0 0.055"  />
+				<cylinder_inertia radius="0.06" length="0.11" mass="0.1"/>
+			</inertial -->
+			<visual>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/visual/spring_link.dae" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</visual>
+			<xacro:unless value="${precise_collision}">
+			<collision>
+				<origin xyz="0 0.018 0.018" rpy="-0.7068 0 0"/>
+				<geometry>
+					<box size="0.04 0.02 0.065"/>
+				</geometry>
+			</collision>
+			</xacro:unless>
+			<xacro:if value="${precise_collision}">
+			<collision>
+				<geometry>
+					<mesh filename="package://robotiq_2f_model/model/meshes/2f85/collision/spring_link.stl" scale="0.001 0.001 0.001"/>
+				</geometry>
+			</collision>
+			</xacro:if>
+		</link>
+
+
+		<transmission name="${name}_right_driver_trans">
+			<type>transmission_interface/SimpleTransmission</type>
+			<joint name="${name}_right_driver_joint">
+				<hardwareInterface>PositionJointInterface</hardwareInterface>
+			</joint>
+			<actuator name="${name}_right_driver_motor">
+				<mechanicalReduction>1</mechanicalReduction>
+			</actuator>
+		</transmission>
+	</xacro:macro>
+</robot>

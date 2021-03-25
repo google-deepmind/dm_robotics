@@ -1,0 +1,3 @@
+include requirements*.txt
+recursive-include models/vendor *
+recursive-include models *.xml

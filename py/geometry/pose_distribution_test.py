@@ -1,0 +1,86 @@
+# Copyright 2020 DeepMind Technologies Limited.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Tests for PoseDistribution implementations."""
+
+from absl.testing import absltest
+from absl.testing import parameterized
+from dm_robotics.geometry import pose_distribution
+from dm_robotics.transformations import transformations as tr
+import numpy as np
+from six.moves import range
+
+
+class PoseDistributionTest(parameterized.TestCase):
+
+  def testTruncatedNormalPoseDistribution(self):
+    """Test normal pose with limits."""
+    random_state = np.random.RandomState(1)
+
+    def _check_limits(mean_poseuler, pos_sd, rot_sd, pos_clip_sd, rot_clip_sd):
+      pose_dist = pose_distribution.truncated_normal_pose_distribution(
+          mean_poseuler, pos_sd, rot_sd, pos_clip_sd, rot_clip_sd)
+      pos, quat = pose_dist.sample_pose(random_state)
+
+      # Check that position and axis-angle don't exceed clip_sd
+      # Obtain the orientation relative to the mean
+      mean_quat = tr.euler_to_quat(mean_poseuler[3:])
+      quat_mean_inv = tr.quat_conj(mean_quat)
+      quat_samp = tr.quat_mul(quat_mean_inv, quat)
+      # Convert to axisangle and compare to threshold.
+      axisangle_samp = tr.quat_to_axisangle(quat_samp)
+
+      self.assertTrue(
+          np.all(np.logical_or(pos > -pos_clip_sd, pos < pos_clip_sd)))
+      self.assertTrue(
+          np.all(
+              np.logical_or(axisangle_samp > -rot_clip_sd,
+                            axisangle_samp < rot_clip_sd)))
+
+    # Check special cases
+    _check_limits(
+        mean_poseuler=np.array([0.1, 0.2, 0.3, 0, 0, 0]),
+        pos_sd=np.array([0.3, 0.2, 0.1]),
+        rot_sd=np.array([0.3, 0.0, 0.0]),
+        pos_clip_sd=2.,
+        rot_clip_sd=1.)
+
+    # Check a bunch of random inputs
+    for _ in range(100):
+      mean_poseuler = random_state.uniform([-1, -2, -3, -np.pi, -np.pi, -np.pi],
+                                           [1, 2, 3, np.pi, np.pi, np.pi])
+      pos_sd = random_state.uniform([0, 0, 0], [1, 2, 3])
+      rot_sd = random_state.uniform([0, 0, 0], [1, 2, 3])
+      pos_clip_sd = random_state.uniform(0, 10)
+      rot_clip_sd = random_state.uniform(0, 10)
+      _check_limits(mean_poseuler, pos_sd, rot_sd, pos_clip_sd, rot_clip_sd)
+
+      # Check that pos and axis only vary along non-zero sd dims
+      pos_sd = np.array([0.0, 0.2, 0.0])
+      rot_sd = np.array([0.1, 0.0, 0.3])
+      pose_dist = pose_distribution.truncated_normal_pose_distribution(
+          mean_pose=np.array([0., 0., 0., 0., 0., 0.]),
+          pos_sd=pos_sd,
+          rot_sd=rot_sd,
+          pos_clip_sd=2.,
+          rot_clip_sd=1.)
+      pos, quat = pose_dist.sample_pose(random_state)
+      axisangle_samp = tr.quat_to_axisangle(quat)
+
+      self.assertTrue(np.all(np.nonzero(pos)[0] == np.nonzero(pos_sd)[0]))
+      self.assertTrue(
+          np.all(np.nonzero(axisangle_samp)[0] == np.nonzero(rot_sd)[0]))
+
+
+if __name__ == '__main__':
+  absltest.main()

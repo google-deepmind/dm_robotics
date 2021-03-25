@@ -1,0 +1,17 @@
+# dm_transformations pip dependencies.
+# It's preferable to:
+# (a) have a set of possible versions for each package that is limited, to
+#     reduce the set of valid configurations and reduce the probability that one
+#     is failing.
+# (b) be resilient to library changes. In particular, we do not want to bump to
+#     the next major version of a library without knowing.
+# (c) get the bug-fixes. However, it's dependent on each package versionning
+#     scheme (e.g. it would be safe to upgrade the patch version in
+#     [major].[minor].[patch] for https://semver.org/).
+#
+# Thus, prefer "==". If you do want (c), you can use the ~= construct.
+# See https://www.python.org/dev/peps/pep-0440/#compatible-release
+
+pip >= 20.0.2
+absl-py == 0.9.0
+numpy >= 1.16.0
