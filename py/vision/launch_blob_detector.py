@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Launch a ROS node to detect colored blobs from images."""
 
 from absl import app
@@ -23,47 +22,45 @@ from dmr_vision import config_blob_detector
 from dmr_vision import detector_node
 import rospy
 
-FLAGS = flags.FLAGS
-
-flags.DEFINE_string(
+_CAMERA = flags.DEFINE_string(
     name="camera",
     default=None,
     help=("The camera to use."
           "Must be one of the keys in `cameras` in the configuration file."))
 
-flags.DEFINE_list(
+_PROPS = flags.DEFINE_list(
     name="props",
     default=[
-        blob_tracker_object_defs.Props.RGB30_GREEN.value,
-        blob_tracker_object_defs.Props.RGB30_RED.value,
-        blob_tracker_object_defs.Props.RGB30_BLUE.value,
+        blob_tracker_object_defs.Props.GREEN.value,
+        blob_tracker_object_defs.Props.RED.value,
+        blob_tracker_object_defs.Props.BLUE.value,
     ],
     help="The names of the props to track.")
 
-flags.DEFINE_boolean(
+_VISUALISE = flags.DEFINE_boolean(
     name="visualize",
     default=False,
-    help="Publish the visualizations provided by the blob detector.")
+    help="Whether to publish helper images of the detected blobs or not.")
 
-flags.DEFINE_boolean(
+_TOOLKIT = flags.DEFINE_boolean(
     name="toolkit",
     default=False,
-    help=("Displays a YUV GUI toolkit to fine tune parameters. "
-          "Sets `visualize = True`."))
+    help=("Whether to display a YUV GUI toolkit to find good YUV parameters to "
+          "detect blobs or not. Sets `visualize = True`."))
 
 
 def main(_):
   logging.info("Collecting configuration parameters.")
   config = config_blob_detector.get_config()
   try:
-    namespace = config.camera_namespaces[FLAGS.camera]
+    namespace = config.camera_namespaces[_CAMERA.value]
   except KeyError as ke:
     raise ValueError("Please provide the name of one of the cameras listed in "
                      "the config `camera_namespaces` attribute. "
-                     f"Provided: {FLAGS.camera}. "
+                     f"Provided: {_CAMERA.value}. "
                      f"Available: {[cam for cam in config.camera_namespaces]}.")
   color_ranges = {}
-  for name in FLAGS.props:
+  for name in _PROPS.value:
     prop = blob_tracker_object_defs.Props(name.lower())
     color_ranges[name] = blob_tracker_object_defs.PROP_SPEC[prop]
 
@@ -73,9 +70,9 @@ def main(_):
       color_ranges=color_ranges,
       scale=config.scale,
       min_area=config.min_area,
-      mask_points=config.masks[FLAGS.camera],
-      visualize=FLAGS.visualize,
-      toolkit=FLAGS.toolkit)
+      mask_points=config.masks[_CAMERA.value],
+      visualize=_VISUALISE.value,
+      toolkit=_TOOLKIT.value)
   ros_node = detector_node.DetectorNode(
       namespace=namespace,
       detector=detector,

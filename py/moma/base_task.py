@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 """A Moma Base Task."""
 
 import collections
@@ -48,7 +47,7 @@ class BaseTask(composer.Task):
      bracelet camera)
    - props (free and fixed elements whose placement can be controlled by the
      initializer)
-   - the entity initializer (composes the scene and positions objects/robots for
+   - the scene initializer (composes the scene and positions objects/robots for
      each episode)
   """
 

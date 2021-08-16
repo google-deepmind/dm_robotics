@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Sensor to measure the previous command sent by an effector."""
+"""Sensor to measure the previous command received by an effector."""
 
 import enum
 from typing import Dict, Tuple, Optional
@@ -70,14 +70,24 @@ class Observations(enum.Enum):
 
 
 class ActionSensor(sensor.Sensor):
-  """Tracks the previous command that was sent out by an effector."""
+  """Tracks the previous command that was received by an effector.
+
+  In most cases, we chain several effectors when controlling our robots. For
+  example, we expose a cartesian effector to the agent. This cartesian command
+  is changed to a joint command and is passed to a joint effector that actuates
+  the robot. This sensor is used to capture the command that is received by the
+  joint effector.
+  """
 
   def __init__(self, effector: SpyEffector, name: str):
     """Constructor.
 
+    The ActionSensor should be built using the create_sensed_effector function
+    below.
+
     Args:
-      effector: The sensor will measure the actions of this effector. Note,
-        must have a `previous_action` property.
+      effector: Effector that exposes a `previous_action` property that is read
+        by the sensor.
       name: Name of the sensor.
     """
     self._effector = effector
@@ -114,7 +124,7 @@ class ActionSensor(sensor.Sensor):
 def create_sensed_effector(
     effector: moma_effector.Effector
 ) -> Tuple[moma_effector.Effector, ActionSensor]:
-  """Returns the effector and sensor to measure the last action sent."""
+  """Returns the effector and sensor to measure the last command received."""
   new_effector = SpyEffector(effector)
   action_sensor = ActionSensor(new_effector, name=effector.prefix)
   return new_effector, action_sensor

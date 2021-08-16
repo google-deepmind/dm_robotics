@@ -220,15 +220,17 @@ class Option(Policy):  # pytype: disable=ignored-metaclass
   Option lifecycle:
     If the framework decides to select an option, `on_selected` is called.
     Next, the option enters the standard agent lifecycle methods:
-      Once, after selection, `begin_episode` is called.
-      In a loop, `step` is called followed by `pterm` (returns a float [0,1]).
-      A uniform distribution decides if `pterm` results in termination,
-      If terminating:
-        A result is obtained from `result`.
-        `end_episode` is called with the temination reason from `result`.
-
-    After an option is terminated, AgentFlow will use the result from
-    that terminated option in subsequent calls to `on_selected`.
+      `step` is called repeatedly, the step_type of the timesteps that are
+      passed must follow these rules:
+      *  The first timestep must have step_type of `FIRST`
+      *  The last timestep (before another FIRST) must have step_type of `LAST`
+      *  All other timesteps must have a step type of `MID`.
+    while an option is being `step`ped, AgentFlow will call `pterm` (which
+    returns a float [0,1]).  This is an advisory signal - returning a pterm of
+    1.0 does not guarantee that the next step will be a `LAST` step.
+    When an option is terminated (a `LAST` step is given), an `OptionResult`
+    is obtained from `result`. AgentFlow will use that result in subsequent
+    calls to `on_selected`.
   """
   __metaclass__ = abc.ABCMeta
 

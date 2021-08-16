@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Launch a ROS node to traingulate the barycenter of colored blobs from images."""
 
 import collections
@@ -25,21 +24,25 @@ from dmr_vision import config_blob_triangulation
 import numpy as np
 import rospy
 
-FLAGS = flags.FLAGS
+_ROBOT = flags.DEFINE_string(
+    name="robot",
+    default="STANDARD_SAWYER",
+    help=("The name of the robot."
+          "Must be one of the enums in the robot configuration file."))
 
-flags.DEFINE_list(
+_PROPS = flags.DEFINE_list(
     name="props",
     default=[
-        blob_tracker_object_defs.Props.RGB30_GREEN.value,
-        blob_tracker_object_defs.Props.RGB30_RED.value,
-        blob_tracker_object_defs.Props.RGB30_BLUE.value,
+        blob_tracker_object_defs.Props.GREEN.value,
+        blob_tracker_object_defs.Props.RED.value,
+        blob_tracker_object_defs.Props.BLUE.value,
     ],
     help="The names of the objects to track.")
 
 
 def main(_):
   logging.info("Collecting configuration parameters.")
-  config = config_blob_triangulation.get_config("STANDARD_SAWYER")
+  config = config_blob_triangulation.get_config(_ROBOT.value)
   extrinsics = collections.defaultdict(dict)
   for cam_topic, cam_extrinsics in config.extrinsics.items():
     extrinsics[cam_topic] = np.append(cam_extrinsics["pos_xyz"],
@@ -48,7 +51,7 @@ def main(_):
   logging.info("Initializing blob triangulation ROS node.")
   rospy.init_node(name=config.node_name, anonymous=True)
   ros_node = blob_triangulation_node.BlobTriangulationNode(
-      prop_names=FLAGS.props,
+      prop_names=_PROPS.value,
       extrinsics=extrinsics,
       limits=config.limits,
       deadzones=config.deadzones,

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 """Base classes for props."""
 
 from dm_control import composer
@@ -27,7 +26,7 @@ class Prop(composer.Entity):
   def _build(self,
              name: str,
              mjcf_root: mjcf.RootElement,
-             prop_root: str = 'prop_root'):  # TODO(b/186731907): rename asap.
+             prop_root: str = 'prop_root'):
     """Base constructor for props.
 
     This constructor sets up the common observables and element access

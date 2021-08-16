@@ -11,12 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Configuration for the blob detector node."""
 
-from typing import Mapping
-
 import dataclasses
+from typing import Mapping
 
 from dmr_vision import types
 
@@ -31,14 +29,10 @@ class BlobDetectorConfig:
     input_queue_size: the input data queue size (see ROS documentation).
     output_queue_size: the output data queue size (see ROS documentation).
     camera_namespaces: a camera name to ROS namespace mapping.
-    masks: (u, v) coordinates defining a closed regions of interest in
-      the image where the blob detector will not look for blobs.
+    masks: (u, v) coordinates defining closed regions of interest in the image
+      where the blob detector will not look for blobs.
     scale: image scaling factor to increase speed and frame rate.
-    min_area: minimum size in pixels above which a blob is deemed valid. An
-      unoccluded object will be 10k-30k pixels. Noise is usually less than 200
-      pixels, but can rarely reach up to 2k. 1k seems a fair compromise,
-      tracking occluded objects up to ~1cm, and ignoring all but the most
-      extreme noise.
+    min_area: minimum size in pixels above which a blob is deemed valid.
   """
   node_name: str
   input_queue_size: int
@@ -66,12 +60,20 @@ def get_config() -> BlobDetectorConfig:
   }
 
   config.masks = {
-      "basket_front_left": [
-          [(0, 0), (0, 320), (976, 176), (1920, 360), (1920, 0)],
-      ],
-      "basket_front_right": [
-          [(0, 0), (0, 360), (944, 176), (1920, 400), (1920, 0)],
-      ],
+      "basket_front_left": [[
+          (0, 0),
+          (0, 320),
+          (976, 176),
+          (1920, 360),
+          (1920, 0),
+      ]],
+      "basket_front_right": [[
+          (0, 0),
+          (0, 360),
+          (944, 176),
+          (1920, 400),
+          (1920, 0),
+      ]],
       "basket_back_left": [],
   }
 

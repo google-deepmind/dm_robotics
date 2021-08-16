@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# Lint as: python3
-"""Sensor abstraction."""  # TODO(b/186731436): better description.
+"""Abstract sensor interface definition ."""
 
 import abc
 import enum
@@ -27,7 +25,12 @@ import numpy as np
 class Sensor(abc.ABC):
   """Abstract sensor interface, sensors generate observations.
 
-  TODO(davebarker): Document better how observables is used.
+  `Sensor`s. have `observables`, it is these objects that supply sensed values.
+  At its simplest, an Observable is a callable that takes a physics and returns
+  a sensed value (which could be a `np.ndarray`).
+
+  The instances returned by observables are stored and used by the composer
+  environment to create the environment's observations (state).
   """
 
   def initialize_for_task(self, control_timestep_seconds: float,
@@ -78,6 +81,16 @@ class Sensor(abc.ABC):
     """Get the observables for this Sensor.
 
     This will be called after `initialize_for_task`.
+
+    It's expected that the keys in this dict are values from
+    `self.get_obs_key(SOME_ENUM_VALUE)`, the values are Observables.
+    See the class docstring for more information about Observable.
+
+    subclassing `dm_control.composer.observation.observable.Generic` is a simple
+    way to create an `Observable`.  Observables have many properties that are
+    used by composer to alter how the values it produces are processed.
+
+    See the code `dm_control.composer.observation` for more information.
     """
     pass
 

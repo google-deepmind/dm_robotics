@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 """Module for scene initializers.
 
 Scene initializers are callables that can change the MJCF of a scene. They are
@@ -20,9 +19,9 @@ called before each episode, and the MJCF is recompiled afterwards. See
 `base_task.py` for more information on how they are called.
 """
 
+import dataclasses
 from typing import Callable, Iterable, Tuple
 
-import dataclasses
 from dm_control import mjcf
 from dm_robotics.moma import base_task
 import numpy as np

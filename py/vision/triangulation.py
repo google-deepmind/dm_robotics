@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Module performing triangulation of 2D points from multiple views."""
 
 from typing import Optional, Sequence, Tuple
@@ -98,9 +97,8 @@ class Triangulation:
       pixel_list = np.array([np.array([
           np.array(pixel_measurements[i]),
       ],)])
-      undistorted_points.append(cv2.undistortPoints(pixel_list,
-                                                    self._camera_matrices[i],
-                                                    distortion))
+      undistorted_points.append(
+          cv2.undistortPoints(pixel_list, self._camera_matrices[i], distortion))
     return self._linear_triangulate(undistorted_points)
 
   def _linear_triangulate(

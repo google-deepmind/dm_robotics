@@ -11,10 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Module defining robot configurations."""
 
+import dataclasses
 import enum
+from typing import Mapping, Optional, Tuple
 
 from dmr_vision import types
 
@@ -22,10 +23,28 @@ DEFAULT_SAWYER_BASKET_CENTER = (0.6, 0.)
 DEFAULT_BASKET_HEIGHT = 0.0498
 
 
-# TODO(b/183080853): data from R28
+@dataclasses.dataclass(frozen=True)
+class RobotConfig:
+  """Robot parameters.
+
+  Attributes:
+    name: unique robot name.
+    cameras: collection of cameras.
+    basket_center: center of playground relative to the robot base frame in the
+      xy plane.
+    basket_height: displacement of the playground from the robot base frame.
+    base_frame_name: the name (or id) that identifies the robot ROS base frame.
+  """
+  name: str
+  cameras: Mapping[str, types.Camera]
+  basket_center: Optional[Tuple[float, float]] = None
+  basket_height: Optional[float] = None
+  base_frame_name: Optional[str] = None
+
+
 @enum.unique
 class RobotType(enum.Enum):
-  STANDARD_SAWYER = types.RobotConfig(
+  STANDARD_SAWYER = RobotConfig(
       name="STANDARD_SAWYER",
       cameras={
           "basket_front_left":
@@ -59,7 +78,7 @@ class RobotType(enum.Enum):
   )
 
 
-def get_robot_config(robot_type: str) -> types.RobotConfig:
+def get_robot_config(robot_type: str) -> RobotConfig:
   """Retrieves robot configration."""
   try:
     return RobotType[robot_type.upper()].value

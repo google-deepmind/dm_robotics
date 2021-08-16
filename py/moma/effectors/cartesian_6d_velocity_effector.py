@@ -14,10 +14,10 @@
 
 """Cartesian 6D velocity (linear and angular) effector."""
 
+import dataclasses
 from typing import Optional, Sequence, Tuple
 
 from absl import logging
-import dataclasses
 from dm_control import mjcf
 from dm_control import mujoco
 from dm_control.mujoco.wrapper.mjbindings.enums import mjtJoint
@@ -472,7 +472,8 @@ class Cartesian6dVelocityEffector(effector.Effector):
     # Compute nullspace bias if gain is positive.
     qdot_nullspace = None
     if (self._control_params.nullspace_gain is not None and
-        self._control_params.nullspace_gain > 0.0):
+        self._control_params.nullspace_gain > 0.0 and
+        self._control_params.nullspace_joint_position_reference is not None):
       qdot_nullspace = self._control_params.nullspace_gain * (
           self._control_params.nullspace_joint_position_reference -
           joints_binding.qpos) / self._control_params.control_timestep_seconds

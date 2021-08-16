@@ -35,5 +35,3 @@ target_link_libraries(dmr_support
     absl::status
     absl::statusor
 )
-
-# TODO(josechenf): Add install/uninstall phase.

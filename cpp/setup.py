@@ -61,7 +61,6 @@ class CMakeBuild(build_ext):
     if not os.path.exists(self.build_temp):
       os.makedirs(self.build_temp)
 
-    # TODO(davebarker): locate current cmake binary.
     # Generate build files:
     subprocess.check_call(
         [ext.cmake] + cmake_args + ["-S", ext.sourcedir], cwd=self.build_temp)

@@ -19,5 +19,3 @@ project(dmr_controllers
 )
 
 add_subdirectory(lsqp)
-
-# TODO(josechenf): Add install/uninstall phase.

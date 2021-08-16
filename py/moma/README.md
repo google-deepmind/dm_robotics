@@ -6,7 +6,7 @@ in simulation and on real robots.
 ## Quick Start
 
 An quick-start introductory tutorial can be found at this Colab:
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/deepmind/dm_robotics/blob/main/moma/tutorial.ipynb)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/deepmind/robotics/blob/main/py/moma/moma_tutorial.ipynb)
 
 ## Overview
 
@@ -141,18 +141,18 @@ the tutorial linked at the top.
 
 [Composer library]: https://deepmind.com/research/publications/dm-control-Software-and-Tasks-for-Continuous-Control
 [`dm_control`]: https://github.com/deepmind/dm_control/tree/master
-[Sensors]: https://github.com/deepmind/dm_robotics/tree/main/moma/sensor.py
-[`sensors`]: https://github.com/deepmind/dm_robotics/tree/main/moma/sensors/
-[Effectors]: https://github.com/deepmind/dm_robotics/tree/main/moma/effector.py
-[`effectors`]: https://github.com/deepmind/dm_robotics/tree/main/moma/effectors/
-[`BaseTask`]: https://github.com/deepmind/dm_robotics/tree/main/moma/base_task.py
-[SubtaskEnvironment]: https://github.com/deepmind/dm_robotics/tree/main/moma/subtask_env.py
+[Sensors]: https://github.com/deepmind/robotics/tree/main/py/moma/sensor.py
+[`sensors`]: https://github.com/deepmind/robotics/tree/main/py/moma/sensors/
+[Effectors]: https://github.com/deepmind/robotics/tree/main/py/moma/effector.py
+[`effectors`]: https://github.com/deepmind/robotics/tree/main/py/moma/effectors/
+[`BaseTask`]: https://github.com/deepmind/robotics/tree/main/py/moma/base_task.py
+[SubtaskEnvironment]: https://github.com/deepmind/robotics/tree/main/py/moma/subtask_env.py
 [dm_env.Environment]: https://github.com/deepmind/dm_env/tree/master
-[AgentFlow]: https://github.com/deepmind/dm_robotics/tree/main/agentflow/README.md
-[`agentflow.ActionSpace`]: https://github.com/deepmind/dm_robotics/tree/main/agentflow/action_spaces.py
-[`agentflow.TimestepPreprocessor`]: https://github.com/deepmind/dm_robotics/tree/main/agentflow/preprocessors/timestep_preprocessor.py
-[`agentflow.SubTask`]: https://github.com/deepmind/dm_robotics/tree/main/agentflow/subtask.py
-[`agentflow.SubTask`]: https://github.com/deepmind/dm_robotics/tree/main/agentflow/subtask.py
-[`agentflow.preprocessors`]: https://github.com/deepmind/dm_robotics/tree/main/agentflow/preprocessors/
-[subtask_env_builder]: https://github.com/deepmind/dm_robotics/tree/main/moma/subtask_env_builder.py
-[example task]: https://github.com/deepmind/dm_robotics/tree/main/moma/tasks/example_task/example_task.py
+[AgentFlow]: https://github.com/deepmind/robotics/tree/main/py/agentflow/README.md
+[`agentflow.ActionSpace`]: https://github.com/deepmind/robotics/tree/main/py/agentflow/action_spaces.py
+[`agentflow.TimestepPreprocessor`]: https://github.com/deepmind/robotics/tree/main/py/agentflow/preprocessors/timestep_preprocessor.py
+[`agentflow.SubTask`]: https://github.com/deepmind/robotics/tree/main/py/agentflow/subtask.py
+[`agentflow.SubTask`]: https://github.com/deepmind/robotics/tree/main/py/agentflow/subtask.py
+[`agentflow.preprocessors`]: https://github.com/deepmind/robotics/tree/main/py/agentflow/preprocessors/
+[subtask_env_builder]: https://github.com/deepmind/robotics/tree/main/py/moma/subtask_env_builder.py
+[example task]: https://github.com/deepmind/robotics/tree/main/py/moma/tasks/example_task/example_task.py

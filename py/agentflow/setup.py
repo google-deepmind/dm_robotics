@@ -45,7 +45,6 @@ setuptools.setup(
     package_dir={"dm_robotics.agentflow": ""},
     packages=[
         "dm_robotics.agentflow",
-        "dm_robotics.agentflow.examples",
         "dm_robotics.agentflow.loggers",
         "dm_robotics.agentflow.meta_options.control_flow",
         "dm_robotics.agentflow.options",

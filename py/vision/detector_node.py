@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Module defining a ROS node to detect blobs on camera images."""
 
 from typing import Callable, Mapping, Optional
@@ -39,8 +38,8 @@ class DetectorNode:
       detector: the detector to use.
       input_queue_size: the size of input queues.
       output_queue_size: the size of output queues.
-      image_optimizer: a function hook that can be used to adjust the quality
-        of the camera images. For example, this function may call camera APIs to
+      image_optimizer: a function hook that can be used to adjust the quality of
+        the camera images. For example, this function may call camera APIs to
         adjust the brightness, gamma values, etc.
 
     Raises:

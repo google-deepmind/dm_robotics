@@ -1,1 +1,6 @@
 -r requirements_external.txt
+dm_robotics-transformations
+dm_robotics-geometry
+dm_robotics-agentflow
+dm_robotics-controllers
+dm_robotics-moma

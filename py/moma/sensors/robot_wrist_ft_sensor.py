@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 """Sensor for measuring the wrist force and torque."""
 
 from typing import Dict
@@ -25,9 +24,22 @@ import numpy as np
 
 
 class RobotWristFTSensor(moma_sensor.Sensor):
-  """Robot wrist ft sensor providing force and torque observations."""
+  """Sensor providing force and torque observations of a mujoco ft sensor."""
 
   def __init__(self, wrist_ft_sensor, name: str):
+    """Constructor.
+
+    Args:
+      wrist_ft_sensor: Object that exposes:
+        - A `force_sensor` property that returns a mujoco force sensor.
+        - A `torque_sensor` property that returns a mujoco torque sensor.
+        MuJoCo force and torque sensors report forces in the child->parent
+        direction. However, the real F/T sensors may report forces with
+        Z pointing outwards, that is, in the parent->child direction. These
+        should be transformed to a canonical coordinate system either by a
+        bespoke Sensor or a TimestepPreprocessor.
+      name: The name of the sensor.
+    """
     self._wrist_ft_sensor = wrist_ft_sensor
     self._name = name
 
@@ -57,19 +69,9 @@ class RobotWristFTSensor(moma_sensor.Sensor):
     return obs.get_obs_key(self._name)
 
   def _wrist_force(self, physics: mjcf.Physics) -> np.ndarray:
-    # MuJoCo force sensors report forces in the child->parent direction.
-    # However, some F/T sensors may report forces with Z pointing outwards,
-    # that is, in the parent->child direction. These should be transformed to a
-    # canonical coordinate system either by a bespoke Sensor or a
-    # TimestepPreprocessor.
     force_sensor = self._wrist_ft_sensor.force_sensor
     return physics.bind(force_sensor).sensordata  # pytype: disable=attribute-error
 
   def _wrist_torque(self, physics: mjcf.Physics) -> np.ndarray:
-    # MuJoCo force sensors report forces in the child->parent direction.
-    # However, some F/T sensors may report forces with Z pointing outwards,
-    # that is, in the parent->child direction. These should be transformed to a
-    # canonical coordinate system either by a bespoke Sensor or a
-    # TimestepPreprocessor.
     torque_sensor = self._wrist_ft_sensor.torque_sensor
     return physics.bind(torque_sensor).sensordata  # pytype: disable=attribute-error

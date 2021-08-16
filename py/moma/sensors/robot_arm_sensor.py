@@ -25,7 +25,7 @@ import numpy as np
 
 
 class RobotArmSensor(moma_sensor.Sensor):
-  """Robot arm sensor providing joint-related observations."""
+  """Robot arm sensor providing joint-related observations for sim arms."""
 
   def __init__(self, arm: robot_arm.RobotArm, name: str,
                have_torque_sensors: bool = True):

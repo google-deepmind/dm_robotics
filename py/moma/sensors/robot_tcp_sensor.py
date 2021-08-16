@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 """Sensor for measuring pose and vel of TCP."""
 
 from typing import Dict
@@ -24,6 +23,7 @@ from dm_robotics.moma.models.end_effectors.robot_hands import robot_hand
 from dm_robotics.moma.sensors import site_sensor
 import numpy as np
 
+# Observation enum listing all the observations exposed by the sensor.
 Observations = site_sensor.Observations
 
 

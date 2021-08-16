@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Tests for `triangulation.py`."""
 
 from absl.testing import absltest
@@ -28,15 +27,21 @@ class TriangulationTest(absltest.TestCase):
 
     # Test parameters are taken from random real world camera calibrations.
     self.camera_matrices = [
-        np.array([[1418.1731532081515, 0.0, 951.1884329781567],
-                  [0.0, 1418.7685215216047, 582.078606694917],
-                  [0.0, 0.0, 1.0]]),
-        np.array([[1408.1781154186797, 0.0, 969.3781055884897],
-                  [0.0, 1409.3923562102611, 600.0994341386963],
-                  [0.0, 0.0, 1.0]]),
-        np.array([[1401.351249806934, 0.0, 979.9264199776977],
-                  [0.0, 1402.777176503527, 615.5376637166237],
-                  [0.0, 0.0, 1.0]]),
+        np.array([
+            [1418.1731532081515, 0.0, 951.1884329781567],
+            [0.0, 1418.7685215216047, 582.078606694917],
+            [0.0, 0.0, 1.0],
+        ]),
+        np.array([
+            [1408.1781154186797, 0.0, 969.3781055884897],
+            [0.0, 1409.3923562102611, 600.0994341386963],
+            [0.0, 0.0, 1.0],
+        ]),
+        np.array([
+            [1401.351249806934, 0.0, 979.9264199776977],
+            [0.0, 1402.777176503527, 615.5376637166237],
+            [0.0, 0.0, 1.0],
+        ]),
     ]
 
     # Test parameters are taken from one real robot Lego cell (cell 1).
@@ -97,14 +102,18 @@ class TriangulationTest(absltest.TestCase):
 
   def test_single_observation(self):
     with self.assertRaises(ValueError):
-      self._run_triangulation(
-          [self.camera_matrices[0],], [self.distortions[0],],
-          [self.extrinsics[0],], self.point_3d)
+      self._run_triangulation([
+          self.camera_matrices[0],
+      ], [
+          self.distortions[0],
+      ], [
+          self.extrinsics[0],
+      ], self.point_3d)
 
   def test_behind_camera(self):
     with self.assertRaises(ValueError):
-      self._run_triangulation(
-          self.camera_matrices, None, self.extrinsics, np.array([10., 0., 0.]))
+      self._run_triangulation(self.camera_matrices, None, self.extrinsics,
+                              np.array([10., 0., 0.]))
 
   def test_distorted_pixel_measurements(self):
     point_3d_triangulated, residual = self._run_triangulation_from_pixels(
@@ -114,8 +123,8 @@ class TriangulationTest(absltest.TestCase):
     self.assertAlmostEqual(residual.item(), 0)
 
   def _run_triangulation(self, camera_matrices, distortions, extrinsics, point):
-    triangulator = triangulation.Triangulation(
-        camera_matrices, distortions, extrinsics)
+    triangulator = triangulation.Triangulation(camera_matrices, distortions,
+                                               extrinsics)
 
     # pylint: disable=invalid-name
     pixel_measurements = []
@@ -123,13 +132,15 @@ class TriangulationTest(absltest.TestCase):
       extrinsics_mat = tf.quaternion_matrix(extrinsics[i][3:7])[0:3, 0:3]
       extrinsics_pos = np.array(extrinsics[i][0:3])
 
-      point_3d_list = np.array([point,])
+      point_3d_list = np.array([
+          point,
+      ])
       # OpenCV expects the camera position expressed in the camera frame.
       W_x_C = extrinsics_mat.T.dot(-extrinsics_pos)
       distortion = distortions[i] if distortions else np.zeros(4)
-      point_projected, _ = cv2.projectPoints(
-          point_3d_list, extrinsics_mat.T, W_x_C,
-          camera_matrices[i], distortion)
+      point_projected, _ = cv2.projectPoints(point_3d_list, extrinsics_mat.T,
+                                             W_x_C, camera_matrices[i],
+                                             distortion)
 
       pixel_measurements.append(point_projected[0][0])
 
@@ -138,8 +149,8 @@ class TriangulationTest(absltest.TestCase):
 
   def _run_triangulation_from_pixels(self, camera_matrices, distortions,
                                      extrinsics, pixel_measurements):
-    triangulator = triangulation.Triangulation(
-        camera_matrices, distortions, extrinsics)
+    triangulator = triangulation.Triangulation(camera_matrices, distortions,
+                                               extrinsics)
 
     return triangulator.triangulate(pixel_measurements)
 

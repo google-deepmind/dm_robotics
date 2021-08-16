@@ -15,6 +15,7 @@
 """Top-level names for agentflow."""
 
 from dm_robotics.agentflow.action_spaces import CastActionSpace  # pytype: disable=pyi-error
+from dm_robotics.agentflow.action_spaces import CompositeActionSpace  # pytype: disable=pyi-error
 from dm_robotics.agentflow.action_spaces import FixedActionSpace  # pytype: disable=pyi-error
 from dm_robotics.agentflow.action_spaces import prefix_slicer  # pytype: disable=pyi-error
 from dm_robotics.agentflow.action_spaces import SequentialActionSpace  # pytype: disable=pyi-error

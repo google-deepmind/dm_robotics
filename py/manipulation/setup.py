@@ -15,6 +15,8 @@
 
 import setuptools
 
+_VERSION = "0.0.1rc1"
+
 
 def _get_requirements(requirements_file):  # pylint: disable=g-doc-args
   """Returns a list of dependencies for setup() from requirements.txt.
@@ -48,8 +50,9 @@ setuptools.setup(
         "dm_robotics.manipulation.props",
         "dm_robotics.manipulation.props.parametric_object",
         "dm_robotics.manipulation.props.parametric_object.rgb_objects",
+        "dm_robotics.manipulation.props.rgb_objects",
     ],
-    version="0.0.1rc1",
+    version=_VERSION.replace("-", ""),
     license="Apache 2.0",
     author="DeepMind",
     description="Parametrically defined mesh objects",

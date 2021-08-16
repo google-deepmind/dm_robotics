@@ -11,12 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Configuration for the blob triangulation node."""
 
+import dataclasses
 from typing import Mapping, Optional
 
-import dataclasses
 from dmr_vision import robot_config
 from dmr_vision import types
 import numpy as np
@@ -39,7 +38,7 @@ class BlobTriangulationConfig:
     limits: Cartesian limits over which points are considered as outliers.
     base_frame: the name of the robot base frame.
     deadzones: additional Cartesian limits excluding volumes of the robot
-      operative space -- i.e. inside the limits -- where points are discarded.
+      operative space where points are discarded.
   """
   node_name: str
   rate: int

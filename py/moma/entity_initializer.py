@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 """Module for scene composers for the insertion task."""
 
+import dataclasses
 from typing import Callable, Iterable, Tuple
 
-import dataclasses
 from dm_control import composer
 from dm_control import mjcf
 from dm_control.composer.initializers import prop_initializer

@@ -21,19 +21,13 @@ Links:
 
 -   [RGB-objects][RgbDocumentation],
 
--   [Manipulating the RGB-objects &#128721;&#129001;&#128311;][go/rgb-stacking].
+-   [Manipulating the RGB-objects &#128721;&#129001;&#128311;][RgbDocumentation].
 
 
 <!-- Hyperlinks  -->
 [OnShapeAPI]: https://onshape-public.github.io/docs/
 
-<!-- TODO(fnori): externally accesible documentation. -->
-[RgbDocumentation]:
-https://sites.google.com/corp/google.com/rgb--stacking#h.p_Hbvm_ijsde_K
-
-
-[go/rgb-stacking]:
-https://sites.google.com/corp/google.com/rgb--stacking#h.p_Hbvm_ijsde_K
+[RgbDocumentation]: ./
 
 
 

@@ -15,7 +15,7 @@
 """Cartesian effector that controls linear XYZ and rotation around Z motions."""
 
 import copy
-from typing import Optional, Sequence
+from typing import Callable, Optional, Sequence
 
 from dm_control import mjcf
 from dm_env import specs
@@ -81,6 +81,10 @@ class Cartesian4dVelocityEffector(effector.Effector):
   The X and Y angular velocities are also controlled internally in order to
   maintain the desired XY orientation, but those components are not exposed via
   the action spec.
+
+  Also, we can change the orientation that is maintained by the robot by
+  changing the `target_alignement` parameter. By default the robot is
+  facing downards.
   """
 
   def __init__(self,
@@ -111,7 +115,9 @@ class Cartesian4dVelocityEffector(effector.Effector):
         the `target_alignment` quaternion if the frame does not have a downward
         z axis.
       rotation_gain: Gain applied to the rotational feedback control used to
-          maintain a downward-facing orientation.
+          maintain a downward-facing orientation. A value too low of this
+          parameter will result in the robot not being able to maintain the
+          desired orientation. A value too high will lead to oscillations.
       target_alignment: Unit quat [w, i, j, k] denoting the desired alignment
           of the element's frame, represented in the world frame. Defaults to
           facing downwards.
@@ -132,7 +138,7 @@ class Cartesian4dVelocityEffector(effector.Effector):
     # We use the target frame to compute a "stabilizing angular velocity" such
     # that the z axis of the target frame aligns with the z axis of the
     # element's frame.
-    self._target_frame = self._target_frame = geometry.HybridPoseStamped(
+    self._target_frame = geometry.HybridPoseStamped(
         pose=None,
         frame=self._element,
         quaternion_override=geometry.PoseStamped(
@@ -239,14 +245,16 @@ class Cartesian4dVelocityEffector(effector.Effector):
         desired_quat=target_quat_target_frame)
 
 
-def limit_to_workspace(cartesian_effector: Cartesian4dVelocityEffector,
-                       element: _MjcfElement,
-                       min_workspace_limits: np.ndarray,
-                       max_workspace_limits: np.ndarray,
-                       wrist_joint: Optional[_MjcfElement] = None,
-                       wrist_limits: Optional[Sequence[float]] = None,
-                       reverse_wrist_range: bool = False
-                       ) -> effector.Effector:
+def limit_to_workspace(
+    cartesian_effector: Cartesian4dVelocityEffector,
+    element: _MjcfElement,
+    min_workspace_limits: np.ndarray,
+    max_workspace_limits: np.ndarray,
+    wrist_joint: Optional[_MjcfElement] = None,
+    wrist_limits: Optional[Sequence[float]] = None,
+    reverse_wrist_range: bool = False,
+    pose_getter: Optional[Callable[[mjcf.Physics], np.ndarray]] = None,
+    ) -> effector.Effector:
   """Returns an effector that restricts the 4D actions to a workspace.
 
   If wrist limits are provided, this effector will also restrict the Z rotation
@@ -268,13 +276,16 @@ def limit_to_workspace(cartesian_effector: Cartesian4dVelocityEffector,
     reverse_wrist_range: For some arms, a positive Z rotation action actually
       decreases the wrist joint position. For these arms, set this param to
       True.
+    pose_getter: Optional function that returns the pose we want to constrain
+      to the workspace. If `None`, defaults to the `xpos` of the `element`.
   """
   if len(min_workspace_limits) != 3 or len(max_workspace_limits) != 3:
     raise ValueError('The workspace limits must be 3D (X, Y, Z). Provided '
                      f'min: {min_workspace_limits} and max: '
                      f'{max_workspace_limits}')
+  pose_getter = pose_getter or (lambda phys: phys.bind(element).xpos)
   def state_getter(physics):
-    pos = physics.bind(element).xpos
+    pos = pose_getter(physics)
     if wrist_joint is not None and wrist_limits is not None:
       wrist_state = physics.bind(wrist_joint).qpos
       if reverse_wrist_range:

@@ -24,18 +24,18 @@ import numpy as np
 
 def main(argv):
   del argv
-  env = example_task.build_task_environment()
-  agent = RandomAgent(env.action_spec())
-
-  rendering_obs = mujoco_rendering.Observer.build(env)
-  rendering_obs.camera_config = {
-      'distance': 2.5,
-      'lookat': [0., 0., 0.],
-      'elevation': -45.0,
-      'azimuth': 90.0,
-  }
-  run_loop.run(env, agent, observers=[rendering_obs], max_steps=100)
   # We need to ensure that we close the environment
+  with example_task.build_task_environment() as env:
+    agent = RandomAgent(env.action_spec())
+
+    rendering_obs = mujoco_rendering.Observer.build(env)
+    rendering_obs.camera_config = {
+        'distance': 2.5,
+        'lookat': [0., 0., 0.],
+        'elevation': -45.0,
+        'azimuth': 90.0,
+    }
+    run_loop.run(env, agent, observers=[rendering_obs], max_steps=100)
 
 
 class RandomAgent:

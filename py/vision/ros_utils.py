@@ -11,14 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Module defining utility classes for ROS."""
 
+import dataclasses
 import threading
 from typing import Optional
 
 from absl import logging
-import dataclasses
 import numpy as np
 import rospy
 
@@ -76,7 +75,6 @@ class CameraInfoHandler:
     with self._lock:
       return self._distortions
 
-  # TODO(b/183081482): is this required?
   def __call__(self, camera_info_msg: sensor_msgs.CameraInfo) -> None:
     camera_matrix = np.array(camera_info_msg.K).reshape((3, 3))
     distortions = np.array(camera_info_msg.D)
@@ -344,7 +342,7 @@ class PosePublisher:
     """Publishes the pose.
 
     Args:
-      pose: The pose.  #TODO(b/183081484): dimensions.
+      pose: The pose expressed as 3D position and unit quaternion.
       stamp: A ROS timestamp.
     """
     message = PoseMessage(pose, frame_id=self._frame_id, stamp=stamp)

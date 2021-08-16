@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 """Builder for a SubTaskEnvironment."""
 
 from typing import Optional, Sequence
@@ -77,7 +76,6 @@ class SubtaskEnvBuilder(object):
     Returns:
       The base composer.Environment
     """
-    # TODO(b/186731437): ; check all required params have been 'set'.
     if self._task is None:
       raise ValueError('Cannot build the base_env until the task is built')
 
@@ -100,6 +98,10 @@ class SubtaskEnvBuilder(object):
     preprocessor = timestep_preprocessor.CompositeTimestepPreprocessor(
         *self._preprocessors)
 
+    if self._action_space is None:
+      raise ValueError(
+          'Cannot build the subtask envrionment until the action space is set')
+
     subtask = parameterized_subtask.ParameterizedSubTask(
         parent_spec=parent_spec,
         action_space=self._action_space,
@@ -109,6 +111,11 @@ class SubtaskEnvBuilder(object):
     # Use the specified effectors if they exist, otherwise default to using all
     # of the effectors in the base task.
     effectors = self._effectors or list(self._task.effectors)
+
+    # Check if there are effectors.
+    if not effectors:
+      raise ValueError(
+          'Cannot build the subtask envrionment if there are no effectors.')
 
     reset_option = (self._reset_option or
                     self._build_noop_reset_option(base_env, effectors))

@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Common definitions of blob detector based objects."""
 
 import enum
@@ -22,25 +21,25 @@ import numpy as np
 
 @enum.unique
 class Props(enum.Enum):
-  RGB30_RED = "rgb30_red"
-  RGB30_GREEN = "rgb30_green"
-  RGB30_BLUE = "rgb30_blue"
+  RED = "red"
+  GREEN = "green"
+  BLUE = "blue"
 
 
 PROP_SPEC = {
-    Props.RGB30_RED:
+    Props.RED:
         types.ColorRange(
             lower=np.array([0., 0., 0.669]), upper=np.array([1., 0.518, 1.])),
-    Props.RGB30_GREEN:
+    Props.GREEN:
         types.ColorRange(
             lower=np.array([0., 0., 0.]), upper=np.array([1., 0.427, 0.479])),
-    Props.RGB30_BLUE:
+    Props.BLUE:
         types.ColorRange(
             lower=np.array([0., 0.568, 0.]), upper=np.array([1., 1., 0.590])),
 }
 
 ROS_PROPS = {
-    Props.RGB30_RED: "/blob/rgb30_red/pose",
-    Props.RGB30_GREEN: "/blob/rgb30_green/pose",
-    Props.RGB30_BLUE: "/blob/rgb30_blue/pose",
+    Props.RED: "/blob/red/pose",
+    Props.GREEN: "/blob/green/pose",
+    Props.BLUE: "/blob/blue/pose",
 }

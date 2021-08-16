@@ -11,23 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Common types used in DeepMind Robotics vision package.
 
 This file is maintained for simplifying data creation and manipulation as well
 as facilitating type hints.
 """
 
+import dataclasses
 from typing import Mapping, Optional, Sequence, Tuple
 
-import dataclasses
 import numpy as np
-
 
 MaskPoints = Sequence[Sequence[Tuple[int, int]]]
 Centers = Mapping[str, Optional[np.ndarray]]
 Detections = Mapping[str, Optional[np.ndarray]]
-
 Extrinsics = Mapping[str, Sequence[float]]
 
 
@@ -38,8 +35,8 @@ class Camera:
   Attributes:
     width: image width.
     height: image height.
-    extrinsics: camera extrinsics expressed as [x, y, z] `position` and
-      [x, y, z, w] `orientation` quaternion.
+    extrinsics: camera extrinsics expressed as [x, y, z] `position` and [x, y,
+      z, w] `orientation` quaternion.
   """
   width: int
   height: int
@@ -98,21 +95,3 @@ class PositionLimit(ValueRange):
     lower: An [x, y, z] array with the lower values of the position limit.
     upper: An [x, y, z] array with the upper values of the position limit.
   """
-
-
-@dataclasses.dataclass(frozen=True)
-class RobotConfig:
-  """Robot parameters.
-
-  Attributes:
-    name: unique robot name.
-    cameras: collection of cameras.
-    basket_center: center of playground relative to the robot base frame.
-    basket_height: displacement of the playground from the robot base frame.
-    base_frame_name: the name (or id) that identifies the robot ROS base frame.
-  """
-  name: str
-  cameras: Mapping[str, Camera]
-  basket_center: Optional[Tuple[float, float]] = None
-  basket_height: Optional[float] = None
-  base_frame_name: Optional[str] = None

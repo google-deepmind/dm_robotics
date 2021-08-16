@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Module defining a ROS node to triangulate the barycenter of colored blobs."""
 
 import collections
@@ -162,11 +161,17 @@ class BlobTriangulationNode:
 
   def _get_camera_info(
       self) -> Tuple[Mapping[str, np.ndarray], Mapping[str, np.ndarray]]:
+    """Collect camera matrices and distortions of all cameras."""
     camera_matrices = {}
     distortions = {}
     for camera_name in self._camera_names:
       camera_info = self._camera_info_handler[camera_name]
       with camera_info:
+        if np.count_nonzero(camera_info.matrix) == 0:
+          raise ValueError(
+              f'Received an all-zero camera matrix for camera {camera_name}. '
+              "Please restart the camera driver, and check the camera's "
+              'calibration file if the issue persists.')
         camera_matrices[camera_name] = camera_info.matrix
         distortions[camera_name] = camera_info.distortions
     return camera_matrices, distortions
@@ -182,7 +187,7 @@ class BlobTriangulationNode:
       for camera_name in self._camera_names:
         point_data = self._point_handler[prop_name][camera_name].point_data
         if point_data is not None:
-          points_and_stamps[prop_name][camera_name] = (point_data.data,
+          points_and_stamps[prop_name][camera_name] = (point_data.data[:2],
                                                        point_data.stamp)
           if most_recent_stamp is None or point_data.stamp > most_recent_stamp:
             most_recent_stamp = point_data.stamp

@@ -30,8 +30,17 @@ class ArmEffector(effector.Effector):
   def __init__(self, arm: robot_arm.RobotArm,
                action_range_override: Optional[List[Tuple[float, float]]],
                robot_name: str):
+    """Constructor.
+
+    Args:
+      arm: The MoMa robot arm that we want to control.
+      action_range_override: Optional argument to change the control range of
+        the robot.
+      robot_name: Name of the robot, used to identify the effector in case
+        multiple arms are used.
+    """
     self._arm = arm
-    self._effector_prefix = '{}_arm_joint'.format(robot_name)
+    self._effector_prefix = f'{robot_name}_arm_joint'
     self._mujoco_effector = mujoco_actuation.MujocoEffector(
         self._arm.actuators,
         self._effector_prefix,

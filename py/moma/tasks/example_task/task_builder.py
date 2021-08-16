@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 """A module for constructing an example handshake task and its dependencies."""
 
 from typing import Sequence, Text, Tuple
@@ -40,6 +39,7 @@ import numpy as np
 
 @attr.s(auto_attribs=True)
 class MutableTaskComponents:
+  """Components that are returned with the task for easier access."""
   robot0_pose_initializer: scene_initializer.EntityPoseInitializer = None
   robot1_pose_initializer: scene_initializer.EntityPoseInitializer = None
   gripper0_initializer: entity_initializer.PoseInitializer = None
@@ -71,7 +71,7 @@ class ExampleTaskComposer(entity_composer.TaskEntitiesComposer):
 
 
 def build_task() -> Tuple[base_task.BaseTask, TaskComponents]:
-  """Builds an BaseTask and all dependencies."""
+  """Builds a BaseTask and all dependencies."""
   arena = _build_arena(name='arena')
   task_props = _build_props()
 
@@ -88,11 +88,14 @@ def build_task() -> Tuple[base_task.BaseTask, TaskComponents]:
   _populate_gripper_initializers(task_robots, components)
   _populate_prop_initializer(task_props, components)
 
+  # This initializer is used to place the robots before compiling the model.
   static_initializer = scene_initializer.CompositeSceneInitializer([
       components.robot0_pose_initializer,
       components.robot1_pose_initializer,
   ])
 
+  # This initializer is used to set the state of the simulation once the
+  # physics model as be compiled.
   dynamic_initializer = entity_initializer.TaskEntitiesInitializer([
       components.gripper0_initializer,
       components.gripper1_initializer,

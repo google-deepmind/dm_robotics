@@ -86,7 +86,6 @@ _OBJECTS_V1_3 = collections.OrderedDict({
     "r6": ParametersDict({ "sds": 4, "shr": 0, "drf": 0, "hlw": 0, "shx": 0, "shy": 0, "scx": 29, "scy": 29, "scz": 150}),
     "r7": ParametersDict({ "sds": 4, "shr": 0, "drf": 0, "hlw": 0, "shx": 0, "shy": 0, "scx": 29, "scy": 150, "scz": 29}),
     "r8": ParametersDict({ "sds": 4, "shr": 0, "drf": 0, "hlw": 0, "shx": 0, "shy": 0, "scx": 150, "scy": 29, "scz": 29})})
-# TODO(fnori): in the future we should get this information from OnShape.
 _OBJECTS_V1_3_NON_GRASPABLE = ("l36", "m36", "y36", "r36", "r67", "v36")
 _OBJECTS_V1_3_NON_UNIQUE = ("f25", "h27", "l27", "m27", "r27", "r68", "u27", "v27", "x27", "y27", "h28", "l28", "m28", "r28", "u28", "v28", "x28", "y28", "r78")
 

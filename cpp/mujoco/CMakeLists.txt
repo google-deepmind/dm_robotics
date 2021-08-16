@@ -148,5 +148,3 @@ if(DM_ROBOTICS_BUILD_TESTS)
   gtest_discover_tests(dmr_mujoco_utils_test)
 
 endif()
-
-# TODO(josechenf): Add install/uninstall phase.

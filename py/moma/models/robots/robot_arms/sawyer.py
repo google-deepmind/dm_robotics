@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 """Sawyer robot arm."""
 
+import dataclasses
 import re
 from typing import List, Tuple
 
-import dataclasses
 from dm_control import mjcf
 from dm_robotics.moma.models import types
 from dm_robotics.moma.models import utils as models_utils

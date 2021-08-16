@@ -29,5 +29,3 @@ add_subdirectory(common)
 if (DM_ROBOTICS_BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
-
-# TODO(josechenf): Add install/uninstall phase.

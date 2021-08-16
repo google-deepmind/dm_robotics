@@ -15,7 +15,7 @@
 """ActionSpace implementations."""
 
 import re
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import Generator, Iterable, List, Optional, Tuple, Sequence, Union
 
 from absl import logging
 from dm_env import specs
@@ -264,6 +264,116 @@ class SequentialActionSpace(core.ActionSpace):
     for action_space in self._action_spaces:
       action = action_space.project(action)
     return action
+
+
+class CompositeActionSpace(core.ActionSpace[specs.BoundedArray]):
+  """Composite Action Space consisting of other action spaces.
+
+  Assumptions (which are verified):
+  1. The input action spaces all `project` to the same shape space. I.e. the
+     output of project for each space has the same shape.
+  2. The input action spaces are all one dimensional.
+  3. The input action spaces are all ActionSpace[BoundedArray] instances.
+
+  Behaviour:
+  The outputs of the composed action spaces are merged not by concatenation -
+  they all output arrays of the same shape - but by using NaN as a sentinel, as
+  as missing value.  An example merging:
+    input1: [1.0, 2.0, NaN, NaN, Nan]
+    input2: [NaN, NaN, NaN, 4.0, 5.0]
+    merged: [1.0, 2.0, NaN, 4.0, 5.0]
+
+  It is invalid if there is a position where both inputs have a non-NaN value.
+  """
+
+  def __init__(self,
+               action_spaces: Iterable[core.ActionSpace[specs.BoundedArray]],
+               name: Optional[str] = None):
+    if not action_spaces:
+      logging.warning('CompositeActionSpace created with no action_spaces.')
+    sub_specs = [space.spec() for space in action_spaces]
+    for spec in sub_specs:
+      if not isinstance(spec, specs.BoundedArray):
+        raise ValueError('spec {} is not a BoundedArray, (type: {})'.format(
+            spec, type(spec)))
+
+    sizes = [spec.shape[0] for spec in sub_specs]
+    minimums = [spec.minimum for spec in sub_specs]
+    maximums = [spec.maximum for spec in sub_specs]
+
+    if sub_specs:
+      spec_dtype = np.find_common_type([spec.dtype for spec in sub_specs], [])
+      min_dtype = np.find_common_type([lim.dtype for lim in minimums], [])
+      max_dtype = np.find_common_type([lim.dtype for lim in maximums], [])
+      minimum = np.concatenate(minimums).astype(min_dtype)
+      maximum = np.concatenate(maximums).astype(max_dtype)
+    else:
+      # No input spaces; we have to default the data type.
+      spec_dtype = np.float32
+      minimum = np.asarray([], dtype=spec_dtype)
+      maximum = np.asarray([], dtype=spec_dtype)
+
+    self._component_action_spaces = action_spaces
+    self._composite_action_spec = specs.BoundedArray(
+        shape=(sum(sizes),),
+        dtype=spec_dtype,
+        minimum=minimum,
+        maximum=maximum,
+        name='\t'.join([spec.name for spec in sub_specs if spec.name]))
+
+    self._name = name or '_'.join(
+        [space.name for space in action_spaces if space.name])
+
+  @property
+  def name(self) -> str:
+    return self._name
+
+  def spec(self) -> specs.BoundedArray:
+    return self._composite_action_spec
+
+  # Profiling for .wrap('CompositeActionSpace.project')
+  def project(self, action: np.ndarray) -> np.ndarray:
+    if not self._component_action_spaces:
+      return np.asarray([], dtype=self.spec().dtype)
+
+    # Check input value has correct shape (and legal values).
+    spec_utils.validate(self._composite_action_spec, action, ignore_nan=True)
+
+    cur_action = None  # type: np.ndarray
+    for action_space, action_component in zip(self._component_action_spaces,
+                                              self._action_components(action)):
+      projection = action_space.project(action_component)
+      if cur_action is None:
+        cur_action = np.full(
+            projection.shape, fill_value=np.nan, dtype=projection.dtype)
+      elif not np.all(cur_action.shape == projection.shape):
+        raise ValueError(f'Projected actions differ in shape! cur_action: '
+                         f'{cur_action.shape}, projection: {projection.shape}')
+      cur_empty_indices = np.isnan(cur_action)
+      proj_empty_indices = np.isnan(projection)
+      assert np.all(
+          np.logical_or(proj_empty_indices, cur_empty_indices)
+      ), 'The projection and current action empty indices do not align'
+      proj_valid_indices = np.logical_not(proj_empty_indices)
+      cur_action[proj_valid_indices] = projection[proj_valid_indices]
+
+    assert cur_action is not None, 'Program error, no action created!'
+
+    return cur_action
+
+  def _action_components(
+      self, action: np.ndarray) -> Generator[np.ndarray, None, None]:
+    start_index = 0
+    for action_space in self._component_action_spaces:
+      input_length = action_space.spec().shape[0]
+      end_index = start_index + input_length
+
+      assert end_index <= self._composite_action_spec.shape[0]
+      action_component = action[start_index:end_index]
+      start_index = end_index
+
+      yield action_component
+    assert start_index == self._composite_action_spec.shape[0]
 
 
 def constrained_action_spec(minimum: Union[float, Sequence[float]],

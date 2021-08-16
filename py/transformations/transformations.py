@@ -1194,7 +1194,7 @@ def rot6_to_rmat(rot6: np.ndarray) -> np.ndarray:
   yu = rot6[3:6]
 
   tol = 1e-6  # Tolerace below which the rot6 is replaced by a canonical basis.
-  eps = 1e-5  # Safety factor to avoid zero case. TODO(jscholz) Just use `tol`?
+  eps = 1e-5  # Safety factor to avoid zero case.
 
   def safe_interp(v: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Safe interpolation between input vector and a default basis."""
