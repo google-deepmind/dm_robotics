@@ -51,6 +51,7 @@ setuptools.setup(
         "dm_robotics.manipulation.props.parametric_object",
         "dm_robotics.manipulation.props.parametric_object.rgb_objects",
         "dm_robotics.manipulation.props.rgb_objects",
+        "dm_robotics.manipulation.standard_cell",
     ],
     version=_VERSION.replace("-", ""),
     license="Apache 2.0",

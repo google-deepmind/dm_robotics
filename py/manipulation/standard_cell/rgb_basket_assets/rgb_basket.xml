@@ -1,0 +1,52 @@
+<mujoco model="standard_basket">
+    <compiler angle="radian" />
+    <size njmax="500" nconmax="100" />
+    <asset>
+      <texture name="skybox" type="skybox" builtin="gradient" rgb1="0.7 0.7 0.7" rgb2="0.9 0.9 0.9" width="100" height="100"/>
+        <mesh name="lasercut_basket_part_1__3default" file="lasercut_basket_part_1__3default.stl" />
+        <mesh name="lasercut_basket_part_1__2default" file="lasercut_basket_part_1__2default.stl" />
+        <mesh name="lasercut_basket_part_2__4default" file="lasercut_basket_part_2__4default.stl" />
+        <mesh name="lasercut_basket_part_4__2default" file="lasercut_basket_part_4__2default.stl" />
+        <mesh name="lasercut_basket_part_4__4default" file="lasercut_basket_part_4__4default.stl" />
+        <mesh name="lasercut_basket_part_3__1default" file="lasercut_basket_part_3__1default.stl" />
+        <mesh name="lasercut_basket_part_2__6default" file="lasercut_basket_part_2__6default.stl" />
+        <mesh name="lasercut_basket_part_2__1default" file="lasercut_basket_part_2__1default.stl" />
+        <mesh name="lasercut_basket_part_1__4default" file="lasercut_basket_part_1__4default.stl" />
+        <mesh name="lasercut_basket_part_1__1default" file="lasercut_basket_part_1__1default.stl" />
+        <mesh name="lasercut_basket_part_2__5default" file="lasercut_basket_part_2__5default.stl" />
+        <mesh name="lasercut_basket_part_4__3default" file="lasercut_basket_part_4__3default.stl" />
+        <mesh name="lasercut_basket_part_4__1default" file="lasercut_basket_part_4__1default.stl" />
+    </asset>
+    <worldbody>
+      <body name="rgb_basket" pos="0.0 0.0 0.0" quat="0.707 0 0 0.707">
+        <geom pos="0 0.12 -0.0501" type="mesh" rgba="0.498039 0.498039 0.498039 1" mesh="lasercut_basket_part_1__3default" />
+        <geom pos="0.12 0 -0.0501" quat="0.707105 0 0 -0.707108" type="mesh" rgba="0.498039 0.498039 0.498039 1" mesh="lasercut_basket_part_1__2default" />
+        <geom pos="0.12 0 -0.0501" quat="0.707105 0 0 -0.707108" type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="lasercut_basket_part_2__4default" />
+        <geom pos="0.406379 -0.406379 0.256222" quat="0.903691 -0.0795643 -0.192085 -0.374321" type="box" rgba="0.898039 0.917647 0.929412 1" size="0.04 0.02 0.02"  />
+        <geom pos="0.0 -0.4225 0.153" quat="9.38184e-07 -0.707105 9.38187e-07 0.707108" type="box" rgba="0.647059 0.647059 0.647059 1" size="0.0225 0.0225 0.445" />
+        <geom pos="0 0.12 -0.0501" type="mesh" rgba="0.498039 0.498039 0.498039 1" mesh="lasercut_basket_part_1__2default" />
+        <geom pos="0 0.12 -0.0501" type="mesh" rgba="0.498039 0.498039 0.498039 1" mesh="lasercut_basket_part_4__2default" />
+        <geom pos="-0.12 0 -0.0501" quat="0.707105 0 0 0.707108" type="mesh" rgba="0.498039 0.498039 0.498039 1" mesh="lasercut_basket_part_4__4default" />
+        <geom pos="0.12 0 -0.0501" quat="0.707105 0 0 -0.707108" type="mesh" rgba="0.498039 0.498039 0.498039 1" mesh="lasercut_basket_part_1__3default" />
+        <geom pos="-0.406379 -0.406379 0.256222" quat="0.374323 -0.192085 -0.0795648 -0.90369" type="box" rgba="0.898039 0.917647 0.929412 1" size="0.04 0.02 0.02"   />
+        <geom pos="0 0.12 -0.0501" type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="lasercut_basket_part_2__4default" />
+        <geom pos="0 0.12 -0.0511" type="mesh" rgba="0.498039 0.498039 0.498039 1" mesh="lasercut_basket_part_3__1default" />
+        <geom pos="0 0.12 -0.0501" type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="lasercut_basket_part_2__6default" />
+        <geom pos="0.4225 0.0 0.153" quat="0.499998 -0.5 0.5 0.500002" type="box" rgba="0.647059 0.647059 0.647059 1" size="0.0225 0.0225 0.445" />
+        <geom pos="0.12 0 -0.0501" quat="0.707105 0 0 -0.707108" type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="lasercut_basket_part_2__1default" />
+        <geom pos="0 0.12 -0.0501" type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="lasercut_basket_part_2__1default" />
+        <geom pos="0.12 0 -0.0501" quat="0.707105 0 0 -0.707108" type="mesh" rgba="0.498039 0.498039 0.498039 1" mesh="lasercut_basket_part_1__4default" />
+        <geom pos="0 0.12 -0.0501" type="mesh" rgba="0.498039 0.498039 0.498039 1" mesh="lasercut_basket_part_1__1default" />
+        <geom pos="0.12 0 -0.0501" quat="0.707105 0 0 -0.707108" type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="lasercut_basket_part_2__6default" />
+        <geom pos="0 0.12 -0.0501" type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="lasercut_basket_part_2__5default" />
+        <geom pos="-0.4225 0.0 0.153" quat="0.499998 0.5 0.5 -0.500002" type="box" rgba="0.647059 0.647059 0.647059 1" size="0.0225 0.0225 0.445" />
+        <geom pos="0 0.12 -0.0501" type="mesh" rgba="0.498039 0.498039 0.498039 1" mesh="lasercut_basket_part_1__4default" />
+        <geom pos="-0.27 0.57 0.415" euler="0.50 0.25 1.9" type="box" rgba="0.898039 0.917647 0.929412 1" size="0.04 0.02 0.02"  />
+        <geom pos="0.0 0.4225 0.153" quat="9.38184e-07 -0.707105 9.38187e-07 0.707108" type="box" rgba="0.647059 0.647059 0.647059 1" size="0.0225 0.0225 0.445" />
+        <geom pos="0.12 0 -0.0501" quat="0.707105 0 0 -0.707108" type="mesh" rgba="0.498039 0.498039 0.498039 1" mesh="lasercut_basket_part_1__1default" />
+        <geom pos="0.12 0 -0.0501" quat="0.707105 0 0 -0.707108" type="mesh" rgba="0.498039 0.498039 0.498039 1" mesh="lasercut_basket_part_4__3default" />
+        <geom pos="0 -0.12 -0.0501" quat="1.32679e-06 0 0 1" type="mesh" rgba="0.498039 0.498039 0.498039 1" mesh="lasercut_basket_part_4__1default" />
+        <geom pos="0.12 0 -0.0501" quat="0.707105 0 0 -0.707108" type="mesh" rgba="0.647059 0.647059 0.647059 1" mesh="lasercut_basket_part_2__5default" />
+      </body>
+    </worldbody>
+</mujoco>
