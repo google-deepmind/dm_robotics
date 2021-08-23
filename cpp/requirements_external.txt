@@ -1,2 +1,5 @@
 numpy >= 1.16.0
+setuptools >= 38.6.0
+pkginfo >= 1.4.2
+wheel >= 0.31.0
 dm_control
