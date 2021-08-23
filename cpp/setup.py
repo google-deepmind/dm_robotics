@@ -98,10 +98,12 @@ setup(
     package_dir={"dm_robotics.controllers": ""},
     packages=["dm_robotics.controllers"],
     version="0.0.1rc1",
+    license="Apache 2.0",
     author="DeepMind",
-    description="DESC",
+    description="Python bindings for robotics/cpp/controllers",
     long_description=open("controllers_py/README.md").read(),
     long_description_content_type="text/markdown",
+    url="https://github.com/deepmind/robotics/tree/main/cpp/controllers_py",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Programming Language :: Python :: 3",

@@ -59,7 +59,7 @@ setuptools.setup(
     description="Parametrically defined mesh objects",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/deepmind/dm_robotics/manipulation",
+    url="https://github.com/deepmind/robotics/tree/main/py/manipulation",
     install_requires=(_get_requirements("requirements.txt") +
                       _get_requirements("requirements_external.txt")),
     classifiers=[
