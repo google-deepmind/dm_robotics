@@ -50,4 +50,4 @@
   my_big_agent = loop_ops.While(lambda _: True, loop_body)
 ```
 
-For more details see the [tutorial colab](https://github.com/deepmind/robotics/py/agentflow/).
+For more details see the [tutorial colab](https://colab.research.google.com/github/deepmind/robotics/blob/main/py/agentflow/tutorial.ipynb).
