@@ -273,7 +273,8 @@ class WeightedDiscretePoseDistribution(PoseDistribution):
 class UniformPoseDistribution(PoseDistribution):
   """Distribution of uniformly distributed poses in a given range."""
 
-  def __init__(self, min_pose_bounds, max_pose_bounds):
+  def __init__(self, min_pose_bounds: Sequence[float],
+               max_pose_bounds: Sequence[float]):
     """Constructor.
 
     Args:
@@ -306,6 +307,79 @@ class UniformPoseDistribution(PoseDistribution):
     mean_quat = tr.quat_slerp(min_pose.quaternion, max_pose.quaternion, 0.5)
 
     return mean_pos, mean_quat
+
+
+def _pos_quat_to_target(
+    to_pos: np.ndarray,
+    from_pos: np.ndarray,
+    xnormal: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:
+  """Computes pose at `from_pos` s.t. z-axis is pointing away from `to_pos`."""
+  if xnormal is None:
+    xnormal = np.array([0., 1., 0.])
+  else:
+    xnormal = xnormal / np.linalg.norm(xnormal)
+
+  view_dir = to_pos - from_pos
+  view_dir /= np.linalg.norm(view_dir)
+  z = -view_dir  # mujoco camera looks down negative z
+  x = np.cross(z, xnormal)
+  y = np.cross(z, x)
+  rmat = np.stack([x, y, z], axis=1)
+  rmat = rmat / np.linalg.norm(rmat, axis=0)
+  quat = tr.axisangle_to_quat(tr.rmat_to_axisangle(rmat))
+
+  return from_pos, quat
+
+
+class LookAtPoseDistribution(PoseDistribution):
+  """Distribution looking from a point to a target."""
+
+  def __init__(self,
+               look_at: Distribution,
+               look_from: Distribution,
+               xnormal: Optional[np.ndarray] = None):
+    """Constructor.
+
+    Args:
+      look_at: A `Distribution` over the 3D point to look at.
+      look_from: A `Distribution` over the 3D point to look from.
+      xnormal: (3,) optional array containing a vector to cross with the looking
+        direction to produce the x-axis of the sampled pose. This can be
+        anything, but typically would be something that's constant w.r.t. the
+        object being viewed (e.g. its y-axis). This is required because the full
+        pose is under-constrained given only `from` and `to` points, so rather
+        than hard-coding a world-frame value we expose this to the user. If the
+        object moves, providing an axis attached to the object will force
+        `LookAtPoseDistribution` to produce poses that maintain a fixed view
+        (modulo randomness), rather than rolling.
+    """
+    super(LookAtPoseDistribution, self).__init__()
+    self._look_at = look_at
+    self._look_from = look_from
+
+    if xnormal is None:
+      self._xnormal = np.array([0., 1., 0.])
+    else:
+      self._xnormal = xnormal / np.linalg.norm(xnormal)
+
+  def sample_pose(
+      self,
+      random_state: np.random.RandomState,
+      physics: Optional[geometry.Physics] = None
+  ) -> Tuple[np.ndarray, np.ndarray]:
+    del physics
+    look_at = self._look_at.sample(random_state)
+    look_from = self._look_from.sample(random_state)
+    return _pos_quat_to_target(look_at, look_from, self._xnormal)
+
+  def mean_pose(
+      self,
+      physics: Optional[geometry.Physics] = None
+  ) -> Tuple[np.ndarray, np.ndarray]:
+    del physics
+    look_at = self._look_at.mean()
+    look_from = self._look_from.mean()
+    return _pos_quat_to_target(look_at, look_from, self._xnormal)
 
 
 class DomePoseDistribution(PoseDistribution):
@@ -396,6 +470,31 @@ def _sample_with_limits(random_state: np.random.RandomState,
         samp, clip_sd))
 
   return samp
+
+
+class UniformDistribution(Distribution):
+  """Generic Uniform Distribution wrapping `numpy.random.uniform`."""
+
+  def __init__(self,
+               low: Union[float, Sequence[float]] = 0.,
+               high: Union[float, Sequence[float]] = 1.):
+    """Constructor.
+
+    Args:
+      low: Lower boundary of the output interval. All values generated will be
+        greater than or equal to low. The default value is 0.
+      high: Upper boundary of the output interval. All values generated will be
+        less than or equal to high. The default value is 1.0.
+    """
+    super(UniformDistribution, self).__init__()
+    self._low = np.array(low)
+    self._high = np.array(high)
+
+  def sample(self, random_state: np.random.RandomState) -> np.ndarray:
+    return random_state.uniform(self._low, self._high)
+
+  def mean(self) -> np.ndarray:
+    return self._low + (self._high - self._low) / 2.
 
 
 class TruncatedNormal(Distribution):

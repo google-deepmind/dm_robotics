@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for PoseDistribution implementations."""
 
+from unittest import mock
+
 from absl.testing import absltest
 from absl.testing import parameterized
 from dm_robotics.geometry import pose_distribution
@@ -22,6 +24,40 @@ from six.moves import range
 
 
 class PoseDistributionTest(parameterized.TestCase):
+
+  def testLookAtPoseDistribution(self):
+
+    target_dist = mock.MagicMock(spec=pose_distribution.UniformDistribution)
+    source_dist = mock.MagicMock(spec=pose_distribution.UniformDistribution)
+    target_dist.sample.return_value = np.array([0.1, 0.5, 0.3])
+    source_dist.sample.return_value = np.array([0.4, 0.2, 0.6])
+    target_dist.mean.return_value = np.array([0.1, 0.2, 0.3]) * -1
+    source_dist.mean.return_value = np.array([0.3, 0.2, 0.1]) * -1
+
+    xnormal = np.array([0, 1, 0])
+
+    look_at_dist = pose_distribution.LookAtPoseDistribution(
+        target_dist, source_dist, xnormal)
+
+    # Test `sample_pose`
+    actual_pos, actual_quat = look_at_dist.sample_pose(None)
+    expected_pos, expected_quat = pose_distribution._pos_quat_to_target(
+        target_dist.sample(), source_dist.sample(), xnormal)
+
+    np.testing.assert_allclose(actual_pos, expected_pos)
+    self.assertTrue(
+        np.allclose(actual_quat, expected_quat) or
+        np.allclose(actual_quat, expected_quat * -1))
+
+    # Test `mean_pose`
+    actual_pos, actual_quat = look_at_dist.mean_pose(None)
+    expected_pos, expected_quat = pose_distribution._pos_quat_to_target(
+        target_dist.mean(), source_dist.mean(), xnormal)
+
+    np.testing.assert_allclose(actual_pos, expected_pos)
+    self.assertTrue(
+        np.allclose(actual_quat, expected_quat) or
+        np.allclose(actual_quat, expected_quat * -1))
 
   def testTruncatedNormalPoseDistribution(self):
     """Test normal pose with limits."""
