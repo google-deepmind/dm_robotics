@@ -23,6 +23,26 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# To build a manylinux compatible wheel:
+# set DM_ROBOTICS_BUILD_WHEEL True
+# set DM_ROBOTICS_VERSION_SCRIPT to a version script for gcc.
+if( DM_ROBOTICS_BUILD_WHEEL )
+  # Flags and setup to build manylinux wheels.
+  add_link_options("-static-libgcc")
+  set(CMAKE_SHARED_LINKER_FLAGS
+      ${CMAKE_SHARED_LINKER_FLAGS}
+      "-Wl,--version-script=${DM_ROBOTICS_VERSION_SCRIPT},--no-whole-archive")
+
+  # We also use a glibc_shim, but if your glibc is manylinux compatible you
+  # won't need to make such a shim.
+  if(EXISTS "/usr/lib/x86_64-linux-gnu/libglibc_shim.a")
+    link_libraries("-l:libstdc++.a" "-lglibc_shim")
+  else()
+    link_libraries("-l:libstdc++.a")
+  endif()
+
+endif()
+
 set(DMR_PYTHON_VERSION "3.8" CACHE STRING "Python version.")
 set(PYTHONVERSION ${DMR_PYTHON_VERSION})
 add_definitions(-DPYBIND11_PYTHON_VERSION="${PYTHONVERSION}")

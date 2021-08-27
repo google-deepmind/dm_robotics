@@ -51,8 +51,14 @@ class CMakeBuild(build_ext):
         "-DDMR_PYTHON_VERSION={}.{}".format(sys.version_info.major,
                                             sys.version_info.minor),
         "-DCMAKE_BUILD_TYPE={}".format(build_type),
+        "-DDM_ROBOTICS_BUILD_TESTS=OFF",
+        "-DDM_ROBOTICS_BUILD_WHEEL=True",
         "--log-level=VERBOSE",
     ]
+
+    version_script = os.environ.get("DM_ROBOTICS_VERSION_SCRIPT", None)
+    if version_script:
+      cmake_args.append(f"-DDM_ROBOTICS_VERSION_SCRIPT={version_script}",)
 
     build_args = []
     if "CMAKE_BUILD_PARALLEL_LEVEL" not in os.environ:
