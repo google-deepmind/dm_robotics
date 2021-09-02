@@ -65,9 +65,11 @@ class BlobDetector(detector.ImageDetector):
       cv2.resizeWindow(self._window_name, self._window_size)
 
       self._trackbar_scale = 1000
-      cv2.createTrackbar("Color selector", self._window_name, 0,
-                         len(self._color_ranges.keys()) - 1,
-                         self._callback_change_color)
+      num_colors = len(self._color_ranges.keys())
+      if num_colors > 1:
+        cv2.createTrackbar("Color selector", self._window_name, 0,
+                           len(self._color_ranges.keys()) - 1,
+                           self._callback_change_color)
 
       cv2.createTrackbar("Subsampling", self._window_name, 5, 10,
                          lambda x: None)
