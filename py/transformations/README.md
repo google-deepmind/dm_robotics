@@ -42,7 +42,7 @@ This library supports force and velocity transforms.
 ## Usage Example
 
 ```python
-from dm_transformations import transformations as tr
+from dm_robotics.transformations import transformations as tr
 
 # Convert a pose, euler angle into a homogeneous matrix (a 4x4 matrix):
 hmat = tr.poseuler_to_hmat(
