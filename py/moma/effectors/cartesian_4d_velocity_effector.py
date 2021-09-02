@@ -92,7 +92,7 @@ class Cartesian4dVelocityEffector(effector.Effector):
                element: _MjcfElement,
                effector_prefix: str,
                control_frame: Optional[geometry.Frame] = None,
-               rotation_gain: float = 1.,
+               rotation_gain: float = 0.8,
                target_alignment: np.ndarray = DOWNFACING_EE_QUAT_WXYZ):
     """Initializes a QP-based 4D Cartesian velocity effector.
 
