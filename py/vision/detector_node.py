@@ -26,7 +26,7 @@ class DetectorNode:
   """A ROS node for generic image-based detection."""
 
   def __init__(self,
-               namespace: str,
+               topic: str,
                detector: vision_detector.Signature,
                input_queue_size: int = 1,
                output_queue_size: int = 1,
@@ -34,7 +34,7 @@ class DetectorNode:
     """Constructs a `DetectorNode` instance.
 
     Args:
-      namespace: the camera ROS namespace.
+      topic: the camera ROS topic.
       detector: the detector to use.
       input_queue_size: the size of input queues.
       output_queue_size: the size of output queues.
@@ -45,7 +45,8 @@ class DetectorNode:
     Raises:
       EnvironmentError: if `image_optimizer` fails and return `False`.
     """
-    self._namespace = namespace
+    self._topic = topic
+    self._namespace = "/" + topic.split("/")[1]
     self._detector = detector
     self._input_queue_size = input_queue_size
     self._output_queue_size = output_queue_size
@@ -56,9 +57,8 @@ class DetectorNode:
       raise EnvironmentError("Provided `image_optimizer` failed execution.")
 
     # Setup a subscriber for receiving camera images.
-    image_raw_topic = f"{namespace}/image_raw"
     self._image_handler = ros_utils.ImageHandler(
-        topic=image_raw_topic, queue_size=input_queue_size)
+        topic=self._topic, queue_size=input_queue_size)
 
   def spin(self) -> None:
     """Loops the node until shutdown."""

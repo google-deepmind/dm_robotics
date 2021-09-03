@@ -28,17 +28,17 @@ class BlobDetectorConfig:
     rate: the desired frame rate.
     input_queue_size: the input data queue size (see ROS documentation).
     output_queue_size: the output data queue size (see ROS documentation).
-    camera_namespaces: a camera name to ROS namespace mapping.
-    masks: (u, v) coordinates defining closed regions of interest in the image
-      where the blob detector will not look for blobs.
+    topic_by_camera_name: a camera name to ROS topic mapping.
+    mask_by_camera_name: (u, v) coordinates defining closed regions of interest
+      in the image where the blob detector will not look for blobs.
     scale: image scaling factor to increase speed and frame rate.
     min_area: minimum size in pixels above which a blob is deemed valid.
   """
   node_name: str
   input_queue_size: int
   output_queue_size: int
-  camera_namespaces: Mapping[str, str]
-  masks: Mapping[str, types.MaskPoints]
+  topic_by_camera_name: Mapping[str, str]
+  mask_by_camera_name: Mapping[str, types.MaskPoints]
   scale: float
   min_area: int
 
@@ -53,13 +53,13 @@ def get_config() -> BlobDetectorConfig:
   config.input_queue_size = 1
   config.output_queue_size = 1
 
-  config.camera_namespaces = {
-      "basket_front_left": "/pylon_basket_front_left",
-      "basket_front_right": "/pylon_basket_front_right",
-      "basket_back_left": "/pylon_basket_back_left",
+  config.topic_by_camera_name = {
+      "basket_front_left": "/pylon_basket_front_left/image_raw",
+      "basket_front_right": "/pylon_basket_front_right/image_raw",
+      "basket_back_left": "/pylon_basket_back_left/image_raw",
   }
 
-  config.masks = {
+  config.mask_by_camera_name = {
       "basket_front_left": [[
           (0, 0),
           (0, 320),
