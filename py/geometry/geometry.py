@@ -508,7 +508,7 @@ class HybridPoseStamped(PoseStamped):
     Raises:
       ValueError: If both position_override and quaternion_override are given.
     """
-    super(HybridPoseStamped, self).__init__(pose, frame, name)
+    super().__init__(pose, frame, name)
     if position_override is not None and quaternion_override is not None:
       raise ValueError("Attempting to create a HybridPoseStamped with "
                        "multiple position / quaternion overrides. "
@@ -519,7 +519,7 @@ class HybridPoseStamped(PoseStamped):
 
   def __eq__(self, other):
     if isinstance(other, HybridPoseStamped):
-      return (super(HybridPoseStamped, self).__eq__(other) and
+      return (super().__eq__(other) and
               (self.position_override == other.position_override) and
               (self.quaternion_override == other.quaternion_override))
     else:

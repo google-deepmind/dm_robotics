@@ -33,7 +33,7 @@ class ConstantPanTiltDistribution(JointAnglesDistribution):
   """A distribution with only a single angle with probability 1."""
 
   def __init__(self, joint_angles):
-    super(ConstantPanTiltDistribution, self).__init__()
+    super().__init__()
     self._joint_angles = joint_angles
 
   def sample_angles(self, random_state,
@@ -45,7 +45,7 @@ class NormalOffsetJointAnglesDistribution(JointAnglesDistribution):
   """Distribution for angles distributed normally around a mean."""
 
   def __init__(self, mean_angles, angles_sd, clip_sd=3.0):
-    super(NormalOffsetJointAnglesDistribution, self).__init__()
+    super().__init__()
     self._mean_angles = mean_angles
     self._angles_sd = angles_sd
     self._clip_sd = clip_sd
@@ -61,7 +61,7 @@ class UniformJointAnglesDistribution(JointAnglesDistribution):
   """Uniform random distribution for joint angles."""
 
   def __init__(self, min_angles, max_angles):
-    super(UniformJointAnglesDistribution, self).__init__()
+    super().__init__()
     self._min_angles = min_angles
     self._max_angles = max_angles
 

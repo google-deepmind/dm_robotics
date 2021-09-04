@@ -23,7 +23,7 @@ from tf import transformations as tf
 class TriangulationTest(absltest.TestCase):
 
   def setUp(self):
-    super(TriangulationTest, self).setUp()
+    super().setUp()
 
     # Test parameters are taken from random real world camera calibrations.
     self.camera_matrices = [

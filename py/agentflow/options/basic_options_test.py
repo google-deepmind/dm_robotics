@@ -479,7 +479,7 @@ class TrivialDelegateOption(basic_options.DelegateOption):
 class FakeActionSpace(core.ActionSpace[core.Spec]):
 
   def __init__(self, func: Callable[[np.ndarray], np.ndarray]):
-    super(FakeActionSpace, self).__init__()
+    super().__init__()
     self._func = func
 
   @property

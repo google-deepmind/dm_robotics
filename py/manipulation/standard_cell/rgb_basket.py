@@ -165,7 +165,7 @@ class RGBBasket(composer.Arena):
       name: (optional) A string, the name of this arena. If `None`, use the
         model name defined in the MJCF file.
     """
-    super(RGBBasket, self)._build(name)
+    super()._build(name)
     self._mjcf_root.include_copy(
         mjcf.from_path(RGB_BASKET_XML_PATH), override_attributes=True)
     self._set_to_non_colliding_geoms()

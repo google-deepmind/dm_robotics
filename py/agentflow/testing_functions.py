@@ -64,7 +64,7 @@ class SpyOp(af.FixedOp):
                arg_spec=None,
                num_steps: Optional[int] = 0,
                name='SpyOp'):
-    super(SpyOp, self).__init__(value, num_steps=num_steps, name=name)
+    super().__init__(value, num_steps=num_steps, name=name)
     self._pterm = pterm
     self._result = result
     self._timesteps = []  # type: List[SpyOpCall]
@@ -75,28 +75,28 @@ class SpyOp(af.FixedOp):
   def pterm(self, timestep):
     self._timesteps.append(self._default_call._replace(pterm=timestep))
     if self._pterm is None:
-      return super(SpyOp, self).pterm(timestep)
+      return super().pterm(timestep)
     else:
       return self._pterm
 
   def result(self, timestep):
     self._timesteps.append(self._default_call._replace(result=timestep))
     if self._result is None:
-      return super(SpyOp, self).result(timestep)
+      return super().result(timestep)
     else:
       return self._result
 
   def step(self, timestep: dm_env.TimeStep):
     self._timesteps.append(self._default_call._replace(step=timestep))
-    return super(SpyOp, self).step(timestep)
+    return super().step(timestep)
 
   def on_selected(self, timestep, prev_option_result=None):
     self._timesteps.append(self._default_call._replace(on_selected=timestep))
-    super(SpyOp, self).on_selected(timestep, prev_option_result)
+    super().on_selected(timestep, prev_option_result)
 
   def arg_spec(self):
     if self._arg_spec is None:
-      return super(SpyOp, self).arg_spec()
+      return super().arg_spec()
     else:
       return self._arg_spec
 
@@ -133,7 +133,7 @@ class ActionSequenceOp(af.Option):
   """An option that returns a fixed sequence of actions."""
 
   def __init__(self, actions, name='ActionSequenceOp'):
-    super(ActionSequenceOp, self).__init__(name=name)
+    super().__init__(name=name)
     self._actions = actions
     self._next_action_index = 0
 
@@ -169,7 +169,7 @@ class IdentitySubtask(af.SubTask):
                action_spec: specs.Array,
                steps: int,
                name: Optional[Text] = None) -> None:
-    super(IdentitySubtask, self).__init__(name)
+    super().__init__(name)
     self._max_steps = steps
     self._steps_taken = 0
     self._observation_spec = observation_spec

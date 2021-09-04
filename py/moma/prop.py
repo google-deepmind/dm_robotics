@@ -138,7 +138,7 @@ class Camera(Prop):
       height: Height of the camera image
       fovy: Field of view, in degrees.
     """
-    super(Camera, self)._build(name, mjcf_root, prop_root)
+    super()._build(name, mjcf_root, prop_root)
 
     self._camera_element = camera_element
     self._width = width

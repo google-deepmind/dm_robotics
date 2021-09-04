@@ -68,7 +68,7 @@ class PoseStampedDistribution(PoseDistribution):
   """A PoseDistribution allowing parameterization relative to other frames."""
 
   def __init__(self, pose_dist: 'PoseDistribution', frame: geometry.Frame):
-    super(PoseStampedDistribution, self).__init__()
+    super().__init__()
     self._pose_dist = pose_dist
     self._frame = frame
 
@@ -112,7 +112,7 @@ class CompositePoseDistribution(PoseDistribution):
   """A PoseDistribution composed of a pose and a quaternion distribution."""
 
   def __init__(self, pos_dist: Distribution, quat_dist: Distribution):
-    super(CompositePoseDistribution, self).__init__()
+    super().__init__()
     self._pos_dist = pos_dist
     self._quat_dist = quat_dist
 
@@ -175,7 +175,7 @@ class ConstantPoseDistribution(PoseDistribution):
     Args:
       pose: a 6D list composed of 3D pose and 3D euler angle.
     """
-    super(ConstantPoseDistribution, self).__init__()
+    super().__init__()
     self._pos = pose[:3]
     self._quat = tr.euler_to_quat(pose[3:], ordering='XYZ')
 
@@ -210,7 +210,7 @@ class LambdaPoseDistribution(PoseDistribution):
       sample_pose_fn: a callable for obtaining a sample pose.
       mean_pose_fn: a callable for obtaining the mean of sampled poses.
     """
-    super(LambdaPoseDistribution, self).__init__()
+    super().__init__()
 
     self._sample_pose_fn = sample_pose_fn
     self._mean_pose_fn = mean_pose_fn
@@ -240,7 +240,7 @@ class WeightedDiscretePoseDistribution(PoseDistribution):
         is relative (i.e. does not need to be normalized), and the pose 6D array
         composed of 3D pose and 3D euler angle.
     """
-    super(WeightedDiscretePoseDistribution, self).__init__()
+    super().__init__()
     self._poses = [pose for _, pose in weighted_poses]
     self._weights = np.array([weight for weight, _ in weighted_poses])
     self._weights /= np.sum(self._weights)
@@ -281,7 +281,7 @@ class UniformPoseDistribution(PoseDistribution):
       min_pose_bounds: a 6D list composed of 3D pose and 3D euler angle.
       max_pose_bounds: a 6D list composed of 3D pose and 3D euler angle.
     """
-    super(UniformPoseDistribution, self).__init__()
+    super().__init__()
     self._min_pose_bounds = np.array(min_pose_bounds)
     self._max_pose_bounds = np.array(max_pose_bounds)
 
@@ -353,7 +353,7 @@ class LookAtPoseDistribution(PoseDistribution):
         `LookAtPoseDistribution` to produce poses that maintain a fixed view
         (modulo randomness), rather than rolling.
     """
-    super(LookAtPoseDistribution, self).__init__()
+    super().__init__()
     self._look_at = look_at
     self._look_from = look_from
 
@@ -399,7 +399,7 @@ class DomePoseDistribution(PoseDistribution):
       r_max: Maximum radius.
       theta_max: Maximum polar angle
     """
-    super(DomePoseDistribution, self).__init__()
+    super().__init__()
     self._center = center
     self._r_min = r_min
     self._r_max = r_max
@@ -486,7 +486,7 @@ class UniformDistribution(Distribution):
       high: Upper boundary of the output interval. All values generated will be
         less than or equal to high. The default value is 1.0.
     """
-    super(UniformDistribution, self).__init__()
+    super().__init__()
     self._low = np.array(low)
     self._high = np.array(high)
 
@@ -509,7 +509,7 @@ class TruncatedNormal(Distribution):
       clip_sd: (float) Scalar threshold on standard-deviation. Values larger
         than this will be re-sampled.
     """
-    super(TruncatedNormal, self).__init__()
+    super().__init__()
     self._mean = np.array(mean, dtype=np.float)
     self._sd = np.array(sd, dtype=np.float)
     self._clip_sd = clip_sd
@@ -546,7 +546,7 @@ class TruncatedNormalQuaternion(TruncatedNormal):
       clip_sd: (float) Scalar threshold on standard-deviation. Values larger
         than this will be re-sampled.
     """
-    super(TruncatedNormalQuaternion, self).__init__(mean, sd, clip_sd)
+    super().__init__(mean, sd, clip_sd)
     if len(mean) == 3:
       self._mean = tr.axisangle_to_quat(mean)
 

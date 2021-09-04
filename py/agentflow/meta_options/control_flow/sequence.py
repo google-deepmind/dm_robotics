@@ -57,7 +57,7 @@ class Sequence(core.MetaOption):
         respect the option life-cycle (e.g. a standard run loop).
       name: A name for this Option.
     """
-    super(Sequence, self).__init__(name=name)
+    super().__init__(name=name)
     self._option_list = option_list
     self._terminate_on_option_failure = terminate_on_option_failure
     self._allow_stepping_after_terminal = allow_stepping_after_terminal

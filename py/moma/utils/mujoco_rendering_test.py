@@ -28,7 +28,7 @@ _WINDOW_PARAMS = (640, 480, 'title')
 class BasicRenderingObserverTest(absltest.TestCase):
 
   def setUp(self):
-    super(BasicRenderingObserverTest, self).setUp()
+    super().setUp()
     self.env = mock.MagicMock()
     self.env.physics = mock.MagicMock()
 

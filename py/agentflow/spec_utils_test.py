@@ -40,7 +40,7 @@ valid_value = testing_functions.valid_value
 class ValidationTest(parameterized.TestCase):
 
   def setUp(self):
-    super(ValidationTest, self).setUp()
+    super().setUp()
     patcher = mock.patch.object(spec_utils, 'debugging_flag', return_value=True)
     self.mock_sum = patcher.start()
     self.addCleanup(patcher.stop)

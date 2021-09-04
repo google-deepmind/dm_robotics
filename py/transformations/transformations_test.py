@@ -51,7 +51,7 @@ def _force_transform_kdl(ht, w):
 class TransformationsTest(parameterized.TestCase):
 
   def __init__(self, *args, **kwargs):
-    super(TransformationsTest, self).__init__(*args, **kwargs)
+    super().__init__(*args, **kwargs)
     self._random_state = np.random.RandomState()
 
   @parameterized.parameters(

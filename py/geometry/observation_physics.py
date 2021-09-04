@@ -30,7 +30,7 @@ class ObservationPhysics(geometry.Physics):
     Args:
       observation_to_pose: A function to convert an observation to a Pose.
     """
-    super(ObservationPhysics, self).__init__()
+    super().__init__()
     self._obs = None  # type: Dict[Text, Any]
     self._parser = observation_to_pose
 

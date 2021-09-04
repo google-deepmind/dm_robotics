@@ -63,7 +63,7 @@ class DummySubTask(subtask.SubTask):
   def __init__(self,
                base_obs_spec: Mapping[Text, specs.Array],
                name: Optional[Text] = None):
-    super(DummySubTask, self).__init__(name)
+    super().__init__(name)
     self._base_obs_spec = base_obs_spec
 
   def observation_spec(self) -> Mapping[Text, specs.Array]:
@@ -94,7 +94,7 @@ class DummyPolicy(core.Policy):
   def __init__(self, action_spec: specs.Array,
                unused_observation_spec: Mapping[Text, specs.Array],
                name: Optional[Text] = None):
-    super(DummyPolicy, self).__init__(name)
+    super().__init__(name)
     self._action_spec = action_spec
 
   def step(self, timestep: dm_env.TimeStep) -> np.ndarray:
@@ -107,7 +107,7 @@ class DummyOption(core.Option):
   def __init__(self, action_spec: specs.Array,
                unused_observation_spec: Mapping[Text, specs.Array],
                name: Optional[Text] = None):
-    super(DummyOption, self).__init__(name)
+    super().__init__(name)
     self._action_spec = action_spec
 
   def step(self, timestep: dm_env.TimeStep) -> np.ndarray:

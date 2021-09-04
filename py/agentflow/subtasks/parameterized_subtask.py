@@ -50,7 +50,7 @@ class ParameterizedSubTask(af.SubTask):
       render_frame_cb: Callable that is used to render a frame on a canvas.
       name: Name of the subtask.
     """
-    super(ParameterizedSubTask, self).__init__(name=name)
+    super().__init__(name=name)
     self._action_space = action_space
     self._parent_spec = parent_spec
     self._timestep_preprocessor = timestep_preprocessor

@@ -232,7 +232,7 @@ class SubTaskOption(core.Option):
       observers: Observers to invoke from step after actions are determined.
       name: An arbitrary name for the resulting Option.
     """
-    super(SubTaskOption, self).__init__(name=name)
+    super().__init__(name=name)
     self._task = sub_task
     self._agent = agent
     self._observers = []

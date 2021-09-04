@@ -240,7 +240,7 @@ class Option(Policy):  # pytype: disable=ignored-metaclass
     Args:
       name: (optional) A name for the option.
     """
-    super(Option, self).__init__(name)
+    super().__init__(name)
     self._uid = uid_generator()
     self._key_prefix = '{}_{}'.format(self._name, self._uid)
     self._arg_key = '{}_arg'.format(self._key_prefix)

@@ -48,7 +48,7 @@ class Cond(basic_options.DelegateOption):
         False (default) `cond` is evaluated once when the option is selected.
       name: A name for this option.
     """
-    super(Cond, self).__init__(delegate=true_branch, name=name)
+    super().__init__(delegate=true_branch, name=name)
     assert callable(cond)
     self._cond = cond
     self._true_branch = true_branch
@@ -115,7 +115,7 @@ class Cond(basic_options.DelegateOption):
       timestep: dm_env.TimeStep,
       prev_option_result: Optional[core.OptionResult] = None) -> None:
     self._select_option(timestep, prev_option_result)
-    return super(Cond, self).on_selected(timestep, prev_option_result)
+    return super().on_selected(timestep, prev_option_result)
 
   def step(self, timestep: dm_env.TimeStep):
     """Evaluates the condition if requested, and runs the selected option."""
@@ -145,8 +145,8 @@ class Cond(basic_options.DelegateOption):
         timestep = timestep._replace(step_type=dm_env.StepType.FIRST)
 
     # Step the active option.
-    return super(Cond, self).step(timestep)
+    return super().step(timestep)
 
   @overrides(core.Option)
   def result(self, timestep: dm_env.TimeStep) -> core.OptionResult:
-    return super(Cond, self).result(timestep)
+    return super().result(timestep)

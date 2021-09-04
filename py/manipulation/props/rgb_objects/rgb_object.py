@@ -413,7 +413,7 @@ class RgbObjectProp(mesh_object.MeshProp):
           self._object_params = RgbObjectParameters(rgb_version, obj_id)
         else:
           self._object_params = None
-        return super(RgbObjectProp, self)._build(
+        return super()._build(
             visual_meshes=[path],
             name=name,
             size=size,
@@ -456,7 +456,7 @@ class RandomRgbObjectProp(mesh_object.MeshProp):
                                                 object_id_from_file)
     else:
       self._object_params = None
-    return super(RandomRgbObjectProp, self)._build(
+    return super()._build(
         visual_meshes=[stl_path],
         name=name,
         size=size,

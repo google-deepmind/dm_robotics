@@ -48,7 +48,7 @@ class L2Reward(af.TimestepPreprocessor):
       reward_scale: Scalar multiplier.
       reward_offset: Scalar offset.
     """
-    super(L2Reward, self).__init__()
+    super().__init__()
     self._obs0 = obs0
     self._obs1 = obs1
     self._reward_scale = reward_scale
@@ -90,7 +90,7 @@ class ThresholdedL2Reward(af.TimestepPreprocessor):
   """
 
   def __init__(self, obs0, obs1, threshold, reward=1.0):
-    super(ThresholdedL2Reward, self).__init__()
+    super().__init__()
     self._obs0 = obs0
     self._obs1 = obs1
     self._threshold = threshold

@@ -174,7 +174,7 @@ class CompositeTimestepPreprocessor(TimestepPreprocessor):
   """Apply an ordered list of timestep preprocessors."""
 
   def __init__(self, *preprocessors: TimestepPreprocessor):
-    super(CompositeTimestepPreprocessor, self).__init__()
+    super().__init__()
     self._timestep_preprocessors = list(preprocessors)
 
   @overrides(TimestepPreprocessor)

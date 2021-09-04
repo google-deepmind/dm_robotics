@@ -453,7 +453,7 @@ class MergeObservationsTest(absltest.TestCase):
 class CropImageObservationTest(absltest.TestCase):
 
   def setUp(self):
-    super(CropImageObservationTest, self).setUp()
+    super().setUp()
     self._input_obs_name = 'input_obs'
     self._output_obs_name = 'output_obs'
     # This has a shape of (4,5)
@@ -619,7 +619,7 @@ class CropImageObservationTest(absltest.TestCase):
 class CropSquareAndResizeTest(absltest.TestCase):
 
   def setUp(self):
-    super(CropSquareAndResizeTest, self).setUp()
+    super().setUp()
     self._input_obs_name = 'input_obs'
     self._output_obs_name = 'output_obs'
     # This has a shape of (4,5)

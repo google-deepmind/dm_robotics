@@ -37,7 +37,7 @@ class _Deslicer(core.ActionSpace):
       output_dtype: np.dtype,
       mask: Sequence[bool],
       default_value: Optional[np.floating] = None):
-    super(_Deslicer, self).__init__()
+    super().__init__()
     self._name = name
     self._input_spec = spec
     self._output_shape = output_shape

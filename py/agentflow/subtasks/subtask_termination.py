@@ -38,7 +38,7 @@ class MaxStepsTermination(preprocessors.TimestepPreprocessor):
       terminal_discount: A scalar discount to set when the step threshold is
         exceeded.
     """
-    super(MaxStepsTermination, self).__init__()
+    super().__init__()
     self._max_steps = max_steps
     self._terminal_discount = terminal_discount
     self._steps = 0
@@ -97,7 +97,7 @@ class RewardThresholdTermination(preprocessors.TimestepPreprocessor):
         result, but uses the last (cached) sub-threshold reward until a LAST
         timestep is received.
     """
-    super(RewardThresholdTermination, self).__init__()
+    super().__init__()
     self._reward_threshold = reward_threshold
     self._terminal_discount = terminal_discount
     self._sparse_mode = sparse_mode
@@ -185,7 +185,7 @@ class LeavingWorkspaceTermination(preprocessors.TimestepPreprocessor):
       workspace_radius: A float representing the radius of the workspace sphere.
       terminal_discount: A scalar discount to set when the workspace is violated
     """
-    super(LeavingWorkspaceTermination, self).__init__()
+    super().__init__()
     self._tcp_pos_obs = tcp_pos_obs
     self._workspace_centre = np.array(workspace_center, dtype=np.float32)
     self._workspace_radius = workspace_radius
@@ -343,7 +343,7 @@ class ObservationThresholdTermination(preprocessors.TimestepPreprocessor):
     Raises:
       KeyError: if `observation` is not a valid observation name.
     """
-    super(ObservationThresholdTermination, self).__init__()
+    super().__init__()
     self._obs = observation
     self._desired_obs_values = np.array(desired_obs_values, dtype=np.float32)
     self._norm_threshold = norm_threshold
