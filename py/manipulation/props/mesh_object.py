@@ -24,6 +24,7 @@ from typing import Any, Callable, List, Optional, Sequence, Union
 
 from absl import logging
 from dm_control import mjcf
+from dm_robotics.manipulation.props.utils import mesh_formats_utils
 from dm_robotics.moma import prop
 
 # Internal imports.
@@ -32,7 +33,7 @@ from dm_robotics.moma import prop
 # unchanged. Refer to http://www.mujoco.org/book/XMLreference.html#material .
 DEFAULT_COLOR_RGBA = '1 1 1 1'
 MIN_MASS = 0.001
-_SUPPORTED_MESH_TYPES = ('.stl', '.msh')
+_MUJOCO_SUPPORTED_MESH_TYPES = ('.stl', '.msh')
 _DEFAULT_SIZE = 0.005
 _DEFAULT_POS = 0
 _DEFAULT_FRICTION = (0.5, 0.005, 0.0001)
@@ -60,7 +61,7 @@ class MeshProp(prop.Prop):
       if isinstance(mesh_source, str):
         logging.debug('Loading mesh file %s', mesh_source)
         extension = os.path.splitext(mesh_source)[1]
-        if extension in _SUPPORTED_MESH_TYPES:
+        if extension in _MUJOCO_SUPPORTED_MESH_TYPES:
           with open(mesh_source, 'rb') as f:
             self._mjcf_root.asset.add(
                 'mesh',
@@ -68,6 +69,15 @@ class MeshProp(prop.Prop):
                 scale=self._size,
                 file=mjcf.Asset(f.read(), extension))
           mesh_idx += 1
+        elif extension == '.obj':
+          msh_strings = mesh_formats_utils.obj_file_to_mujoco_msh(mesh_source)
+          for msh_string in msh_strings:
+            self._mjcf_root.asset.add(
+                'mesh',
+                name=name,
+                scale=self._size,
+                file=mjcf.Asset(msh_string, '.msh'))
+            mesh_idx += 1
         else:
           raise ValueError(f'Unsupported object extension: {extension}')
       else:  # TODO(b/195733842): add tests.
