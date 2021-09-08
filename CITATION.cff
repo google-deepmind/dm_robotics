@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: Barker
+    given-names: Dave
+  - family-names: Blokzijl
+    given-names: Michiel
+  - family-names: Chen
+    given-names: Jose Enrique
+  - family-names: Fantacci
+    given-names: Claudio
+  - family-names: Jeong
+    given-names: Rae
+  - family-names: Khosid
+    given-names: David
+  - family-names: Laurens
+    given-names: Antoine
+  - family-names: Pevceviciute
+    given-names: Rugile
+  - family-names: Raju
+    given-names: Akhil
+  - family-names: Regli
+    given-names: Jean-baptiste
+  - family-names: Scholz
+    given-names: Jon
+  - family-names: Sushkov
+    given-names: Oleg
+title: "dm_robotics: Libraries, tools, and tasks created and used for Robotics research at DeepMind."
+version: 0.01
+date-released: 2021-07-29
