@@ -44,7 +44,7 @@ setuptools.setup(
     description="A library for Rigid Body Transformations",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/deepmind/robotics/tree/main/py/transformations",
+    url="https://github.com/deepmind/dm_robotics/tree/main/py/transformations",
     install_requires=_get_requirements("requirements.txt"),
     classifiers=[
         "Development Status :: 5 - Production/Stable",

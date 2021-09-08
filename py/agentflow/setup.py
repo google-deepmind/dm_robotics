@@ -58,7 +58,7 @@ setuptools.setup(
     description="Tools for single-embodiment, multiple-task, Reinforcement Learning",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/deepmind/robotics/tree/main/py/agentflow",
+    url="https://github.com/deepmind/dm_robotics/tree/main/py/agentflow",
     install_requires=(_get_requirements("requirements.txt") +
                       _get_requirements("requirements_external.txt")),
     classifiers=[

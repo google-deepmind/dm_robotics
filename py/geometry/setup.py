@@ -50,7 +50,7 @@ setuptools.setup(
     description="This library provides primitives for dealing with scene and robot geometry",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/deepmind/robotics/tree/main/py/geometry",
+    url="https://github.com/deepmind/dm_robotics/tree/main/py/geometry",
     install_requires=(_get_requirements("requirements.txt")
                       + _get_requirements("requirements_external.txt")),
     classifiers=[

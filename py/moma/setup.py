@@ -62,7 +62,7 @@ setuptools.setup(
     description="Tools for authoring robotic manipulation tasks.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/deepmind/robotics/tree/main/py/moma",
+    url="https://github.com/deepmind/dm_robotics/tree/main/py/moma",
     install_requires=(_get_requirements("requirements.txt") +
                       _get_requirements("requirements_external.txt")),
     classifiers=[

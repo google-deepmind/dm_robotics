@@ -106,10 +106,10 @@ setup(
     version="0.0.2",
     license="Apache 2.0",
     author="DeepMind",
-    description="Python bindings for robotics/cpp/controllers",
+    description="Python bindings for dm_robotics/cpp/controllers",
     long_description=open("controllers_py/README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/deepmind/robotics/tree/main/cpp/controllers_py",
+    url="https://github.com/deepmind/dm_robotics/tree/main/cpp/controllers_py",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Programming Language :: Python :: 3",
