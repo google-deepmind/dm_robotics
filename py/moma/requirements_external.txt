@@ -4,4 +4,4 @@ opencv-python >= 3.4.0
 attrs >= 20.3.0
 pydot >= 1.2.4
 typing-extensions >= 3.10.0.0
-dataclasses
+dataclasses;python_version<"3.7"

@@ -29,9 +29,15 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 if( DM_ROBOTICS_BUILD_WHEEL )
   # Flags and setup to build manylinux wheels.
   add_link_options("-static-libgcc")
-  set(CMAKE_SHARED_LINKER_FLAGS
-      ${CMAKE_SHARED_LINKER_FLAGS}
-      "-Wl,--version-script=${DM_ROBOTICS_VERSION_SCRIPT},--no-whole-archive")
+  if( DM_ROBOTICS_VERSION_SCRIPT )
+    set(CMAKE_SHARED_LINKER_FLAGS
+        ${CMAKE_SHARED_LINKER_FLAGS}
+        "-Wl,--version-script=${DM_ROBOTICS_VERSION_SCRIPT},--no-whole-archive")
+  else()
+    set(CMAKE_SHARED_LINKER_FLAGS
+        ${CMAKE_SHARED_LINKER_FLAGS}
+        "-Wl,--no-whole-archive")
+  endif()
 
   # We also use a glibc_shim, but if your glibc is manylinux compatible you
   # won't need to make such a shim.
