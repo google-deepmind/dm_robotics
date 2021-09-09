@@ -53,7 +53,7 @@ setuptools.setup(
         "dm_robotics.manipulation.props.ycb_objects",
         "dm_robotics.manipulation.standard_cell",
     ],
-    version="0.0.2",
+    version="0.0.3",
     license="Apache 2.0",
     author="DeepMind",
     description="Parametrically defined mesh objects",

@@ -38,7 +38,7 @@ setuptools.setup(
     name="dm_robotics-transformations",
     package_dir={"dm_robotics.transformations": ""},
     packages=["dm_robotics.transformations"],
-    version="0.0.2",
+    version="0.0.3",
     license="Apache 2.0",
     author="DeepMind",
     description="A library for Rigid Body Transformations",
