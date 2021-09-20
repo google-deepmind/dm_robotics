@@ -27,7 +27,7 @@ from dm_control import mjcf
 from dm_robotics.manipulation.props.utils import mesh_formats_utils
 from dm_robotics.moma import prop
 
-# Internal imports.
+# Internal file import.
 
 # The default value of '1 1 1 1' has the effect of leaving the texture
 # unchanged. Refer to http://www.mujoco.org/book/XMLreference.html#material .

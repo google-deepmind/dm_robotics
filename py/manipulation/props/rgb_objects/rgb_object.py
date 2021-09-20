@@ -49,7 +49,7 @@ from dm_robotics.manipulation.props.parametric_object.rgb_objects import paramet
 from dm_robotics.manipulation.props.parametric_object.rgb_objects import rgb_object_names
 import numpy as np
 
-# Internal imports.
+# Internal resources import.
 
 if typing.TYPE_CHECKING:
   from dm_robotics.manipulation.props.parametric_object import parametric_object

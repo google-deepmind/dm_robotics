@@ -419,7 +419,7 @@ class TransformationsTest(parameterized.TestCase):
       rmat2 = transformations.quat_to_mat(quat2[k])[0:3, 0:3]
       rmat_prod_q = transformations.quat_to_mat(quat_prod[k])[0:3, 0:3]
       rmat_prod = rmat1.dot(rmat2)
-      np.testing.assert_allclose(rmat_prod, rmat_prod_q)
+      np.testing.assert_allclose(rmat_prod, rmat_prod_q, atol=1e-5)
 
   def test_quat_slerp_random(self):
     for _ in range(_NUM_RANDOM_SAMPLES):
@@ -446,7 +446,7 @@ class TransformationsTest(parameterized.TestCase):
       full_rotated_quat = transformations.quat_mul(quat0, full_quat_rot)
       partial_rotated_quat = transformations.quat_mul(quat0, partial_quat_rot)
       slerp_quat = transformations.quat_slerp(quat0, full_rotated_quat, frac)
-      np.testing.assert_allclose(partial_rotated_quat, slerp_quat, atol=1e-5)
+      np.testing.assert_allclose(partial_rotated_quat, slerp_quat, atol=1e-4)
 
       # Test that it takes the shortest path
       full_angle = self._random_state.uniform(0, 90)
@@ -634,7 +634,7 @@ class TransformationsTest(parameterized.TestCase):
       computed_quat = transformations.quat_between_vectors(
           source_vec, target_vec)
       computed_target = transformations.quat_rotate(computed_quat, source_vec)
-      np.testing.assert_allclose(target_vec, computed_target)
+      np.testing.assert_allclose(target_vec, computed_target, atol=0.005)
 
   def test_quat_between_vectors_inverse(self):
     # test quat_between_vectors with inverse vectors

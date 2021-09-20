@@ -16,7 +16,7 @@ import itertools
 import struct
 from typing import Any, Sequence
 
-# Internal imports.
+# Internal file import.
 
 
 def _flatten(list_of_lists: Sequence[Sequence[Any]]) -> Sequence[Any]:
