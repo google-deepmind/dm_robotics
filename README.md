@@ -37,7 +37,7 @@ To build and test the libraries, run `build.sh`.  This script assumes:
 *  MuJoCo is installed and licensed.
 *  [`dm_control`](https://github.com/deepmind/dm_control) is installed.
 *  cmake version >= 3.20.2 is installed.
-*  Python 3.6 ,3.7 or 3.8 and system headers are installed.
+*  Python 3.6, 3.7 or 3.8 and system headers are installed.
 *  GCC version 9 or later is installed.
 *  numpy is installed.
 
