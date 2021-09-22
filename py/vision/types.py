@@ -95,3 +95,15 @@ class PositionLimit(ValueRange):
     lower: An [x, y, z] array with the lower values of the position limit.
     upper: An [x, y, z] array with the upper values of the position limit.
   """
+
+
+@dataclasses.dataclass(frozen=True)
+class Plane:
+  """Parameterization of a 3d plane.
+
+  Attributes:
+    point: 3d point which lies in the plane.
+    normal: 3d vector normal to the plane.
+  """
+  point: np.ndarray
+  normal: np.ndarray

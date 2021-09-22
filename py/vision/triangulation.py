@@ -16,9 +16,27 @@
 from typing import Optional, Sequence, Tuple
 
 import cv2
+from dmr_vision import types
 import numpy as np
-
 from tf import transformations as tf
+
+
+def _plane_basis_from_normal(normal: np.ndarray):
+  """Returns a 3x2 matrix with orthonormal columns tangent to normal."""
+  norm = np.linalg.norm(normal)
+  if norm < 1e-6:
+    raise ValueError("The norm of the normal vector is less than 1e-6. "
+                     "Consider rescaling it or passing a unit vector.")
+  normal = normal / norm
+  # Choose some vector which is guaranteed not to be collinear with the normal.
+  if normal[0] > 0.8:
+    tangent_0 = np.array([0., 1., 0.])
+  else:
+    tangent_0 = np.array([1., 0., 0.])
+  # Make it orthonormal to normal.
+  tangent_0 = tangent_0 - normal * np.dot(tangent_0, normal)
+  tangent_1 = np.cross(normal, tangent_0)
+  return np.stack([tangent_0, tangent_1], axis=1)
 
 
 class Triangulation:
@@ -35,7 +53,8 @@ class Triangulation:
 
   def __init__(self, camera_matrices: Sequence[np.ndarray],
                distortions: Optional[Sequence[np.ndarray]],
-               extrinsics: Sequence[np.ndarray]):
+               extrinsics: Sequence[np.ndarray],
+               planar_constraint: Optional[types.Plane] = None) -> None:
     """Initializes the class given the scene configuration.
 
     Args:
@@ -51,6 +70,8 @@ class Triangulation:
         'world' frame in which we want to estimate the 3D point in. Each pose
         must be provided as a NumPy array of size (7, 1) where the first three
         entries are position and the last four are the quaternion [x, y, z, w].
+      planar_constraint: An optional plane (in global frame) that the
+        triangulated point must lie on.
 
     Raises:
       ValueError: Will be raised if dimensions between parameters mismatch.
@@ -58,6 +79,13 @@ class Triangulation:
     self._camera_matrices = camera_matrices
     self._distortions = distortions
     self._extrinsics = extrinsics
+    # Optional plane constraint parameterization.
+    self._has_planar_constraint = planar_constraint is not None
+    self._offset = None
+    self._basis = None
+    if self._has_planar_constraint:
+      self._offset = planar_constraint.point
+      self._basis = _plane_basis_from_normal(planar_constraint.normal)
 
     if len(self._camera_matrices) != len(self._extrinsics):
       raise ValueError("Number of camera matrices and extrinsics should match.")
@@ -112,7 +140,9 @@ class Triangulation:
 
     Returns:
       3D position of triangulation as NumPy array of size (3,).
-      Residual of the 3D position of triangulation of size (1,).
+      Residual of the 3D position of triangulation of size (1,) or an empty
+      array if the 3D position can be reconstructed exactly from the
+      measurements and constraints.
 
     Raises:
       ValueError: Will be raised if observations do not allow triangulation.
@@ -158,6 +188,10 @@ class Triangulation:
     According to the article above, we then solve this system using the SVD
     and discarding the scale.
 
+    If a planar constraint is provided, then we reparameterize
+    [W_p_x, W_p_y, W_p_z] using 2d coordinates in this plane, solve
+    for these coordinates, and then transform back to 3d.
+
     This can be improved in two ways:
     - implement the iterative method outlined in 5.2 in the article above
     - implement a Levenberg-Marquardt implementation, also outlined in 5.2
@@ -167,7 +201,7 @@ class Triangulation:
 
     num_measurements = len(undistorted_points)
 
-    if num_measurements < 2:
+    if num_measurements < 2 and not self._has_planar_constraint:
       raise ValueError("We need at least two measurements to triangulate.")
 
     # For linear algebra as well as expressing reference frames, it really
@@ -192,6 +226,18 @@ class Triangulation:
       A[3 * i:3 * (i + 1), 3 + i] = -W_v
       b[3 * i:3 * (i + 1), 0] = np.array(self._extrinsics[i][0:3]).T
 
+    # Maybe add a planar constraint.
+    if self._has_planar_constraint:
+      # Reparametrize x = Zx' + y -> AZx' = b - Ay.
+      Z = np.zeros([cols, cols - 1])
+      y = np.zeros([cols, 1])
+      Z[3:, 2:] = np.eye(num_measurements)
+      Z[:3, :2] = self._basis
+      y[:3, 0] = self._offset
+      orig_A = A
+      A = np.matmul(orig_A, Z)  # [3 * num_measurments, 2 + num_measurments]
+      b = b - np.matmul(orig_A, y)
+
     # Solve for the 3D point and the scale.
     try:
       x, residual, rank, _ = np.linalg.lstsq(A, b, rcond=None)
@@ -199,14 +245,24 @@ class Triangulation:
       err.message = """Triangulation failed, possibly due to invalid
         data provided. Numeric error: """ + err.message
       raise
+    if self._has_planar_constraint:
+      # Map from 2d plane to 3d world coordinates.
+      scales = x[2:]
+      pose = (np.matmul(self._basis, x[:2]) +
+              np.expand_dims(self._offset, axis=-1))
+      num_free_variables = 3 + num_measurements - 1
+    else:
+      scales = x[3:]
+      pose = x[:3]
+      num_free_variables = 3 + num_measurements
 
     # Verify the rank to ensure visibility.
-    if rank - num_measurements < 3:
+    if rank < num_free_variables:
       raise ValueError("Insufficient observations to triangulate.")
 
     # Verify that scaling factors are positive.
-    if (x[3::] < 0).any():
+    if (scales < 0).any():
       raise ValueError("3D point lies behind at least one camera")
 
-    return x[0:3], np.sqrt(residual)
+    return pose, np.sqrt(residual)
     # pylint: enable=invalid-name

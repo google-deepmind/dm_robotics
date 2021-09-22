@@ -35,10 +35,11 @@ class BlobTriangulationNode:
                limits: types.PositionLimit,
                deadzones: Optional[Mapping[str, types.PositionLimit]] = None,
                fuse_tolerance: float = 0.1,
+               planar_constraint: Optional[Mapping[str, types.Plane]] = None,
                base_frame: str = "base",
                input_queue_size: int = 1,
                output_queue_size: int = 1,
-               rate: int = 20):
+               rate: int = 20) -> None:
     """Constructs a `BlobTriangulationNode` instance.
 
     Args:
@@ -51,18 +52,22 @@ class BlobTriangulationNode:
       deadzones: A mapping specifying deadzones with their limits, specified in
         the same terms of `limits`.
       fuse_tolerance: Maximum time interval between fused data points.
+      planar_constraint: An optional mapping of prop names to planes (in
+        global frame) that the blob must lie in. This is useful for example
+        for tracking a ball which is guaranteed to be on the ground plane.
+        If provided then a single camera is enough for "triangulation".
       base_frame: The frame id to use when publishing poses.
       input_queue_size: The size of input queues.
       output_queue_size: The size of output queues.
       rate: The frequency with which to spin the node.
     """
-
     self._prop_names = prop_names
     self._camera_names = list(extrinsics.keys())
     self._extrinsics = extrinsics
     self._pose_validator = utils.PoseValidator(
         limits=limits, deadzones=deadzones)
     self._fuse_tolerance = fuse_tolerance
+    self._planar_constraint = planar_constraint or {}
     self._base_frame = base_frame
     self._input_queue_size = input_queue_size
     self._output_queue_size = output_queue_size
@@ -104,11 +109,13 @@ class BlobTriangulationNode:
         continue
       # List the cameras in which the prop is visible.
       available_cameras = list(centers[prop_name].keys())
-      # If the prop is visible in less than two cameras, skip.
-      if len(available_cameras) < 2:
+      # If there are not enough measurements then skip.
+      planar_constraint = self._planar_constraint.get(prop_name, None)
+      min_num_cameras = 2 if planar_constraint is None else 1
+      if len(available_cameras) < min_num_cameras:
         continue
       available_cameras_powerset = self._powerset(
-          available_cameras, min_cardinality=2)
+          available_cameras, min_cardinality=min_num_cameras)
       position = None
       residual = None
       for camera_set in available_cameras_powerset:
@@ -116,7 +123,8 @@ class BlobTriangulationNode:
         triangulation = linear_triangulation.Triangulation(
             camera_matrices=[camera_matrices[name] for name in camera_set],
             distortions=[distortions[name] for name in camera_set],
-            extrinsics=[self._extrinsics[name] for name in camera_set])
+            extrinsics=[self._extrinsics[name] for name in camera_set],
+            planar_constraint=planar_constraint)
         # Create a list of blob centers ordered by source camera.
         blob_centers = [
             centers[prop_name][camera_name] for camera_name in camera_set

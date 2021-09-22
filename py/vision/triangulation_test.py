@@ -14,13 +14,15 @@
 """Tests for `triangulation.py`."""
 
 from absl.testing import absltest
+from absl.testing import parameterized
 import cv2
 from dmr_vision import triangulation
+from dmr_vision import types
 import numpy as np
 from tf import transformations as tf
 
 
-class TriangulationTest(absltest.TestCase):
+class TriangulationTest(parameterized.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -69,19 +71,36 @@ class TriangulationTest(absltest.TestCase):
         (993.52079234, 440.15403317),
     ]
 
-  def test_undistorted(self):
+    # A plane which contains the above point.
+    self.plane = types.Plane(point=np.array([0., 0., self.point_3d[2]]),
+                             normal=np.array([0., 0., 1.]))
+
+  @parameterized.parameters(True, False)
+  def test_undistorted(self, use_plane_constraint):
+    planar_constraint = self.plane if use_plane_constraint else None
     point_3d_triangulated, residual = self._run_triangulation(
-        self.camera_matrices, None, self.extrinsics, self.point_3d)
+        self.camera_matrices, None, self.extrinsics, self.point_3d,
+        planar_constraint=planar_constraint)
     self.assertSequenceAlmostEqual(point_3d_triangulated.flatten(),
                                    self.point_3d)
     self.assertAlmostEqual(residual.item(), 0)
 
-  def test_distorted(self):
+  @parameterized.parameters(True, False)
+  def test_distorted(self, use_plane_constraint):
+    planar_constraint = self.plane if use_plane_constraint else None
     point_3d_triangulated, residual = self._run_triangulation(
-        self.camera_matrices, self.distortions, self.extrinsics, self.point_3d)
+        self.camera_matrices, self.distortions, self.extrinsics, self.point_3d,
+        planar_constraint=planar_constraint)
     self.assertSequenceAlmostEqual(point_3d_triangulated.flatten(),
                                    self.point_3d)
     self.assertAlmostEqual(residual.item(), 0)
+
+  def test_from_single_viewpoint_with_plane_constraint(self):
+    point_3d_triangulated, _ = self._run_triangulation(
+        self.camera_matrices[0:1], self.distortions[0:1], self.extrinsics[0:1],
+        self.point_3d, planar_constraint=self.plane)
+    self.assertSequenceAlmostEqual(point_3d_triangulated.flatten(),
+                                   self.point_3d)
 
   def test_from_two_viewpoints(self):
     point_3d_triangulated, residual = self._run_triangulation(
@@ -122,9 +141,11 @@ class TriangulationTest(absltest.TestCase):
                                    self.point_3d)
     self.assertAlmostEqual(residual.item(), 0)
 
-  def _run_triangulation(self, camera_matrices, distortions, extrinsics, point):
-    triangulator = triangulation.Triangulation(camera_matrices, distortions,
-                                               extrinsics)
+  def _run_triangulation(self, camera_matrices, distortions,
+                         extrinsics, point, planar_constraint=None):
+    triangulator = triangulation.Triangulation(
+        camera_matrices, distortions, extrinsics,
+        planar_constraint=planar_constraint)
 
     # pylint: disable=invalid-name
     pixel_measurements = []
