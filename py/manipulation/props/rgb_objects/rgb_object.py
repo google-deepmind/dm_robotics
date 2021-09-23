@@ -79,7 +79,9 @@ _RESOURCES_ROOT_DIR = (
 
 ## RGB-objects definitions.
 _RGB_OBJECTS_MESHES = [
-    os.path.join(_RESOURCES_ROOT_DIR, 'rgb_v1/meshes/')
+    os.path.join(_RESOURCES_ROOT_DIR, 'rgb_v1/meshes/test_triplets'),
+    os.path.join(_RESOURCES_ROOT_DIR, 'rgb_v1/meshes/train'),
+    os.path.join(_RESOURCES_ROOT_DIR, 'rgb_v1/meshes/validation')
 ]
 _RGB_OBJECTS_PARAMS = rgb_object_names.RgbObjectsNames(
     parametric_rgb_object.RgbVersion.v1_3).nicknames
@@ -90,7 +92,7 @@ _D_OBJECTS = [x for x in _RGB_OBJECTS_PARAMS if x.startswith('d')]
 
 # d2 is the seed object which is also used in the test triplets.
 RGB_OBJECTS_TEST_SET = sorted([
-    'd2', 'r2', 'r3', 'r5', 'r6', 'b6', 'b2', 'b3', 'b5', 'g5', 'g6', 'g2', 'g3'
+    'd2', 'r2', 'r3', 'r5', 'r6', 'b2', 'b3', 'b5', 'b6', 'g2', 'g3', 'g5', 'g6'
 ])
 RGB_OBJECTS_FULL_SET = list(
     (set(_RGB_OBJECTS_PARAMS) - set(_D_OBJECTS)).union(
