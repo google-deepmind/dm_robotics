@@ -20,11 +20,12 @@ authors:
   - family-names: Raju
     given-names: Akhil
   - family-names: Regli
-    given-names: Jean-baptiste
+    given-names: Jean-Baptiste
   - family-names: Scholz
     given-names: Jon
   - family-names: Sushkov
     given-names: Oleg
-title: "dm_robotics: Libraries, tools, and tasks created and used for Robotics research at DeepMind."
+title: "dm\_robotics: Libraries, tools, and tasks created and used for robotics research at DeepMind"
 version: 0.01
 date-released: 2021-07-29
+url: "https://github.com/deepmind/dm_robotics"
