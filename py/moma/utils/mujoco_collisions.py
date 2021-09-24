@@ -19,11 +19,14 @@ cannot collide because of the contype and conaffinity parameters of Mujoco. This
 speeds up the simulation.
 """
 
+from typing import Optional
+
 from dm_control import mjcf
 from dm_control import mujoco
 
 
-def exclude_bodies_based_on_contype_conaffinity(mjcf_model: mjcf.RootElement):
+def exclude_bodies_based_on_contype_conaffinity(
+    mjcf_model: mjcf.RootElement, exclude_exception_str: Optional[str] = None):
   """Adds a contact-exclude MJCF element for the body pairs described below.
 
   A contact-exclude MJCF element is added for every body pair for which all of
@@ -39,6 +42,8 @@ def exclude_bodies_based_on_contype_conaffinity(mjcf_model: mjcf.RootElement):
 
   Args:
     mjcf_model: mjcf.RootElement of the finalized MuJoCo XML for the scene.
+    exclude_exception_str: if this string is found in the name of the body that
+      body is exempt from the contact.add exclude operation.
   """
   # We compile the model first to make sure all the contypes/conaffinities are
   # set.
@@ -50,13 +55,17 @@ def exclude_bodies_based_on_contype_conaffinity(mjcf_model: mjcf.RootElement):
   # first body pass the contype/conaffinity check against the geoms in the
   # second body.
   for body1_id in range(model.nbody):
-    for body2_id in range(body1_id):
-      if not (_is_any_geom_pass_contype_conaffinity_check(
-          model, body1_id, body2_id)):
-        mjcf_model.contact.add(
-            "exclude",
-            body1=model.id2name(body1_id, "body"),
-            body2=model.id2name(body2_id, "body"))
+    body1_name = model.id2name(body1_id, "body")
+    if (exclude_exception_str is None or
+        exclude_exception_str not in body1_name):
+      for body2_id in range(body1_id):
+        body2_name = model.id2name(body2_id, "body")
+        if (exclude_exception_str is None or
+            exclude_exception_str not in body2_name):
+          if not _is_any_geom_pass_contype_conaffinity_check(
+              model, body1_id, body2_id):
+            mjcf_model.contact.add(
+                "exclude", body1=body1_name, body2=body2_name)
 
 
 def _is_any_geom_pass_contype_conaffinity_check(model: mujoco.wrapper.MjModel,
