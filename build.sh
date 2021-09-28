@@ -28,7 +28,9 @@ echo "Using python version '$python_version'"
 
 # Install tox, which we use to build the packages.
 # The packages themselves do not depend on tox.
-python3 -m pip install tox
+if ! [[ -x $tox_binary ]]; then
+  python3 -m pip install tox
+fi
 
 echo "Recreating $root/cpp/build directory"
 rm -rf "$root/cpp/build"
@@ -82,4 +84,8 @@ $tox_binary
 
 echo "Building python manipulation package"
 cd "$root/py/manipulation"
+$tox_binary
+
+echo "Running integration tests"
+cd "$root/py/integration_test"
 $tox_binary

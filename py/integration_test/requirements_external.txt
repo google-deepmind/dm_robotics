@@ -1,0 +1,3 @@
+# Other important libraries we want to remain compatible with
+tensorflow >= 2.6.0
+jax[cpu] >= 0.2.17
