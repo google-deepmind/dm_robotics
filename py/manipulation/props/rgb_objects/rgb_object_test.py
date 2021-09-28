@@ -16,28 +16,25 @@
 import functools
 from absl.testing import absltest
 from absl.testing import parameterized
-from dm_robotics.manipulation.props import mesh_object
+from dm_robotics.manipulation.props import object_collection
 from dm_robotics.manipulation.props.rgb_objects import rgb_object
 import numpy as np
 
 
 class RgbObjectTest(parameterized.TestCase):
 
-  @parameterized.named_parameters(
-      ("rgb_v1", rgb_object.PropsVersion.RGB_OBJECTS_V1, 152))
+  @parameterized.named_parameters(("rgb_v1", rgb_object.V1, 152))
   def test_all_rgb_objects_creation(self, rgb_version, num_objects):
-    self.assertLen(rgb_object.PROP_FEATURES[rgb_version].ids_list, num_objects)
+    self.assertLen(rgb_object.PROP_FEATURES[rgb_version].ids, num_objects)
     colors = list(rgb_object.DEFAULT_COLOR_SET.values())
-    for (i,
-         obj_id) in enumerate(rgb_object.PROP_FEATURES[rgb_version].ids_list):
+    for (i, obj_id) in enumerate(rgb_object.PROP_FEATURES[rgb_version].ids):
       color = colors[i % len(colors)]
       prop = rgb_object.RgbObjectProp(
           rgb_version=rgb_version, obj_id=obj_id, name=obj_id, color=color)
       self.assertEqual(prop.name, obj_id)
       np.testing.assert_array_equal(prop.color, color)
 
-  @parameterized.named_parameters(
-      ("rgb_v1", rgb_object.PropsVersion.RGB_OBJECTS_V1))
+  @parameterized.named_parameters(("rgb_v1", rgb_object.V1))
   def test_random_props_creation(self, rgb_version):
     for i in range(40):
       obj_id = str(i)
@@ -46,56 +43,47 @@ class RgbObjectTest(parameterized.TestCase):
       self.assertEqual(prop.name, obj_id)
 
   def test_triplets_creation(self):
-    for (rgb_version, obj_ids) in rgb_object.PROP_SETS.values():
-      for obj_id in obj_ids:
+    for obj_set in rgb_object.PROP_SETS.values():
+      for obj_id in obj_set.ids:
         prop = rgb_object.RgbObjectProp(
-            rgb_version=rgb_version, obj_id=obj_id, name=obj_id)
+            rgb_version=obj_set.version, obj_id=obj_id, name=obj_id)
         self.assertEqual(prop.name, obj_id)
 
-  @parameterized.named_parameters(
-      ("rgb_v1", rgb_object.PropsVersion.RGB_OBJECTS_V1))
+  @parameterized.named_parameters(("rgb_v1", rgb_object.V1))
   def test_dynamic_triplets_creation(self, rgb_version):
     # Test on a new dictionary.
     names = ["a1", "a2", "a3"]
     (id_list_red, id_list_green, id_list_blue) = [[x] for x in names]
-    d = mesh_object.PropSetDict({
-        "s1_tuple": (rgb_version, tuple(names)),
-        "s2_list": (rgb_version, list(names)),
+    d = object_collection.PropSetDict({
+        "s1_tuple":
+            rgb_object.PropsSetType(rgb_version, tuple(names)),
+        "s2_list":
+            rgb_object.PropsSetType(rgb_version, list(names)),
         "s3_dynamic":
             functools.partial(
                 rgb_object.random_set,
-                rgb_version=rgb_object.PropsVersion.RGB_OBJECTS_V1,
+                rgb_version=rgb_object.V1,
                 id_list_red=id_list_red,
                 id_list_green=id_list_green,
                 id_list_blue=id_list_blue),
     })
     for v in d.values():
-      self.assertSequenceEqual(v[1], names)
+      self.assertSequenceEqual(v.ids, names)
 
-  def test_random_prop_sets(self):
-    for (rgb_version,
-         obj_ids) in rgb_object.RANDOM_PROP_SETS_FUNCTIONS.values():
-      for obj_id in obj_ids:
-        prop = rgb_object.RgbObjectProp(
-            rgb_version=rgb_version, obj_id=obj_id, name=obj_id)
-        self.assertEqual(prop.name, obj_id)
-
-  @parameterized.named_parameters(
-      ("rgb_v1", rgb_object.PropsVersion.RGB_OBJECTS_V1))
+  @parameterized.named_parameters(("rgb_v1", rgb_object.V1))
   def test_random_set(self, rgb_version):
     for _ in range(20):
-      prop_set = rgb_object.random_set(rgb_version)[1]
+      prop_set = rgb_object.random_set(rgb_version).ids
       self.assertIsInstance(prop_set, list)
       self.assertLen(prop_set, 3)
     for _ in range(10):
-      prop_set = rgb_object.random_set()[1]  # default value of `rgb_version`
+      prop_set = rgb_object.random_set().ids
       self.assertIsInstance(prop_set, list)
       self.assertLen(prop_set, 3)
 
-  @parameterized.named_parameters(
-      ("rgb_v1", rgb_object.PropsVersion.RGB_OBJECTS_V1))
+  @parameterized.named_parameters(("rgb_v1", rgb_object.V1))
   def test_generated_params(self, rgb_version):
-    for obj_id in rgb_object.PROP_FEATURES[rgb_version].ids_list:
+    for obj_id in rgb_object.PROP_FEATURES[rgb_version].ids:
       prop = rgb_object.RgbObjectProp(rgb_version=rgb_version, obj_id=obj_id)
       self.assertEqual(prop.object_params.rgb_version, rgb_version)
       generated_params = prop.object_params.generated_params
@@ -112,8 +100,7 @@ class RgbObjectTest(parameterized.TestCase):
       param_bounds_validator = prop.object_params.parametric_object.shape_bounds
       self.assertTrue(param_bounds_validator(generated_params))
 
-  @parameterized.named_parameters(
-      ("rgb_v1", rgb_object.PropsVersion.RGB_OBJECTS_V1))
+  @parameterized.named_parameters(("rgb_v1", rgb_object.V1))
   def test_min_max(self, rgb_version):
     (params_min,
      params_max) = rgb_object.RgbObjectParameters.min_max(rgb_version)
@@ -125,33 +112,32 @@ class RgbObjectTest(parameterized.TestCase):
         ValueError, "id_list includes g13 which is not part of "
         "PropsVersion.RGB_OBJECTS_V1"):
       _ = rgb_object.random_set(
-          rgb_version=rgb_object.PropsVersion.RGB_OBJECTS_V1,
-          id_list=["x2", "m3", "g13"])[1]
+          rgb_version=rgb_object.V1, id_list=["x2", "m3", "g13"]).ids
 
   def test_random_set_id_list(self):
     for _ in range(20):
       prop_set = rgb_object.random_set(
-          rgb_version=rgb_object.PropsVersion.RGB_OBJECTS_V1,
+          rgb_version=rgb_object.V1,
           id_list_red=["x5"],
           id_list_green=["y3"],
           id_list_blue=["v23"],
-      )[1]
+      ).ids
       self.assertEqual(set(prop_set), set(["x5", "y3", "v23"]))
     for _ in range(20):
       prop_set = rgb_object.random_set(
-          rgb_version=rgb_object.PropsVersion.RGB_OBJECTS_V1,
+          rgb_version=rgb_object.V1,
           id_list_red=rgb_object.RGB_OBJECTS_DIM["6"],
           id_list_green=rgb_object.RGB_OBJECTS_DIM["23"],
           id_list_blue=rgb_object.RGB_OBJECTS_DIM["67"],
-      )[1]
+      ).ids
       self.assertIn(prop_set[0], rgb_object.RGB_OBJECTS_DIM["6"])
       self.assertIn(prop_set[1], rgb_object.RGB_OBJECTS_DIM["23"])
       self.assertIn(prop_set[2], rgb_object.RGB_OBJECTS_DIM["67"])
     for _ in range(20):
       prop_set = rgb_object.random_set(
-          rgb_version=rgb_object.PropsVersion.RGB_OBJECTS_V1,
+          rgb_version=rgb_object.V1,
           id_list=rgb_object.RGB_OBJECTS_DIM["3"],
-      )[1]
+      ).ids
       self.assertIn(prop_set[0], rgb_object.RGB_OBJECTS_DIM["3"])
       self.assertIn(prop_set[1], rgb_object.RGB_OBJECTS_DIM["3"])
       self.assertIn(prop_set[2], rgb_object.RGB_OBJECTS_DIM["3"])
@@ -160,9 +146,9 @@ class RgbObjectTest(parameterized.TestCase):
     outside_56_once = False
     for _ in range(20):
       prop_set = rgb_object.random_set(
-          rgb_version=rgb_object.PropsVersion.RGB_OBJECTS_V1,
+          rgb_version=rgb_object.V1,
           id_list_blue=rgb_object.RGB_OBJECTS_DIM["56"],
-      )[1]
+      ).ids
       if prop_set[0] not in rgb_object.RGB_OBJECTS_DIM["56"]:
         outside_56_once = True
       self.assertIn(prop_set[0], rgb_object.RGB_OBJECTS_FULL_SET)

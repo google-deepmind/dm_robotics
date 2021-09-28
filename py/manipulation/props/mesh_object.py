@@ -11,16 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """A prop originated in mesh files.
 
 A "prop" is any object within an environment which the robot can manipulate. A
 `MeshProp` allows users to use objects modeled in CAD within their Mujoco
 simulations.
 """
-import collections
 import os
-from typing import Any, Callable, List, Optional, Sequence, Union
+from typing import List, Optional, Sequence, Union
 
 from absl import logging
 from dm_control import mjcf
@@ -217,52 +215,3 @@ class MeshProp(prop.Prop):
   @property
   def color(self):
     return self._visual_dclass.geom.rgba
-
-
-class Singleton(type):
-  _instances = {}
-
-  def __call__(cls, *args, **kwargs):
-    if cls not in cls._instances:
-      cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-    return cls._instances[cls]
-
-
-class PropSetDict(dict):
-  """A dictionary that supports a function evaluation on every key access."""
-
-  def __getitem__(self, key: Any) -> Sequence[str]:
-    # The method is called during [] access.
-    return self._evaluate(dict.__getitem__(self, key))
-
-  def __repr__(self) -> str:
-    return f'{type(self).__name__}({super().__repr__()})'
-
-  def get(self, key) -> Sequence[str]:
-    return self.__getitem__(key)
-
-  def values(self):
-    values = super().values()
-    return [self._evaluate(x) for x in values]
-
-  def items(self):
-    new_dict = {k: self._evaluate(v) for k, v in super().items()}
-    return new_dict.items()
-
-  def _evaluate(
-      self,
-      sequence_or_function: Union[Sequence[str], Callable[[], Sequence[str]]]
-  ) -> Sequence[str]:
-    """Based on the type of an argument, execute different actions.
-
-    Supports sequence containers or functions that create such.
-
-    Args:
-      sequence_or_function: A sequence or a function that creates a sequence.
-    Returns:
-      A sequence of names.
-    """
-    if isinstance(sequence_or_function, collections.Sequence):
-      return sequence_or_function
-    new_sequence = sequence_or_function()
-    return new_sequence
