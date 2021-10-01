@@ -55,7 +55,7 @@ class Cond(basic_options.DelegateOption):
     self._false_branch = false_branch
     self._eval_every_step = eval_every_step
 
-    self._options_selected: set(core.Option) = set()
+    self._options_selected: Set[core.Option] = set()
     self._just_switched = False
 
   def _maybe_other_branch(self) -> Optional[core.Option]:
@@ -134,7 +134,7 @@ class Cond(basic_options.DelegateOption):
       if other_branch is not None:
         other_branch.step(timestep)
       # Re-initialized the set of option selected.
-      self._options_selected: set(core.Option) = set()
+      self._options_selected: Set[core.Option] = set()
 
     if timestep.mid() and self._eval_every_step and self._just_switched:
       # Step through option lifecycle appropriately.
