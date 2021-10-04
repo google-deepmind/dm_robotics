@@ -22,8 +22,8 @@ when group 4 is missing from the training set. We also call them
 "single-dimensional objects" as they have a single axis of deformation.
 
 Real objects were 3D printed in specific colors following this name convention.
-In addition, 5 object sets have been defined from these objects. Each set
-contains 3 objects (1 red, 1 green and 1 blue).
+In addition, 5 object triplets have been defined from these objects, each one
+containing 1 red, 1 green and 1 blue objects.
 
 Second collection of objects have been generated starting from a seed object
 and a set of maximally deformed objects r2, r3, r5, r6, r7, r8. All other
@@ -87,7 +87,7 @@ _RESOURCES_ROOT_DIR = (
 _RGB_OBJECTS_MESHES = [
     os.path.join(_RESOURCES_ROOT_DIR, 'rgb_v1/meshes/test_triplets'),
     os.path.join(_RESOURCES_ROOT_DIR, 'rgb_v1/meshes/train'),
-    os.path.join(_RESOURCES_ROOT_DIR, 'rgb_v1/meshes/validation')
+    os.path.join(_RESOURCES_ROOT_DIR, 'rgb_v1/meshes/heldout')
 ]
 _RGB_OBJECTS_PARAMS = rgb_object_names.RgbObjectsNames(
     parametric_rgb_object.RgbVersion.v1_3).nicknames
@@ -103,22 +103,22 @@ RGB_OBJECTS_TEST_SET = sorted([
 RGB_OBJECTS_FULL_SET = list((set(_RGB_OBJECTS_PARAMS) - set(_D_OBJECTS)).union(
     set(RGB_OBJECTS_TEST_SET)))
 
-# Validation set consists of all objects with a single axis of deformation, e.g.
+# Held-out set consists of all objects with a single axis of deformation, e.g.
 # 't2' etc.
 _SINGLE_DEFORMATION_OBJECTS = [x for x in RGB_OBJECTS_FULL_SET if len(x) == 2]
 # All single dimension objects are intended for a validataion.
-RGB_OBJECTS_VALIDATION_SET = sorted(_SINGLE_DEFORMATION_OBJECTS)
+RGB_OBJECTS_HELDOUT_SET = sorted(_SINGLE_DEFORMATION_OBJECTS)
 RGB_OBJECTS_TRAIN_SET = list(
-    set(RGB_OBJECTS_FULL_SET) - set(RGB_OBJECTS_VALIDATION_SET) -
+    set(RGB_OBJECTS_FULL_SET) - set(RGB_OBJECTS_HELDOUT_SET) -
     set(_D_OBJECTS) - set(RGB_OBJECTS_TEST_SET))
 # Arbitrary single letters to use in object naming.
 _DEFORMATION_VALUES = ['f', 'e', 'h', 'x', 'l', 'm', 'y', 'r', 'u', 'v']
 # 1 and 4 are intentionally excluded.
-DEFORMATION_VALIDATION_AXES = ['2', '3', '5', '6']
+DEFORMATION_HELDOUT_AXES = ['2', '3', '5', '6']
 DEFORMATION_TRAIN_AXES = [
     '23', '25', '26', '35', '36', '37', '38', '56', '57', '58', '67'
 ]
-DEFORMATION_AXES = (DEFORMATION_TRAIN_AXES + DEFORMATION_VALIDATION_AXES)
+DEFORMATION_AXES = (DEFORMATION_TRAIN_AXES + DEFORMATION_HELDOUT_AXES)
 
 
 def _define_deformation_axes() -> Dict[str, Iterable[str]]:
@@ -157,12 +157,13 @@ DEFAULT_COLOR_SET = {
 }
 
 
-def random_set(rgb_version: PropsVersion = V1,
-               id_list: Optional[Iterable[str]] = None,
-               id_list_red: Optional[Iterable[str]] = None,
-               id_list_green: Optional[Iterable[str]] = None,
-               id_list_blue: Optional[Iterable[str]] = None) -> PropsSetType:
-  """Get a set of 3 randomly chosen props.
+def random_triplet(
+    rgb_version: PropsVersion = V1,
+    id_list: Optional[Iterable[str]] = None,
+    id_list_red: Optional[Iterable[str]] = None,
+    id_list_green: Optional[Iterable[str]] = None,
+    id_list_blue: Optional[Iterable[str]] = None) -> PropsSetType:
+  """Get a triplet of 3 randomly chosen props.
 
   The function provides a distinct set of 3 prop names. The user can use each
   one of these names to instantinate `RgbObjectProp` object and provide the
@@ -180,7 +181,7 @@ def random_set(rgb_version: PropsVersion = V1,
     id_list_blue: A list of ids for the blue object. It overrides id_list.
 
   Returns:
-    Random set of 3 prop names without replacement.
+    Random triplet of prop names without replacement.
   """
   if id_list:
     for object_id in id_list:
@@ -198,57 +199,58 @@ def random_set(rgb_version: PropsVersion = V1,
   prop_ids = [
       np.random.choice(id_list_red, 1)[0],
       np.random.choice(id_list_green, 1)[0],
-      np.random.choice(id_list_blue, 1)[0]]
+      np.random.choice(id_list_blue, 1)[0]
+  ]
   return PropsSetType(version=rgb_version, ids=prop_ids)
 
 
-def fixed_random_set(rgb_version: PropsVersion = V1) -> PropsSetType:
-  """Gets one of the predefined sets randomly.
+def fixed_random_triplet(rgb_version: PropsVersion = V1) -> PropsSetType:
+  """Gets one of the predefined triplets randomly.
 
   Args:
     rgb_version: RGB-Objects version. Only v1.0 supported.
 
   Returns:
-    Set of 3 objects from a predefined set.
+    Triplet of object names from a predefined set.
   """
   if rgb_version == V1:
-    obj_set = np.random.choice(
-        [s for s in PROP_SETS_TRAINING if s.startswith('rgb_test_set')])
-    return PROP_SETS_TRAINING[obj_set]
+    obj_triplet = np.random.choice(
+        [s for s in PROP_TRIPLETS_TRAINING if s.startswith('rgb_test_triplet')])
+    return PROP_TRIPLETS_TRAINING[obj_triplet]
   else:
     raise ValueError(
-        'Sampling predefined sets of objects is not implemented for %s' %
+        'Sampling predefined tiplets of objects is not implemented for %s' %
         rgb_version.name)
 
 
-def _define_blue_prop_sets(
+def _define_blue_prop_triplets(
     base_str='rgb_blue_dim',
     id_list=None,
     axes=tuple(DEFORMATION_AXES)) -> Dict[str, functools.partial]:
   """Defines object sets for each axis of deformation."""
-  blue_obj_sets = {}
+  blue_obj_triplets = {}
   for a in axes:
     # Blue objects according to axes of deformation. Red and green are
     # random from the full set.
-    blue_obj_sets[f'{base_str}{a}'] = functools.partial(
-        random_set,
+    blue_obj_triplets[f'{base_str}{a}'] = functools.partial(
+        random_triplet,
         rgb_version=V1,
         id_list=id_list,
         id_list_blue=RGB_OBJECTS_DIM[a])
-  return blue_obj_sets
+  return blue_obj_triplets
 
 
-PROP_SETS_TRAINING = {
+PROP_TRIPLETS_TRAINING = {
     # Object groups as per 'Triplets v1.0':
-    'rgb_test_set1': PropsSetType(V1, ('r3', 'd2', 'b2')),
-    'rgb_test_set2': PropsSetType(V1, ('r5', 'g2', 'b3')),
-    'rgb_test_set3': PropsSetType(V1, ('r6', 'g3', 'b5')),
-    'rgb_test_set4': PropsSetType(V1, ('d2', 'g5', 'b6')),
-    'rgb_test_set5': PropsSetType(V1, ('r2', 'g6', 'd2')),
+    'rgb_test_triplet1': PropsSetType(V1, ('r3', 'd2', 'b2')),
+    'rgb_test_triplet2': PropsSetType(V1, ('r5', 'g2', 'b3')),
+    'rgb_test_triplet3': PropsSetType(V1, ('r6', 'g3', 'b5')),
+    'rgb_test_triplet4': PropsSetType(V1, ('d2', 'g5', 'b6')),
+    'rgb_test_triplet5': PropsSetType(V1, ('r2', 'g6', 'd2')),
 }
 
-PROP_SETS = object_collection.PropSetDict({
-    **PROP_SETS_TRAINING,
+PROP_TRIPLETS = object_collection.PropSetDict({
+    **PROP_TRIPLETS_TRAINING,
 })
 
 
