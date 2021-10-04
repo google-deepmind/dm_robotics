@@ -1,0 +1,27 @@
+# Octahedron.
+
+# List of geometric vertices.
+v -1 0 0
+v 0 1 0
+v 1 0 0
+v 0 -1 0
+v 0 0 -1
+v 0 0 1
+
+# List of texture coordinates, in (u, [,v ,w]) coordinates.
+vt 0.500 1
+vt 0.500 1
+vt 0.500 1
+vt 0.500 1
+vt 0.500 1
+vt 0.500 1
+
+# Polygonal face element.
+f 1/1 4/4 6/6
+f 2/2 1/1 6/6
+f 3/3 2/2 6/6
+f 4/4 3/3 6/6
+f 1/1 2/2 5/5
+f 2/2 3/3 5/5
+f 3/3 4/4 5/5
+f 4/4 1/1 5/5

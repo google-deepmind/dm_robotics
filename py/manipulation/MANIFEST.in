@@ -1,3 +1,4 @@
 include requirements*.txt
 recursive-include props/rgb_objects/assets *
+recursive-include props/utils/test_assets *
 recursive-include standard_cell/rgb_basket_assets *

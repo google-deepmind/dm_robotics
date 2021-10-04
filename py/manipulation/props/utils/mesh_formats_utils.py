@@ -14,9 +14,13 @@
 """Utilities to process different mesh files formats."""
 import itertools
 import struct
+import sys
 from typing import Any, Sequence
 
 # Internal file import.
+
+
+DEFAULT_ENCODING = sys.getdefaultencoding()
 
 
 def _flatten(list_of_lists: Sequence[Sequence[Any]]) -> Sequence[Any]:

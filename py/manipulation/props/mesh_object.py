@@ -32,6 +32,7 @@ from dm_robotics.moma import prop
 DEFAULT_COLOR_RGBA = '1 1 1 1'
 MIN_MASS = 0.001
 _MUJOCO_SUPPORTED_MESH_TYPES = ('.stl', '.msh')
+_MUJOCO_TEXTURE_TYPES = ('.png')
 _DEFAULT_SIZE = 0.005
 _DEFAULT_POS = 0
 _DEFAULT_FRICTION = (0.5, 0.005, 0.0001)
@@ -58,7 +59,7 @@ class MeshProp(prop.Prop):
       name = 'mesh_%s_%s_%02d' % (mesh_prefix, self.name, mesh_idx)
       if isinstance(mesh_source, str):
         logging.debug('Loading mesh file %s', mesh_source)
-        extension = os.path.splitext(mesh_source)[1]
+        _, extension = os.path.splitext(mesh_source)
         if extension in _MUJOCO_SUPPORTED_MESH_TYPES:
           with open(mesh_source, 'rb') as f:
             self._mjcf_root.asset.add(
@@ -215,3 +216,14 @@ class MeshProp(prop.Prop):
   @property
   def color(self):
     return self._visual_dclass.geom.rgba
+
+  @property
+  def textures(self) -> Sequence[bytes]:
+    # Extract textures from the object.
+    textures = []
+    assets = self.mjcf_model.get_assets()
+    for asset_name, asset_data in assets.items():
+      _, file_extension = os.path.splitext(asset_name)
+      if file_extension.lower() in _MUJOCO_TEXTURE_TYPES:
+        textures.append(asset_data)
+    return textures
