@@ -44,7 +44,9 @@ class PropertyTest(parameterized.TestCase):
         'p': [[0, 255]], 'q': [[0, 255]], 'r': [[0, 255]]})
     prop = parametric_object.ParametricProperties(param_names, param_check)
     prop.check_instance({'p': 122, 'q': 122, 'r': 122})
-    self.assertEqual(prop._param_names, ('p', 'q', 'r'))
+    self.assertEqual(prop.param_names, ('p', 'q', 'r'))
+    self.assertEqual(len(prop.param_units), len(prop.param_names))
+    self.assertEqual(len(prop.param_types), len(prop.param_names))
 
     reply = prop.check_instance({'p': 500, 'q': 0, 'r': 0})
     self.assertEqual(False, reply)
