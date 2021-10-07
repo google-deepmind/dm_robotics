@@ -92,13 +92,13 @@ _RGB_OBJECTS_MESHES = [
 _RGB_OBJECTS_PARAMS = rgb_object_names.RgbObjectsNames(
     parametric_rgb_object.RgbVersion.v1_3).nicknames
 # Objects which name starts with 'd' letter are excluded from the dataset,
-# except the seed object d2. They are sampled too closely in the parametric
-# space to the seed object and so have little additional value.
+# They are sampled too closely in the parametric space to the seed object and
+# so have little additional value.
 _D_OBJECTS = [x for x in _RGB_OBJECTS_PARAMS if x.startswith('d')]
 
-# d2 is the seed object which is also used in the test triplets.
+# s0 is the seed object which is also used in the test triplets.
 RGB_OBJECTS_TEST_SET = sorted([
-    'd2', 'r2', 'r3', 'r5', 'r6', 'b2', 'b3', 'b5', 'b6', 'g2', 'g3', 'g5', 'g6'
+    's0', 'r2', 'r3', 'r5', 'r6', 'b2', 'b3', 'b5', 'b6', 'g2', 'g3', 'g5', 'g6'
 ])
 RGB_OBJECTS_FULL_SET = list((set(_RGB_OBJECTS_PARAMS) - set(_D_OBJECTS)).union(
     set(RGB_OBJECTS_TEST_SET)))
@@ -242,11 +242,11 @@ def _define_blue_prop_triplets(
 
 PROP_TRIPLETS_TRAINING = {
     # Object groups as per 'Triplets v1.0':
-    'rgb_test_triplet1': PropsSetType(V1, ('r3', 'd2', 'b2')),
+    'rgb_test_triplet1': PropsSetType(V1, ('r3', 's0', 'b2')),
     'rgb_test_triplet2': PropsSetType(V1, ('r5', 'g2', 'b3')),
     'rgb_test_triplet3': PropsSetType(V1, ('r6', 'g3', 'b5')),
-    'rgb_test_triplet4': PropsSetType(V1, ('d2', 'g5', 'b6')),
-    'rgb_test_triplet5': PropsSetType(V1, ('r2', 'g6', 'd2')),
+    'rgb_test_triplet4': PropsSetType(V1, ('s0', 'g5', 'b6')),
+    'rgb_test_triplet5': PropsSetType(V1, ('r2', 'g6', 's0')),
 }
 
 PROP_TRIPLETS = object_collection.PropSetDict({

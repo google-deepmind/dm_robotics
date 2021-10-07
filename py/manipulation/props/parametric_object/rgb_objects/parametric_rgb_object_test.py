@@ -139,6 +139,8 @@ class RgbObjectTest(parameterized.TestCase):
     v1_3 = rgb_object_names.RgbObjectsNames(version=RgbVersion.v1_3)
     logging.info('Version 1.0 has %s objects', len(v1_0.nicknames))
     logging.info('Version 1.3 has %s objects', len(v1_3.nicknames))
+    self.assertIn('s0', v1_3.nicknames)
+    self.assertNotIn('d2', v1_3.nicknames)
 
 if __name__ == '__main__':
   absltest.main()

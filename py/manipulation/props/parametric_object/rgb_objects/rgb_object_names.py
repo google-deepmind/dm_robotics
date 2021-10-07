@@ -245,8 +245,8 @@ class RgbObjectsNames:
             _OBJECTS_V1_3["r" + n],
             10, ("d"+n, "f"+n, "e"+n, "u"+n, "h"+n,
                  "x"+n, "l"+n, "v"+n, "m"+n, "y"+n)))
-      # Removing the seed object
-      self._nicknames.pop("s")
+      # Updating the seed object name.
+      self._nicknames["s0"] = self._nicknames.pop("s")
 
       # Creating intermediate Omn = (Om + On)//2.
       self._nicknames.update(parameters_numeric_combinations(
@@ -254,6 +254,8 @@ class RgbObjectsNames:
           ("d", "f", "e", "h", "x", "l", "m", "y", "r", "u", "v"),
           ("2", "3", "5", "6", "7", "8"),
           2))
+      # Remove 'd2' object which is identical to the seed 's0', both are cubes.
+      self._nicknames.pop("d2")
 
       # Remove non-graspable and non-unique
       for o in _OBJECTS_V1_3_NON_GRASPABLE + _OBJECTS_V1_3_NON_UNIQUE:
