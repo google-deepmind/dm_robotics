@@ -70,6 +70,13 @@ class RgbObjectTest(parameterized.TestCase):
     for v in d.values():
       self.assertSequenceEqual(v.ids, names)
 
+  def test_random_prop_triplet(self):
+    for triplet in rgb_object.RANDOM_PROP_TRIPLETS_FUNCTIONS.values():
+      for obj_id in triplet.ids:
+        prop = rgb_object.RgbObjectProp(
+            rgb_version=triplet.version, obj_id=obj_id, name=obj_id)
+        self.assertEqual(prop.name, obj_id)
+
   @parameterized.named_parameters(("rgb_v1", rgb_object.V1))
   def test_random_triplet(self, rgb_version):
     for _ in range(20):

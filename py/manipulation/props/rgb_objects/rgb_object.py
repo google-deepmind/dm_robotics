@@ -215,8 +215,8 @@ def fixed_random_triplet(rgb_version: PropsVersion = V1) -> PropsSetType:
   """
   if rgb_version == V1:
     obj_triplet = np.random.choice(
-        [s for s in PROP_TRIPLETS_TRAINING if s.startswith('rgb_test_triplet')])
-    return PROP_TRIPLETS_TRAINING[obj_triplet]
+        [s for s in PROP_TRIPLETS_TEST if s.startswith('rgb_test_triplet')])
+    return PROP_TRIPLETS_TEST[obj_triplet]
   else:
     raise ValueError(
         'Sampling predefined tiplets of objects is not implemented for %s' %
@@ -240,7 +240,7 @@ def _define_blue_prop_triplets(
   return blue_obj_triplets
 
 
-PROP_TRIPLETS_TRAINING = {
+PROP_TRIPLETS_TEST = {
     # Object groups as per 'Triplets v1.0':
     'rgb_test_triplet1': PropsSetType(V1, ('r3', 's0', 'b2')),
     'rgb_test_triplet2': PropsSetType(V1, ('r5', 'g2', 'b3')),
@@ -249,8 +249,21 @@ PROP_TRIPLETS_TRAINING = {
     'rgb_test_triplet5': PropsSetType(V1, ('r2', 'g6', 's0')),
 }
 
+RANDOM_PROP_TRIPLETS_FUNCTIONS = object_collection.PropSetDict({
+    # Return changing triplets on every access.
+    'rgb_train_random':
+        functools.partial(
+            random_triplet, rgb_version=V1, id_list=RGB_OBJECTS_TRAIN_SET),
+    'rgb_heldout_random':
+        functools.partial(
+            random_triplet, rgb_version=V1, id_list=RGB_OBJECTS_HELDOUT_SET),
+    'rgb_test_random':   # Randomly loads one of the 5 test triplets.
+        functools.partial(fixed_random_triplet, rgb_version=V1),
+})
+
 PROP_TRIPLETS = object_collection.PropSetDict({
-    **PROP_TRIPLETS_TRAINING,
+    **PROP_TRIPLETS_TEST,
+    **RANDOM_PROP_TRIPLETS_FUNCTIONS,
 })
 
 
