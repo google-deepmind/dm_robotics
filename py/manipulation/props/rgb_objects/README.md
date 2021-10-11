@@ -277,24 +277,24 @@ for i, obj_id in enumerate(objects):
 
 [rgb_stacking]: https://github.com/deepmind/deepmind_research/rgb_stacking/README.md
 
-[object_disk]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/doc/images/rgb_objects_disk.png
-[rgb_benchmark]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/doc/images/rgb_benchmark.png
-[test_triplets]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/doc/images/tile_triplets.gif
-[axis2]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/doc/images/tile_axis2.gif
-[axis3]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/doc/images/tile_axis3.gif
-[axis5]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/doc/images/tile_axis5.gif
-[axis6]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/doc/images/tile_axis6.gif
-[axis23]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/doc/images/tile_axis23.gif
-[axis25]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/doc/images/tile_axis25.gif
-[axis26]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/doc/images/tile_axis26.gif
-[axis35]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/doc/images/tile_axis35.gif
-[axis36]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/doc/images/tile_axis36.gif
-[axis37]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/doc/images/tile_axis37.gif
-[axis38]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/doc/images/tile_axis38.gif
-[axis56]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/doc/images/tile_axis56.gif
-[axis57]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/doc/images/tile_axis57.gif
-[axis58]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/doc/images/tile_axis58.gif
-[axis67]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/doc/images/tile_axis67.gif
+[object_disk]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/rgb_objects_disk.png?raw=true
+[rgb_benchmark]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/rgb_benchmark.png?raw=true
+[test_triplets]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_triplets.gif?raw=true
+[axis2]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis2.gif?raw=true
+[axis3]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis3.gif?raw=true
+[axis5]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis5.gif?raw=true
+[axis6]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis6.gif?raw=true
+[axis23]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis23.gif?raw=true
+[axis25]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis25.gif?raw=true
+[axis26]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis26.gif?raw=true
+[axis35]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis35.gif?raw=true
+[axis36]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis36.gif?raw=true
+[axis37]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis37.gif?raw=true
+[axis38]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis38.gif?raw=true
+[axis56]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis56.gif?raw=true
+[axis57]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis57.gif?raw=true
+[axis58]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis58.gif?raw=true
+[axis67]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis67.gif?raw=true
 
 
 ## Citing
