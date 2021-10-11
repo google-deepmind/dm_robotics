@@ -1,27 +1,120 @@
 # RGB-objects &#128721;&#129001;&#128311; for robotic manipulation
 
-This folder provides the RGB-objects introduced in the paper [Beyond Pick-and-Place: Tackling Robotic Stacking of Diverse Shapes](https://openreview.net/forum?id=U0Q8CrtBJxJ) and related code used by the 
-[RGB-Stacking][rgb_stacking] environment.
+This folder provides the RGB-objects introduced in the paper
+[Beyond Pick-and-Place: Tackling Robotic Stacking of Diverse Shapes][pick_and_place_paper]
+and related code used by the [RGB-Stacking][rgb_stacking] environment.
 
-## Basic method to create parametric objects {#parametric}
 
+## The RGB-objects family
+The RGB-objects are all obtained by applying a certain deformation to a cube,
+which is our seed object, referred to as `s0` in code.
+We have defined four major axes of deformation of the seed object, which result
+in different shapes. These shapes can also be thought of as the vertical
+extrusion of a 2D shape, which is also the name of each axis. The names of the
+axes in code are numerical:
+
+- **Axis 2 - Polygon**: deformation obtained by transforming the
+  extruded planar shape (i.e. the square) into a regular polygon.
+- **Axis 3 - Trapezoid**: deformation obtained by progressively
+  morphing the planar square to a isosceles trapezoid.
+- **Axis 5 - Parallelogram**: deformation obtained by changing the
+  orientation of the extrusion axis, from vertical (i.e. orthogonal to the plane
+  of the planar shape) to progressively more slanted axes.
+- **Axis 6 - Rectangle**: deformation by uniformly
+  scaling the object along the X, Y or Z-axis. Note that the x-, y-,z- Rectangle axes are the same so we refer to these as a single major Rectangle axis.
+
+
+These deformations and their combinations define a parametric family of objects.
+For our Skill Generalization task (see the  [paper](https://openreview.net/forum?id=U0Q8CrtBJxJ))
+we designate the axes of all pairwise combined deformations as the
+"training axes" and the ones of single deformation - the major axes above - as
+the "held-out axes". Pairwise mixing of some of the major axes leads to
+objects that are duplicates and therefore we omitted certain axes and objects.
+
+Based on the resulting 15 axes, we created a training object set, which consists of 103
+different shapes, and a held-out set. The diagram and gifs below shows a depiction of
+all the objects in the benchmark. The seed object is at the center; all the other
+objects are the result of deformations of this cube. The held-out objects
+(major axes) are enclosed in the uper teal sector of the diagram; the training objects (pairwise
+mixing of two major axes) are enclosed in the blue sector. Some objects cannot
+be grasped with a parallel gripper with 85 mm aperture (i.e. the Robotiq 2F-85);
+these objects are transparent and were omitted in our experiments.
+
+![disk of objects][object_disk]
+
+
+## STL assets
 <section class="zippy open">
-RGB-objects are a set of parametric objects that were carefully designed to pose
-different degrees of grasping and stacking difficulty for a parallel gripper on
-a robotic arm.
+Under the [`meshes`][meshes_dir] directory there are 152 STL files representing
+the RGB-object dataset.
 
-The basic method used to create objects is applying an extrusion
-on a convex 2D shape to produce 3D object. An extrusion is simply pushing the
-2D shape into the third dimension by giving it a depth. Both the extrusion
-and the 2D shapes are described parametrically. The result of
-using variouos 2D shapes and applying different extrusions is a comprehensive
-set of 3D objects for robotic manipulation.
+### Assets directories structure
+All mesh assets are located in the [`meshes`][meshes_dir] directory where they
+are further split between following subdirectories:
 
-Set of feasible parameters to create 3D shapes is described by parameters
-bounded by min-max values. In addition, such boundaries can also be expressed
-with respect to other parameters.
+- [`train`][meshes_train_dir] directory with 103 objects.
+- [`test_triplets`][meshes_test_dir] directory with 13 objects including the
+  seed `s0`, to form 5 test triplets.
+- [`heldout`][meshes_heldout_dir] directory with 36 objects.
 
-Nine parameters are currently used:
+### File name convention
+All asset files are in STL format and have an `*.stl` extention. The
+file name starts with the object ID and is followed by a sequence of
+parameters that uniquely describe the object.
+For example, `b3_sds4_shr48_drf0_hlw0_shx0_shy0_scx46_scy49_scz63.stl` is the
+filename for the `b3` object.
+
+### Visualizing STL assets
+[`meshlab`][meshlab] is a convinient tool to work with the provided meshes. To
+load a mesh from a command line:
+
+```bash
+$ cd props/rgb_objects/assets/rgb_v1/meshes
+$ meshlab test_triplets/b3_sds4_shr48_drf0_hlw0_shx0_shy0_scx46_scy49_scz63.stl
+```
+
+</section>
+
+
+<section class="zippy close">
+A map of the object IDs is provided here:
+
+Held-Out Axis 2, **Polygon**: \
+![Axis of transformation 2][axis2] \
+Held-Out Axis 3, **Trapezoid**: \
+![Axis of transformation 3][axis3] \
+Held-Out Axis 5, **Parallelogram**: \
+![Axis of transformation 5][axis5] \
+Held-Out Axis 6, **Rectangle**: \
+![Axis of transformation 6][axis6] \
+Training Axis 23, **Polygon & Trapezoid**: \
+![Axis of transformation 23][axis23] \
+Training Axis 25, **Polygon & Parallelogram**: \
+![Axis of transformation 25][axis25] \
+Training Axis 26, **Polygon & Rectangle**: \
+![Axis of transformation 26][axis26] \
+Training Axis 35, **Trapezoid & Parallelogram**: \
+![Axis of transformation 35][axis35] \
+Training Axis 36, **Trapezoid & x-Rectangle**: \
+![Axis of transformation 36][axis36] \
+Training Axis 37, **Trapezoid & y-Rectangle**: \
+![Axis of transformation 37][axis37] \
+Training Axis 38, **Trapezoid & z-Rectangle**: \
+![Axis of transformation 38][axis38] \
+Training Axis 56, **Parallelogram & x-Rectangle**: \
+![Axis of transformation 56][axis56] \
+Training Axis 57, **Parallelogram & y-Rectangle**: \
+![Axis of transformation 57][axis57] \
+Training Axis 58, **Parallelogram & z-Rectangle**: \
+![Axis of transformation 58][axis58] \
+Training Axis 67, **x-Rectangle & y-Rectangle**: \
+![Axis of transformation 67][axis67]
+
+</section>
+
+ <section class="zippy open">
+The abbreviations used for the parameters that define each object are explained
+  below:
 
 1.  **`sds`: integer scalar [-]**. The number of edges used to
   generate the regular 2D shape. By default, every 2D shape is a regular one,
@@ -33,7 +126,7 @@ Nine parameters are currently used:
 
 3.  **`drf`: real-valued [deg]**. The amount of
     [draft](https://en.wikipedia.org/wiki/Draft_\(engineering\)) used in the
-    extrusion. Not used in this dataset, drf=0 for every object
+    extrusion. Not used in this dataset, drf=0 for every object.
 
 4.  **`hlw`: real-valued [%]**. The percentage of material to be removed from
     each of the generated faces of the solid (to make it hollow). In this dataset,
@@ -56,154 +149,9 @@ RGB-shape has a one-to-one mapping with the associated parameters.
 
 </section>
 
-## STL assets
-<section class="zippy open">
-Under the [`meshes`][meshes_dir] directory there are 152 STL files representing
-the RGB-object dataset.
 
-### Assets directories structure
-All mesh assets are located in the [`meshes`][meshes_dir] directory where they
-are further split between following subdirectories:
-
-- [`train`][meshes_train_dir] directory with 103 objects.
-- [`test_triplets`][meshes_test_dir] directory with 13 objects including the
-  seed `s0`, to form 5 test triplets.
-- [`heldout`][meshes_heldout_dir] directory with 36 objects.
-
-### File name convention
-All asset files are in [STL format][STL format] and have `*.stl` extention. The
-file name starts with an object name and is followed by a sequence of
-transformations applied to the seed object.
-
-For example, `b3_sds4_shr48_drf0_hlw0_shx0_shy0_scx46_scy49_scz63.stl` is `b3`
-object created by a specific parameterization. For the meaning of
-transformations, see [parametric objects](#parametric) above. It is easy to
-decode from the first parameter `sds4` that the basic 2D shape was a square
-(perfect 2D shape with 4 edges).
-
-Name of the object, eg. 'b3' above, starts from an alphabetic keys ('b')
-followed by one or two axes of transformation (axis 3).
-
-### Visualizing STL assets
-[`meshlab`][meshlab] is a convinient tool to work with the provided meshes. To
-load a mesh from a command line:
-
-```bash
-$ cd props/rgb_objects/assets/rgb_v1/meshes
-$ meshlab test_triplets/b3_sds4_shr48_drf0_hlw0_shx0_shy0_scx46_scy49_scz63.stl
-```
-
-</section>
-
-## RGB-objects dataset for manipulation tasks
-
-Using the parametric method described above for object generation, we created a
-dataset provided in this directory. It contains mesh assets and supporting
-Python code.
-
-For the following discussion, `set` is a collection of objects combined by some
-characteristics, and `triplet` is an ordered set of 3 objects with assigned
-red, green and blue colors. Triplets are an integral part of the
-[RGB-stacking][rgb_stacking] task.
-
-### The RGB-objects family
-The technical recipe to create an RGB-object using a 2D shape extrusion, was
-described in [parametric objects](#parametric). Specific choices of parameters
-were dictated by following approach to design the whole RGB-objects set.
-The all instantinated RGB-objects are obtained by applying a certain deformation
-to a cube (the seed object).
-We have defined six major axes of deformation of the seed object, which result
-in different shapes. These shapes can also be thought of as the vertical
-extrusion of a 2D shape along different axes which are:
-
-- **Polygon** (axis no.2 in code): deformation obtained by transforming the
-  extruded planar shape (i.e. the square) into a regular polygon.
-- **Trapezoid** (axis no. 3 in code): deformation obtained by progressively
-  morphing the planar square to a isosceles trapezoid.
-- **Parallelogram** (axis no. 5 in code): deformation obtained by changing the
-  orientation of the extrusion axis, from vertical (i.e. orthogonal to the plane
-  of the planar shape) to progressively more slanted axes.
-- **Rectangle** (3 deformations, numbered 6, 7, 8): deformation by uniformly
-  scaling the object along the X, Y or Z-axis.
-
-These deformations and their combinations define a parametric family of objects.
-For our task we designate the axes of all pairwise combined deformations as the
-"training axes" and the ones of single deformation as the held-out axes.
-
-The training axes are Polygon & Trapezoid, Polygon & Parallelogram,
-Polygon & x-Rectangle, Trapezoid & Parallelogram, Trapezoid & x-Rectangle,
-Trapezoid & y-Rectangle, Trapezoid & z-Rectangle, Parallelogram & x-Rectangle,
-Parallelogram & y-Rectangle, Parallelogram & z-Rectangle,
-and x-Rectangle & y-Rectangle. Pairwise mixing of some of the major axes leads to
-objects that are duplicates and therefore we omitted certain axes and objects.
-Also note that the x-, y-, z- Rectangle axes are the same so we refer to these
-as a single major Rectangle axis.
-
-Based on these 15 axes, we created a training object set, which consists of 103
-different shapes, and a held-out set. The diagram below shows a depiction of
-all the objects in the dataset.
-
-In the diagram below, the RGB-objects grouped according to each of the 15
-chosen axes of deformation. The seed object is at the center; all the other
-objects are the result of deformations of this cube. These deformations change
-the grasping and stacking affordances of the objects. The held-out objects
-(major axes) are enclosed in the uper teal sector; the training objects (pairwise
-mixing of two major axes) are enclosed in the blue sector. Some objects cannot
-be grasped with a parallel gripper with 85 mm aperture (i.e. the Robotiq 2F-85);
-these objects are transparent and were omitted in our experiments.
-
-![disk of objects][object_disk]
-
-### Objects in the the dataset
-<section class="zippy open">
-A sequence of transformations was applied on the seed cube object to create 152
-different objects. In the code we enumarate axes of transformation.
-
-Training axis 2, **Polygon**: \
-![Axis of transformation 2][axis2] \
-Training axis 3, **Trapezoid**: \
-![Axis of transformation 3][axis3] \
-Training axis 5, **Parallelogram**: \
-![Axis of transformation 5][axis5] \
-Training axis 6, **Rectangle**: \
-![Axis of transformation 6][axis6] \
-Axis 23, **Polygon & Trapezoid**: \
-![Axis of transformation 23][axis23] \
-Axis 25, **Polygon & Parallelogram**: \
-![Axis of transformation 25][axis25] \
-Axis 26, **Polygon & Rectangle**: \
-![Axis of transformation 26][axis26] \
-Axis 35, **Trapezoid & Parallelogram**: \
-![Axis of transformation 35][axis35] \
-Axis 36, **Trapezoid & x-Rectangle**: \
-![Axis of transformation 36][axis36] \
-Axis 37, **Trapezoid & y-Rectangle**: \
-![Axis of transformation 37][axis37] \
-Axis 38, **Trapezoid & z-Rectangle**: \
-![Axis of transformation 38][axis38] \
-Axis 56, **Parallelogram & x-Rectangle**: \
-![Axis of transformation 56][axis56] \
-Axis 57, **Parallelogram & y-Rectangle**: \
-![Axis of transformation 57][axis57] \
-Axis 58, **Parallelogram & z-Rectangle**: \
-![Axis of transformation 58][axis58] \
-Axis 67, **x-Rectangle & y-Rectangle**: \
-![Axis of transformation 67][axis67]
-
-</section>
-
-
-### Sets derived from the dataset
-<section class="zippy open">
-
-Splitting objects into train, test and held-out sets.
-
-
-![RGB-insertions][rgb_benchmark]{width="800"}
-</section>
-
-### Pre-defined triplets
-<section class="zippy open">
+### Test Triplets
+<section class="zippy close">
 We also provide the 5 fixed test triplets we have used during evaluation in our
   work.
 
@@ -257,46 +205,6 @@ for i, obj_id in enumerate(objects):
 ```
 </section>
 
-
-<!-- Hyperlinks  -->
-[OnShapeAPI]: https://onshape-public.github.io/docs/
-
-[meshlab]: https://www.meshlab.net
-
-[STL format]: https://en.wikipedia.org/wiki/STL_(file_format)
-
-[rgb_object_package]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects
-
-[meshes_dir]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/assets/rgb_v1/meshes
-
-[meshes_heldout_dir]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/assets/rgb_v1/meshes/heldout
-
-[meshes_test_dir]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/assets/rgb_v1/meshes/test_triplets
-
-[meshes_train_dir]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/assets/rgb_v1/meshes/train
-
-[rgb_stacking]: https://github.com/deepmind/rgb_stacking/tree/main/README.md
-
-[object_disk]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/rgb_objects_disk.png?raw=true
-[rgb_benchmark]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/rgb_benchmark.png?raw=true
-[test_triplets]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_triplets.gif?raw=true
-[axis2]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis2.gif?raw=true
-[axis3]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis3.gif?raw=true
-[axis5]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis5.gif?raw=true
-[axis6]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis6.gif?raw=true
-[axis23]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis23.gif?raw=true
-[axis25]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis25.gif?raw=true
-[axis26]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis26.gif?raw=true
-[axis35]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis35.gif?raw=true
-[axis36]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis36.gif?raw=true
-[axis37]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis37.gif?raw=true
-[axis38]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis38.gif?raw=true
-[axis56]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis56.gif?raw=true
-[axis57]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis57.gif?raw=true
-[axis58]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis58.gif?raw=true
-[axis67]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis67.gif?raw=true
-
-
 ## Citing
 
 <section class="zippy open">
@@ -332,3 +240,35 @@ If you use `rgb_objects` in your work, please cite the accompanying [paper](http
 }
 ```
 </section>
+
+
+<!-- Hyperlinks  -->
+[pick_and_place_paper]: https://openreview.net/forum?id=U0Q8CrtBJxJ
+[rgb_object_package]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects
+[rgb_stacking]: https://github.com/deepmind/rgb_stacking/tree/main/README.md
+[meshes_dir]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/assets/rgb_v1/meshes
+[meshes_heldout_dir]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/assets/rgb_v1/meshes/heldout
+[meshes_test_dir]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/assets/rgb_v1/meshes/test_triplets
+[meshes_train_dir]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/assets/rgb_v1/meshes/train
+[object_disk]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/rgb_objects_disk.png?raw=true
+[rgb_benchmark]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/rgb_benchmark.png?raw=true
+[test_triplets]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_triplets.gif?raw=true
+[axis2]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis2.gif?raw=true
+[axis3]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis3.gif?raw=true
+[axis5]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis5.gif?raw=true
+[axis6]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis6.gif?raw=true
+[axis23]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis23.gif?raw=true
+[axis25]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis25.gif?raw=true
+[axis26]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis26.gif?raw=true
+[axis35]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis35.gif?raw=true
+[axis36]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis36.gif?raw=true
+[axis37]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis37.gif?raw=true
+[axis38]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis38.gif?raw=true
+[axis56]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis56.gif?raw=true
+[axis57]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis57.gif?raw=true
+[axis58]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis58.gif?raw=true
+[axis67]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_axis67.gif?raw=true
+[OnShapeAPI]: https://onshape-public.github.io/docs/
+[meshlab]: https://www.meshlab.net
+[STL format]: https://en.wikipedia.org/wiki/STL_(file_format)
+
