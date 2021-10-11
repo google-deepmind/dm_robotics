@@ -17,4 +17,4 @@ for [RGB-stacking][rgb_stacking] manipulation tasks.
 
 <!-- Hyperlinks  -->
 
-[rgb_stacking]: https://github.com/deepmind/deepmind_research/rgb_stacking/README.md
+[rgb_stacking]: https://github.com/deepmind/rgb_stacking/tree/main/README.md

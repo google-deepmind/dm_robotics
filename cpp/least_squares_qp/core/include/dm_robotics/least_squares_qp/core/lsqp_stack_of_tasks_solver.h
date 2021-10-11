@@ -73,6 +73,14 @@ class LsqpStackOfTasksSolver {
   // For more information on OSQP-specific parameters, refer to:
   // https://buildmedia.readthedocs.org/media/pdf/osqp/stable/osqp.pdf
   struct Parameters {
+    // If `true`, the internal OSQP solver will use an adaptive rho step size.
+    // Please refer to the OSQP library documentation (Section 5.2) for more
+    // information.
+    //
+    // Note that setting this to `true` can greatly speed up the convergence of
+    // the algorithm, but the solution will no longer be deterministic.
+    bool use_adaptive_rho = false;
+
     // If `true`, the solver will return an error if the nullspace projection
     // fails i.e. if the solver fails to find a solution to any hierarchy after
     // the first. If `false`, the solution to the last solved hierarchy will be
@@ -221,9 +229,9 @@ class LsqpStackOfTasksSolver {
   // sparsity, this call does not allocate memory. Note that when this is the
   // case, the solution may have a small numerical difference (<1e-10 in our
   // tests) when compared to the result of SetupAndSolve due to numerical
-  // scaling errors. If deterministic solutions are important to the point where
-  // a difference of 1e-10 is too large, we recommend the use of SetupAndSolve
-  // instead.
+  // scaling errors as long as `use_adaptive_rho` is set to `false`. If
+  // deterministic solutions are important to the point where a difference of
+  // 1e-10 is too large, we recommend the use of SetupAndSolve instead.
   //
   // Internally, it calls OSQP to solve the optimization problems. The OSQP
   // solver's primal and dual variables are initialized (warm-started) with the

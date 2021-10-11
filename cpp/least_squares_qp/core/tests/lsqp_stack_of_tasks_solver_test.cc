@@ -179,6 +179,7 @@ class FixedLimitConstraint final : public LsqpConstraint {
 TEST(SolverTestWithoutFixture,
      NullspaceFailureResultsInErrorWhenReturnErrorOnNullspaceFailureIsTrue) {
   LsqpStackOfTasksSolver qp_solver(LsqpStackOfTasksSolver::Parameters{
+      /*use_adaptive_rho=*/false,
       /*return_error_on_nullspace_failure=*/true,
       /*verbosity=*/LsqpStackOfTasksSolver::Parameters::VerboseFlags::kNone,
       /*absolute_tolerance=*/kQpSolutionTolerance,
@@ -205,6 +206,7 @@ class SolverTest : public Test {
  public:
   SolverTest()
       : qp_solver_(LsqpStackOfTasksSolver::Parameters{
+            /*use_adaptive_rho=*/false,
             /*return_error_on_nullspace_failure=*/false,
             /*verbosity=*/
             LsqpStackOfTasksSolver::Parameters::VerboseFlags::kNone,

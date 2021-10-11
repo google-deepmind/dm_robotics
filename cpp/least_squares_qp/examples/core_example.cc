@@ -105,6 +105,7 @@ int main() {
   // Instantiate solver
   dm_robotics::LsqpStackOfTasksSolver qp_solver(
       dm_robotics::LsqpStackOfTasksSolver::Parameters{
+          /*use_adaptive_rho=*/false,
           /*return_error_on_nullspace_failure=*/true,
           /*verbosity=*/
           dm_robotics::LsqpStackOfTasksSolver::Parameters::VerboseFlags::kNone,

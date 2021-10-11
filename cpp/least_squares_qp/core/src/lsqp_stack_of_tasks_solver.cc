@@ -39,9 +39,8 @@ namespace dm_robotics {
 constexpr char kErrorMessageUnableToInitializeNoHierarchies[] =
     "Unable to initialize QP solver as no task hierarchies have been created.";
 
-constexpr bool kDefaultIsPolish = false;         // Prevents memory allocation.
-constexpr bool kDefaultIsWarmStart = true;       // Ensures determinism.
-constexpr double kDefaultIsAdaptiveRho = false;  // Ensures determinism.
+constexpr bool kDefaultIsPolish = false;    // Prevents memory allocation.
+constexpr bool kDefaultIsWarmStart = true;  // Ensures determinism.
 
 // Implementation structure for LsqpStackOfTasks.
 class LsqpStackOfTasksSolver::Impl {
@@ -99,7 +98,7 @@ LsqpStackOfTasksSolver::Impl::Impl(const Parameters& params)
   osqp_settings.eps_rel = std::max(params.relative_tolerance, 0.0);
   osqp_settings.eps_prim_inf = params.primal_infeasibility_tolerance;
   osqp_settings.eps_dual_inf = params.dual_infeasibility_tolerance;
-  osqp_settings.adaptive_rho = kDefaultIsAdaptiveRho;
+  osqp_settings.adaptive_rho = params.use_adaptive_rho;
   osqp_settings.polish = kDefaultIsPolish;
   osqp_settings.verbose =
       (params.verbosity & Parameters::VerboseFlags::kInternalSolver) ==

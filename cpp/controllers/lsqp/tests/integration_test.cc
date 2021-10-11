@@ -150,6 +150,7 @@ TEST_F(IdentityTaskAndCollisionAvoidanceIntegrationTest,
   // difficult problem to solve, with 326 constraint rows and 21 DoF, where the
   // target velocity is infeasible.
   LsqpStackOfTasksSolver qp_solver(LsqpStackOfTasksSolver::Parameters{
+      /*use_adaptive_rho=*/false,
       /*return_error_on_nullspace_failure=*/false,
       /*verbosity=*/LsqpStackOfTasksSolver::Parameters::VerboseFlags::kNone,
       /*absolute_tolerance=*/kCollisionDistanceTolerance,
@@ -226,6 +227,7 @@ TEST_P(ParameterizedCartesian6dVelocityTaskTest,
 
   // Instantiate the solver and find a solution to the problem.
   LsqpStackOfTasksSolver qp_solver(LsqpStackOfTasksSolver::Parameters{
+      /*use_adaptive_rho=*/false,
       /*return_error_on_nullspace_failure=*/false,
       /*verbosity=*/LsqpStackOfTasksSolver::Parameters::VerboseFlags::kNone,
       /*absolute_tolerance=*/kSolutionTolerance,
@@ -287,6 +289,7 @@ TEST_P(ParameterizedCartesian6dVelocityTaskTest,
 
   // Instantiate the solver and set up the problem, but do not solve yet.
   LsqpStackOfTasksSolver qp_solver(LsqpStackOfTasksSolver::Parameters{
+      /*use_adaptive_rho=*/false,
       /*return_error_on_nullspace_failure=*/false,
       /*verbosity=*/LsqpStackOfTasksSolver::Parameters::VerboseFlags::kNone,
       /*absolute_tolerance=*/kSolutionTolerance,

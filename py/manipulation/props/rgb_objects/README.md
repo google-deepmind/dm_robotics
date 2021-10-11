@@ -275,7 +275,7 @@ for i, obj_id in enumerate(objects):
 
 [meshes_train_dir]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/assets/rgb_v1/meshes/train
 
-[rgb_stacking]: https://github.com/deepmind/deepmind_research/rgb_stacking/README.md
+[rgb_stacking]: https://github.com/deepmind/rgb_stacking/tree/main/README.md
 
 [object_disk]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/rgb_objects_disk.png?raw=true
 [rgb_benchmark]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/rgb_benchmark.png?raw=true

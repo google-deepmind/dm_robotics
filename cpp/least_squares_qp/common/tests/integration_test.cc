@@ -57,6 +57,7 @@ TEST_P(ParameterizedMinimizeNormTaskDofTest, SolutionIsZeroVector) {
   const double kTolerance = 1e-6;
   const int kNumDof = GetParam();
   LsqpStackOfTasksSolver qp_solver(LsqpStackOfTasksSolver::Parameters{
+      /*use_adaptive_rho=*/false,
       /*return_error_on_nullspace_failure=*/false,
       /*verbosity=*/LsqpStackOfTasksSolver::Parameters::VerboseFlags::kNone,
       /*absolute_tolerance=*/kTolerance,
@@ -85,6 +86,7 @@ TEST_P(ParameterizedIdentityTaskTargetTest, SolutionIsEqualToTarget) {
   const double kTolerance = 1e-6;
   const std::vector<double> kTarget = GetParam();
   LsqpStackOfTasksSolver qp_solver(LsqpStackOfTasksSolver::Parameters{
+      /*use_adaptive_rho=*/false,
       /*return_error_on_nullspace_failure=*/false,
       /*verbosity=*/LsqpStackOfTasksSolver::Parameters::VerboseFlags::kNone,
       /*absolute_tolerance=*/kTolerance,
@@ -122,6 +124,7 @@ TEST(MinNormBoxConstraintIntegrationTest,
 
   // Initialize solver.
   LsqpStackOfTasksSolver qp_solver(LsqpStackOfTasksSolver::Parameters{
+      /*use_adaptive_rho=*/false,
       /*return_error_on_nullspace_failure=*/false,
       /*verbosity=*/LsqpStackOfTasksSolver::Parameters::VerboseFlags::kNone,
       /*absolute_tolerance=*/kTolerance,
