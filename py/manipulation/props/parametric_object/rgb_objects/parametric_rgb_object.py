@@ -15,7 +15,8 @@
 r"""A class that defines an rgb_objects as an instance of parametric_object.
 
 An rgb_object is a specific instance of a parametric object. An rgb_object
-has 8 parameters named: 'sds', 'scx', 'scy', 'scz', 'shx', 'shy', 'hlw', 'drf'.
+has 9 parameters named: 'sds', 'shr', 'scx', 'scy', 'scz', 'shx', 'shy', 'hlw',
+'drf'.
 The meaning of these parameters is the following:
 
   sds: Number of sides, 2 circle

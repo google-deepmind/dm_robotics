@@ -222,6 +222,12 @@ class RgbObjectTest(parameterized.TestCase):
             "b2", "b3", "b5", "b6", "g2", "g3", "g5", "g6", "r2", "r3",
             "r5", "r6", "s0"
         ]))
+    self.assertEqual(
+        set(rgb_object.RGB_OBJECTS_TEST_SET),
+        set([  # sorted alphabetically.
+            "b2", "b3", "b5", "b6", "g2", "g3", "g5", "g6", "r2", "r3",
+            "r5", "r6", "s0",
+        ]))
 
 
 if __name__ == "__main__":
