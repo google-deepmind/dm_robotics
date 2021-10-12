@@ -44,7 +44,9 @@ these objects are transparent and were omitted in our experiments.
 
 
 ## STL assets
+
 <section class="zippy open">
+
 Under the [`meshes`][meshes_dir] directory there are 152 STL files representing
 the RGB-object dataset.
 
@@ -77,6 +79,7 @@ $ meshlab test_triplets/b3_sds4_shr48_drf0_hlw0_shx0_shy0_scx46_scy49_scz63.stl
 
 
 <section class="zippy close">
+
 A map of the object IDs is provided here:
 
 Held-Out Axis 2, **Polygon**: \
@@ -112,7 +115,8 @@ Training Axis 67, **x-Rectangle & y-Rectangle**: \
 
 </section>
 
- <section class="zippy open">
+<section class="zippy open">
+
 The abbreviations used for the parameters that define each object are explained
   below:
 
@@ -151,7 +155,9 @@ RGB-shape has a one-to-one mapping with the associated parameters.
 
 
 ### Test Triplets
+
 <section class="zippy close">
+
 We also provide the 5 fixed test triplets we have used during evaluation in our
   work.
 
@@ -162,11 +168,14 @@ We also provide the 5 fixed test triplets we have used during evaluation in our
 - `rgb_test_triplet5`: `('r2', 'g6', 's0')`
 
 ![Triplets][test_triplets]
+
 </section>
 
 
 ## Usage example
+
 <section class="zippy open">
+
 RGB-objects are implemented in [`props/rgb_objects`][rgb_object_package] package,
   can be initialized and used as following.
 
@@ -203,11 +212,13 @@ for i, obj_id in enumerate(objects):
         obj_id=obj_id, color=color_set[i], name=f'rgb_object_{obj_id}')
   task_props.append(prop)
 ```
+
 </section>
 
 ## Citing
 
 <section class="zippy open">
+
 If you use `rgb_objects` in your work, please cite the accompanying [paper][pick_and_place_paper]:
 
 ```bibtex
@@ -239,6 +250,7 @@ If you use `rgb_objects` in your work, please cite the accompanying [paper][pick
     url={https://openreview.net/forum?id=U0Q8CrtBJxJ}
 }
 ```
+
 </section>
 
 
