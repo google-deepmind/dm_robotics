@@ -161,6 +161,26 @@ class FakeSubtask(subtask.SubTask):
     return True
 
 
+class FakeSubTaskObserver(subtask.SubTaskObserver):
+
+  def __init__(self):
+    self.last_parent_timestep = None
+    self.last_parent_action = None
+
+    self.last_agent_timestep = None
+    self.last_agent_action = None
+
+  def step(self, parent_timestep: dm_env.TimeStep,
+           parent_action: Optional[np.ndarray], agent_timestep: dm_env.TimeStep,
+           agent_action: Optional[np.ndarray]) -> None:
+
+    self.last_parent_timestep = parent_timestep
+    self.last_parent_action = parent_action
+
+    self.last_agent_timestep = agent_timestep
+    self.last_agent_action = agent_action
+
+
 # Test method:
 # Create a SubTask and Reset option to drive the environment.
 # Create an EnvironmentAdaptor from them.
@@ -342,6 +362,123 @@ class SubTaskEnvironmentTest(absltest.TestCase):
       reset_ts = env.reset()
       self.assertIsNone(reset_ts.reward)
       self.assertIsNone(reset_ts.discount)
+
+  def testObserver(self):
+    base_env = testing_functions.SpyEnvironment()
+    effectors = [
+        FakeEffector('fake_effector_1', 3),
+        FakeEffector('faky_mcfakeface', 2)
+    ]
+    effectors_spec = effectors_action_spec(effectors)
+
+    sub_task = FakeSubtask(base_env, effectors, max_steps=3, name='FakeSubTask')
+    # Action that we send to the Environment-from-SubTask adaptor.
+    agent_action = action(sub_task.action_spec(), 22)
+
+    # Action that the adaptor sends to the base environment for reset().
+    reset_action = action(effectors_spec, 11)
+
+    reset = moma_option.MomaOption(
+        physics_getter=lambda: base_env.physics,
+        effectors=effectors,
+        delegate=basic_options.FixedOp(reset_action, num_steps=2, name='Reset'))
+
+    observer = FakeSubTaskObserver()
+
+    with subtask_env.SubTaskEnvironment(base_env, effectors, sub_task,
+                                        reset) as env:
+      env.add_observer(observer)
+
+      timestep1 = env.reset()
+      self.assertIsNone(observer.last_parent_timestep)
+      self.assertIsNone(observer.last_parent_action)
+      self.assertIsNone(observer.last_agent_timestep)
+      self.assertIsNone(observer.last_agent_action)
+
+      # Step the env 3 times (that's the limit of the subtask)
+      # Check the corresponding actions sent to the base environment.
+      timestep2 = env.step(agent_action)
+      self.assertEqual(observer.last_agent_timestep.step_type,
+                       dm_env.StepType.FIRST)
+
+      # The fake observation is added by the subtask, and should not be present
+      # in the parent timestep.
+      self.assertNotIn('fake', observer.last_parent_timestep.observation)
+      self.assertIn('fake', observer.last_agent_timestep.observation)
+      self.assertTrue(
+          np.array_equal(observer.last_agent_action, [22, 22, 22, 22, 22, 22]))
+      self.assertTrue(
+          np.array_equal(observer.last_parent_action, [22, 22, 22, 22, 22]))
+
+      timestep3 = env.step(agent_action)
+      self.assertEqual(observer.last_parent_timestep.step_type,
+                       dm_env.StepType.MID)
+      self.assertEqual(observer.last_agent_timestep.step_type,
+                       dm_env.StepType.MID)
+      self.assertNotIn('fake', observer.last_parent_timestep.observation)
+      self.assertIn('fake', observer.last_agent_timestep.observation)
+      self.assertTrue(
+          np.array_equal(observer.last_agent_action, [22, 22, 22, 22, 22, 22]))
+      self.assertTrue(
+          np.array_equal(observer.last_parent_action, [22, 22, 22, 22, 22]))
+
+      timestep4 = env.step(agent_action)
+      self.assertEqual(observer.last_agent_timestep.step_type,
+                       dm_env.StepType.LAST)
+      self.assertIsNone(observer.last_parent_action)
+      self.assertIsNone(observer.last_agent_action)
+
+      # Check the timesteps are as expected:
+      self.assertEqual(timestep1.step_type, dm_env.StepType.FIRST)
+      self.assertEqual(timestep2.step_type, dm_env.StepType.MID)
+      self.assertEqual(timestep3.step_type, dm_env.StepType.MID)
+      self.assertEqual(timestep4.step_type, dm_env.StepType.LAST)
+
+      # Run a second episode.
+      timestep1 = env.reset()
+
+      # Observer should not have been stepped and wil still have none actions.
+      self.assertIsNone(observer.last_parent_action)
+      self.assertIsNone(observer.last_agent_action)
+
+      # Step the env 3 times (that's the limit of the subtask)
+      # Check the corresponding actions sent to the base environment.
+      timestep2 = env.step(agent_action)
+      self.assertEqual(observer.last_agent_timestep.step_type,
+                       dm_env.StepType.FIRST)
+
+      # The fake observation is added by the subtask, and should not be present
+      # in the parent timestep.
+      self.assertNotIn('fake', observer.last_parent_timestep.observation)
+      self.assertIn('fake', observer.last_agent_timestep.observation)
+      self.assertTrue(
+          np.array_equal(observer.last_agent_action, [22, 22, 22, 22, 22, 22]))
+      self.assertTrue(
+          np.array_equal(observer.last_parent_action, [22, 22, 22, 22, 22]))
+
+      timestep3 = env.step(agent_action)
+      self.assertEqual(observer.last_parent_timestep.step_type,
+                       dm_env.StepType.MID)
+      self.assertEqual(observer.last_agent_timestep.step_type,
+                       dm_env.StepType.MID)
+      self.assertNotIn('fake', observer.last_parent_timestep.observation)
+      self.assertIn('fake', observer.last_agent_timestep.observation)
+      self.assertTrue(
+          np.array_equal(observer.last_agent_action, [22, 22, 22, 22, 22, 22]))
+      self.assertTrue(
+          np.array_equal(observer.last_parent_action, [22, 22, 22, 22, 22]))
+
+      timestep4 = env.step(agent_action)
+      self.assertEqual(observer.last_agent_timestep.step_type,
+                       dm_env.StepType.LAST)
+      self.assertIsNone(observer.last_parent_action)
+      self.assertIsNone(observer.last_agent_action)
+
+      # Check the timesteps are as expected:
+      self.assertEqual(timestep1.step_type, dm_env.StepType.FIRST)
+      self.assertEqual(timestep2.step_type, dm_env.StepType.MID)
+      self.assertEqual(timestep3.step_type, dm_env.StepType.MID)
+      self.assertEqual(timestep4.step_type, dm_env.StepType.LAST)
 
   def _assert_actions(self, expected_action: np.ndarray,
                       actual_actions: List[np.ndarray]):

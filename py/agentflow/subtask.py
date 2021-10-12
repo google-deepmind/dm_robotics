@@ -201,8 +201,24 @@ class SubTaskObserver(abc.ABC):
   """
 
   @abc.abstractmethod
-  def step(self, parent_timestep: dm_env.TimeStep, parent_action: np.ndarray,
-           agent_timestep: dm_env.TimeStep, agent_action: np.ndarray) -> None:
+  def step(self, parent_timestep: dm_env.TimeStep,
+           parent_action: Optional[np.ndarray], agent_timestep: dm_env.TimeStep,
+           agent_action: Optional[np.ndarray]) -> None:
+    """Steps the observer.
+
+    The relationship between the timestep and action is the action is a response
+    to the timestep.
+
+    Args:
+      parent_timestep: The timestep output by the underlying base task, prior
+        to any TimestepPreprocessors being applied.
+      parent_action: The agent action as seen by the base task. A None action is
+        given if the agent timestep is a LAST timestep.
+      agent_timestep: The timestep seen by the agent, proir to any
+        TimestepPreprocessors being applied.
+      agent_action: The action output by the agent. A None action is given if
+        the agent timestep is a LAST timestep.
+    """
     pass
 
 

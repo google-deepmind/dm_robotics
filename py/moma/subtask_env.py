@@ -74,6 +74,7 @@ class SubTaskEnvironment(dm_env.Environment):
     self._reset_option = reset_option
     self._reset_required = True
     self._last_internal_timestep = None  # type: dm_env.TimeStep
+    self._last_external_timestep = None  # type: dm_env.TimeStep
 
     # Stub action for the moma task step. Actual actuation is done directly
     # through effectors.
@@ -82,6 +83,7 @@ class SubTaskEnvironment(dm_env.Environment):
 
     self._effectors_action_spec = None
 
+    self._observers = []  # type: List [af.SubTaskObserver]
     self._teardown_callables = []  # type: List  [Callable[[], None]]
     self._is_closed = False  # type: bool
     # If the user does not close the environment we issue an error and
@@ -132,6 +134,8 @@ class SubTaskEnvironment(dm_env.Environment):
 
     timestep = timestep._replace(reward=None)
     timestep = timestep._replace(discount=None)
+
+    self._last_external_timestep = timestep
     return timestep
 
   # Profiling for .wrap()
@@ -155,6 +159,13 @@ class SubTaskEnvironment(dm_env.Environment):
                               self._subtask.action_spec().maximum)
     internal_action = self._subtask.agent_to_parent_action(external_action)
 
+    for obs in self._observers:
+      obs.step(
+          parent_timestep=self._last_internal_timestep,
+          parent_action=internal_action,
+          agent_timestep=self._last_external_timestep,
+          agent_action=external_action)
+
     self._actuate_effectors(internal_action)
     internal_timestep = self._env.step(self._stub_env_action)
 
@@ -171,11 +182,21 @@ class SubTaskEnvironment(dm_env.Environment):
     if external_timestep.last():
       self._reset_required = True
 
+      # For a LAST timestep, step the observers with a None action. This ensures
+      # the observers will see every timestep of the task.
+      for obs in self._observers:
+        obs.step(
+            parent_timestep=internal_timestep,
+            parent_action=None,
+            agent_timestep=external_timestep,
+            agent_action=None)
+
     # This shouldn't happen, but just in case.
     if external_timestep.first():
       external_timestep = external_timestep._replace(reward=None)
       external_timestep = external_timestep._replace(discount=None)
 
+    self._last_external_timestep = external_timestep
     return external_timestep
 
   def _actuate_effectors(self, action):
@@ -239,6 +260,10 @@ class SubTaskEnvironment(dm_env.Environment):
       reset_option: New reset option for this environment.
     """
     self._reset_option = reset_option
+
+  def add_observer(self, observer: af.SubTaskObserver) -> None:
+    """Adds a subtask observer to the environment."""
+    self._observers.append(observer)
 
   def add_teardown_callable(self, teardown_fn: Callable[[], None]):
     """Adds a function to be called when the environment is closed.
