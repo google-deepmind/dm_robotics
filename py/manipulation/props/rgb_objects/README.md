@@ -25,7 +25,7 @@ axes in code are numerical:
 
 
 These deformations and their combinations define a parametric family of objects.
-For our Skill Generalization task (see the  [paper](https://openreview.net/forum?id=U0Q8CrtBJxJ))
+For our Skill Generalization task (see the  [paper][pick_and_place_paper])
 we designate the axes of all pairwise combined deformations as the
 "training axes" and the ones of single deformation - the major axes above - as
 the "held-out axes". Pairwise mixing of some of the major axes leads to
@@ -161,7 +161,7 @@ We also provide the 5 fixed test triplets we have used during evaluation in our
 - `rgb_test_triplet4`: `('s0', 'g5', 'b6')`
 - `rgb_test_triplet5`: `('r2', 'g6', 's0')`
 
-![Triplets][test_triplets]{width="300"}
+![Triplets][test_triplets]
 </section>
 
 
@@ -208,7 +208,7 @@ for i, obj_id in enumerate(objects):
 ## Citing
 
 <section class="zippy open">
-If you use `rgb_objects` in your work, please cite the accompanying [paper](https://openreview.net/forum?id=U0Q8CrtBJxJ):
+If you use `rgb_objects` in your work, please cite the accompanying [paper][pick_and_place_paper]:
 
 ```bibtex
 @inproceedings{lee2021rgbstacking,
