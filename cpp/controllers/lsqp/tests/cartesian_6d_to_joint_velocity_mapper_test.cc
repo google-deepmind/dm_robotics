@@ -242,7 +242,7 @@ TEST_F(Cartesian6dToJointVelocityMapperTest,
                                        kObjectName, kJointIds)
           .data(),
       6, kJointIds.size());
-  Eigen::MatrixXd jacobian_4d = jacobian_6d({0, 2, 4, 5}, Eigen::all);
+  Eigen::MatrixXd jacobian_4d = jacobian_6d({0, 2, 4, 5}, Eigen::indexing::all);
   Eigen::Vector<double, 4> realized_cartesian_4d_vel;
   Eigen::Vector<double, 4> target_cartesian_4d_vel;
   int index_4d = 0;

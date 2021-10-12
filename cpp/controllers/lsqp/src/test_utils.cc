@@ -48,7 +48,7 @@ std::vector<double> ComputeObject6dJacobianForJoints(
   // Get the columns corresponding to the DoF IDs.
   std::vector<double> jacobian(6 * dof_ids.size());
   Eigen::Map<Eigen::MatrixXd>(jacobian.data(), 6, dof_ids.size()) =
-      col_jacobian_buffer(Eigen::all, dof_ids_vector);
+      col_jacobian_buffer(Eigen::indexing::all, dof_ids_vector);
   return jacobian;
 }
 

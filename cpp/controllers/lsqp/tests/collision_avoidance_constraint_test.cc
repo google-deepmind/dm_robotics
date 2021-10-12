@@ -70,7 +70,7 @@ Eigen::MatrixXd ComputeContactNormalJacobianForJoints(
   // Index the complete Jacobian to get a subset of joints.
   // We multiply by -1.0 to ensure that the Jacobain maps joint velocities to
   // the velocity of the geoms towards each other, not away from each other.
-  return -1.0 * jacobian(Eigen::all, dof_ids_vector);
+  return -1.0 * jacobian(Eigen::indexing::all, dof_ids_vector);
 }
 
 TEST_F(CollisionAvoidanceConstraintTest,
