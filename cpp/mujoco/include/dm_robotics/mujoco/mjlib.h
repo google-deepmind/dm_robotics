@@ -31,9 +31,6 @@ extern "C" {
 
 using MjActivateFunc = int(const char*);
 using MjDeactivateFunc = void();
-using MjCertQuestionFunc = void(mjtNum[16]);
-using MjCertAnswerFunc = void(const mjtNum[16], mjtNum[16]);
-using MjCertCheckFunc = int(const mjtNum[16], const mjtNum[16]);
 using MjDefaultVFSFunc = void(mjVFS*);
 using MjAddFileVFSFunc = int(mjVFS*, const char*, const char*);
 using MjMakeEmptyFileVFSFunc = int(mjVFS*, const char*, int);
@@ -382,9 +379,6 @@ class MjLib {
 
   MjActivateFunc* const mj_activate;                        // NOLINT
   MjDeactivateFunc* const mj_deactivate;                    // NOLINT
-  MjCertQuestionFunc* const mj_certQuestion;                // NOLINT
-  MjCertAnswerFunc* const mj_certAnswer;                    // NOLINT
-  MjCertCheckFunc* const mj_certCheck;                      // NOLINT
   MjDefaultVFSFunc* const mj_defaultVFS;                    // NOLINT
   MjAddFileVFSFunc* const mj_addFileVFS;                    // NOLINT
   MjMakeEmptyFileVFSFunc* const mj_makeEmptyFileVFS;        // NOLINT
