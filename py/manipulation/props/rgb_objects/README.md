@@ -255,7 +255,7 @@ If you use `rgb_objects` in your work, please cite the accompanying [paper][pick
 
 
 <!-- Hyperlinks  -->
-[pick_and_place_paper]: https://openreview.net/forum?id=U0Q8CrtBJxJ
+[pick_and_place_paper]: http://arxiv.org/abs/2110.06192
 [rgb_object_package]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects
 [rgb_stacking]: https://github.com/deepmind/rgb_stacking/tree/main/README.md
 [meshes_dir]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/assets/rgb_v1/meshes
