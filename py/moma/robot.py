@@ -155,7 +155,7 @@ class StandardRobot(Robot):
     effectors = [self._arm_effector]
     if self.gripper_effector:
       effectors.append(self.gripper_effector)
-    return effectors
+    return effectors  # pytype: disable=bad-return-type  # bind-properties
 
   @property
   def arm_effector(self) -> effector.Effector:
