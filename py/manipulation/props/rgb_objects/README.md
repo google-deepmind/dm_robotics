@@ -126,7 +126,7 @@ The abbreviations used for the parameters that define each object are explained
 
 2.  **`shr`: real-valued [%]**. The percentage of 'shrinking' applied to the 2D
     shape. In the 2D plane, the shape is y-shrunk along the x-axis according to
-    the formula: $$ y_{new} = (1 - \mbox{shr} \cdot x)*y_{old} $$.
+    the formula: <img src="https://render.githubusercontent.com/render/math?math=y_{new}%20=%20(1%20-%20shr%20\cdot%20x)*y_{old}">
 
 3.  **`drf`: real-valued [deg]**. The amount of
     [draft](https://en.wikipedia.org/wiki/Draft_\(engineering\)) used in the
