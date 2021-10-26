@@ -110,6 +110,7 @@ setup(
     long_description=open("controllers_py/README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/deepmind/dm_robotics/tree/main/cpp/controllers_py",
+    python_requires=">=3.7, <3.10",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Programming Language :: Python :: 3",
