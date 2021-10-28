@@ -51,26 +51,26 @@ class RobotType(enum.Enum):
               types.Camera(
                   width=1920,
                   height=1200,
-                  extrinsics={
-                      "pos_xyz": [0.973, -0.375, 0.299],
-                      "quat_xyzw": [0.783, 0.329, -0.196, -0.489]
-                  }),
+                  extrinsics=types.Extrinsics(
+                      pos_xyz=(0.973, -0.375, 0.299),
+                      quat_xyzw=(0.783, 0.329, -0.196, -0.489),
+                  )),
           "basket_front_right":
               types.Camera(
                   width=1920,
                   height=1200,
-                  extrinsics={
-                      "pos_xyz": [0.978, 0.375, 0.294],
-                      "quat_xyzw": [0.332, 0.774, -0.496, -0.213]
-                  }),
+                  extrinsics=types.Extrinsics(
+                      pos_xyz=(0.978, 0.375, 0.294),
+                      quat_xyzw=(0.332, 0.774, -0.496, -0.213),
+                  )),
           "basket_back_left":
               types.Camera(
                   width=1920,
                   height=1200,
-                  extrinsics={
-                      "pos_xyz": [0.059, -0.251, 0.441],
-                      "quat_xyzw": [0.759, -0.482, 0.235, -0.370]
-                  })
+                  extrinsics=types.Extrinsics(
+                      pos_xyz=(0.059, -0.251, 0.441),
+                      quat_xyzw=(0.759, -0.482, 0.235, -0.370),
+                  )),
       },
       basket_center=DEFAULT_SAWYER_BASKET_CENTER,
       basket_height=DEFAULT_BASKET_HEIGHT,

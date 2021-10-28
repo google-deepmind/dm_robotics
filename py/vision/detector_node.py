@@ -15,6 +15,7 @@
 
 from typing import Callable, Mapping, Optional
 
+from absl import logging
 from dmr_vision import detector as vision_detector
 from dmr_vision import ros_utils
 from dmr_vision import types
@@ -25,12 +26,14 @@ import rospy
 class DetectorNode:
   """A ROS node for generic image-based detection."""
 
-  def __init__(self,
-               topic: str,
-               detector: vision_detector.Signature,
-               input_queue_size: int = 1,
-               output_queue_size: int = 1,
-               image_optimizer: Optional[Callable[[], bool]] = None):
+  def __init__(
+      self,
+      topic: str,
+      detector: vision_detector.Signature,
+      input_queue_size: int = 1,
+      output_queue_size: int = 1,
+      image_optimizer: Optional[Callable[[], bool]] = None,
+  ):
     """Constructs a `DetectorNode` instance.
 
     Args:
@@ -38,9 +41,9 @@ class DetectorNode:
       detector: the detector to use.
       input_queue_size: the size of input queues.
       output_queue_size: the size of output queues.
-      image_optimizer: a function hook that can be used to adjust the quality of
-        the camera images. For example, this function may call camera APIs to
-        adjust the brightness, gamma values, etc.
+      image_optimizer: a function that can be used to trigger specific options
+        on the camera. For example, this function may call camera APIs to adjust
+        the brightness, gamma values, etc.
 
     Raises:
       EnvironmentError: if `image_optimizer` fails and return `False`.
@@ -56,9 +59,10 @@ class DetectorNode:
     if image_optimizer and not image_optimizer():
       raise EnvironmentError("Provided `image_optimizer` failed execution.")
 
-    # Setup a subscriber for receiving camera images.
     self._image_handler = ros_utils.ImageHandler(
-        topic=self._topic, queue_size=input_queue_size)
+        topic=self._topic,
+        queue_size=input_queue_size,
+    )
 
   def spin(self) -> None:
     """Loops the node until shutdown."""
@@ -76,6 +80,15 @@ class DetectorNode:
       # Publish detection results.
       self._publish_centers(centers, frame_id, stamp)
       self._publish_detections(detections, frame_id, stamp)
+
+  def close(self) -> None:
+    """Gently cleans up DetectorNode and closes ROS topics."""
+    logging.info("Closing ROS nodes.")
+    self._image_handler.close()
+    for point_publisher in self._point_publishers.values():
+      point_publisher.close()
+    for visualization_publisher in self._visualization_publishers.values():
+      visualization_publisher.close()
 
   def _publish_centers(self, centers: Mapping[str, Optional[np.ndarray]],
                        frame_id: str, stamp: rospy.Time) -> None:

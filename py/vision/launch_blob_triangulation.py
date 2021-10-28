@@ -13,7 +13,7 @@
 # limitations under the License.
 """Launch a ROS node to traingulate the barycenter of colored blobs from images."""
 
-import collections
+import math
 
 from absl import app
 from absl import flags
@@ -21,6 +21,7 @@ from absl import logging
 from dmr_vision import blob_tracker_object_defs
 from dmr_vision import blob_triangulation_node
 from dmr_vision import config_blob_triangulation
+from dmr_vision import ros_utils
 import numpy as np
 import rospy
 
@@ -39,26 +40,67 @@ _PROPS = flags.DEFINE_list(
     ],
     help="The names of the objects to track.")
 
+_MAX_INVALID_CAMINFO = flags.DEFINE_float(
+    name="max_invalid_caminfo",
+    default=math.inf,
+    help=("Number of tentatives after receiving an invalid camera info message "
+          "before raising an exception. Setting this to `1` means to never "
+          "wait for a valid message after receiving a wrong one, while setting "
+          "it to `math.inf` means to never raise an exception and keep on "
+          "trying until a healthy message is received."))
+
 
 def main(_):
   logging.info("Collecting configuration parameters.")
   config = config_blob_triangulation.get_config(_ROBOT.value)
-  extrinsics = collections.defaultdict(dict)
+  extrinsics = {}
+  intrinsics = {}
   for cam_topic, cam_extrinsics in config.extrinsics.items():
-    extrinsics[cam_topic] = np.append(cam_extrinsics["pos_xyz"],
-                                      cam_extrinsics["quat_xyzw"])
+    extrinsics[cam_topic] = cam_extrinsics
+    camera_info = ros_utils.CameraInfoHandler(
+        topic=f"{cam_topic}/camera_info",
+        queue_size=config.input_queue_size,
+    )
+    incalid_caminfo_counter = 0
+    while incalid_caminfo_counter < _MAX_INVALID_CAMINFO.value:
+      with camera_info:
+        if np.count_nonzero(camera_info.camera_matrix) == 0:
+          incalid_caminfo_counter += 1
+          logging.log_every_n_seconds(
+              logging.INFO, "Received an all-zero camera matrix from topic %s. "
+              "Tentative number %d. Discarding the message and not updating "
+              "camera matrix and distortion parameters. If the problem "
+              "persists, consider restarting the camera driver, checking the "
+              "camera's calibration file, or the provided intrinsics.", 12,
+              cam_topic, incalid_caminfo_counter)
+          camera_info.wait()
+          continue
+        else:
+          intrinsics[cam_topic].camera_matrix = camera_info.camera_matrix
+          intrinsics[cam_topic].distortion_parameters = (
+              camera_info.distortion_parameters)
+          camera_info.close()
+    if incalid_caminfo_counter >= _MAX_INVALID_CAMINFO.value:
+      camera_info.close()
+      raise ValueError(
+          "Received an all-zero camera matrix for more than "
+          f"{_MAX_INVALID_CAMINFO.value} time(s). Please restart the camera "
+          "driver, check the camera's calibration file, or the provided "
+          "intrinsics if the issue persists.")
 
   logging.info("Initializing blob triangulation ROS node.")
   rospy.init_node(name=config.node_name, anonymous=True)
   ros_node = blob_triangulation_node.BlobTriangulationNode(
       prop_names=_PROPS.value,
       extrinsics=extrinsics,
+      intrinsics=intrinsics,
       limits=config.limits,
       deadzones=config.deadzones,
       base_frame=config.base_frame,
       rate=config.rate,
       input_queue_size=config.input_queue_size,
-      output_queue_size=config.output_queue_size)
+      output_queue_size=config.output_queue_size,
+  )
 
   logging.info("Spinning ROS node.")
   ros_node.spin()

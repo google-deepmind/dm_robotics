@@ -29,24 +29,29 @@ import rospy
 class BlobTriangulationNode:
   """A ROS node for triangulating prop positions in a robot base frame."""
 
-  def __init__(self,
-               prop_names: Collection[str],
-               extrinsics: Mapping[str, np.ndarray],
-               limits: types.PositionLimit,
-               deadzones: Optional[Mapping[str, types.PositionLimit]] = None,
-               fuse_tolerance: float = 0.1,
-               planar_constraint: Optional[Mapping[str, types.Plane]] = None,
-               base_frame: str = "base",
-               input_queue_size: int = 1,
-               output_queue_size: int = 1,
-               rate: int = 20) -> None:
+  def __init__(
+      self,
+      prop_names: Collection[str],
+      extrinsics: Mapping[str, types.Extrinsics],
+      intrinsics: Optional[Mapping[str, types.Intrinsics]],
+      limits: types.PositionLimit,
+      deadzones: Optional[Mapping[str, types.PositionLimit]] = None,
+      fuse_tolerance: float = 0.1,
+      planar_constraint: Optional[Mapping[str, types.Plane]] = None,
+      base_frame: str = "base",
+      input_queue_size: int = 1,
+      output_queue_size: int = 1,
+      rate: int = 20,
+  ):
     """Constructs a `BlobTriangulationNode` instance.
 
     Args:
       prop_names: The names of the props to use.
-      extrinsics: A mapping from camera names to 7D pose vector of the camera
-        realtive to a common reference frame. The 7D vector is the union of a
-        position vector [x, y, z] and a quaternion [x, y, z, w].
+      extrinsics: A mapping from camera names to extrinsic parameters (a 7D pose
+        vector of the camera realtive to a common reference frame).
+      intrinsics: A mapping from camera names to intrinsics parameters. If a
+        camera is not present in this mapping, the node will attempt to collect
+        the intrinsics from the camera ROS driver `camera_info` topic.
       limits: The robot playground limits, specified in terms of upper and lower
         positions, i.e. a cuboid.
       deadzones: A mapping specifying deadzones with their limits, specified in
@@ -68,18 +73,12 @@ class BlobTriangulationNode:
         limits=limits, deadzones=deadzones)
     self._fuse_tolerance = fuse_tolerance
     self._planar_constraint = planar_constraint or {}
+    self._intrinsics = intrinsics
     self._base_frame = base_frame
     self._input_queue_size = input_queue_size
     self._output_queue_size = output_queue_size
     self._rate = rospy.Rate(rate)
     self._pose_publishers = {}
-
-    # Setup subscribers for receiving camera info.
-    self._camera_info_handler = {}
-    for camera_name in self._camera_names:
-      camera_info_topic = f"{camera_name}/camera_info"
-      self._camera_info_handler[camera_name] = ros_utils.CameraInfoHandler(
-          topic=camera_info_topic, queue_size=input_queue_size)
 
     # Setup subscribers for receiving blob centers.
     self._point_handler = collections.defaultdict(dict)
@@ -92,15 +91,15 @@ class BlobTriangulationNode:
   def spin(self) -> None:
     """Loops the node until shutdown."""
     while not rospy.is_shutdown():
-      camera_matrices, distortions = self._get_camera_info()
       centers, most_recent_stamp = self._get_blob_centers()
-      poses = self._fuse(centers, camera_matrices, distortions)
+      poses = self._fuse(centers)
       self._publish_poses(poses, most_recent_stamp)
       self._rate.sleep()
 
-  def _fuse(self, centers: Mapping[str, Mapping[str, np.ndarray]],
-            camera_matrices: Mapping[str, np.ndarray],
-            distortions: Mapping[str, np.ndarray]) -> Mapping[str, np.ndarray]:
+  def _fuse(
+      self,
+      centers: Mapping[str, Mapping[str, np.ndarray]],
+  ) -> Mapping[str, np.ndarray]:
     """Fuse the detected center points by triangulation."""
     prop_poses = {}
     for prop_name in self._prop_names:
@@ -121,9 +120,18 @@ class BlobTriangulationNode:
       for camera_set in available_cameras_powerset:
         # Setup the triangulation module for the camera subset.
         triangulation = linear_triangulation.Triangulation(
-            camera_matrices=[camera_matrices[name] for name in camera_set],
-            distortions=[distortions[name] for name in camera_set],
-            extrinsics=[self._extrinsics[name] for name in camera_set],
+            camera_matrices=[
+                self._intrinsics[name].camera_matrix for name in camera_set
+            ],
+            distortions=[
+                self._intrinsics[name].distortion_parameters
+                for name in camera_set
+            ],
+            extrinsics=[
+                np.append(self._extrinsics[name].pos_xyz,
+                          self._extrinsics[name].quat_xyzw)
+                for name in camera_set
+            ],
             planar_constraint=planar_constraint)
         # Create a list of blob centers ordered by source camera.
         blob_centers = [
@@ -166,23 +174,6 @@ class BlobTriangulationNode:
     return itertools.chain.from_iterable(
         itertools.combinations(iterable_list, r)
         for r in range(min_cardinality, max_cardinality + 1))
-
-  def _get_camera_info(
-      self) -> Tuple[Mapping[str, np.ndarray], Mapping[str, np.ndarray]]:
-    """Collect camera matrices and distortions of all cameras."""
-    camera_matrices = {}
-    distortions = {}
-    for camera_name in self._camera_names:
-      camera_info = self._camera_info_handler[camera_name]
-      with camera_info:
-        if np.count_nonzero(camera_info.matrix) == 0:
-          raise ValueError(
-              f'Received an all-zero camera matrix for camera {camera_name}. '
-              "Please restart the camera driver, and check the camera's "
-              'calibration file if the issue persists.')
-        camera_matrices[camera_name] = camera_info.matrix
-        distortions[camera_name] = camera_info.distortions
-    return camera_matrices, distortions
 
   def _get_blob_centers(
       self

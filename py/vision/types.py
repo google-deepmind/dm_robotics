@@ -25,22 +25,35 @@ import numpy as np
 MaskPoints = Sequence[Sequence[Tuple[int, int]]]
 Centers = Mapping[str, Optional[np.ndarray]]
 Detections = Mapping[str, Optional[np.ndarray]]
-Extrinsics = Mapping[str, Sequence[float]]
 
 
 @dataclasses.dataclass(frozen=True)
-class Camera:
-  """Camera parameters.
+class Intrinsics:
+  """Camera intrinsics.
 
   Attributes:
-    width: image width.
-    height: image height.
-    extrinsics: camera extrinsics expressed as [x, y, z] `position` and [x, y,
-      z, w] `orientation` quaternion.
+    camera_matrix: intrinsic camera matrix for the raw (distorted) images: K =
+      [[fx  0 cx], [ 0 fy cy], [ 0  0  1]]. Projects 3D points in the camera
+      coordinate frame to 2D pixel coordinates using the focal lengths (fx, fy)
+      and principal point (cx, cy).
+    distortion_parameters: the distortion parameters, size depending on the
+      distortion model. For example, the "plumb_bob" model has 5 parameters (k1,
+      k2, t1, t2, k3).
   """
-  width: int
-  height: int
-  extrinsics: Extrinsics
+  camera_matrix: np.ndarray
+  distortion_parameters: np.ndarray
+
+
+@dataclasses.dataclass(frozen=True)
+class Extrinsics:
+  """Camera extrinsics.
+
+  Attributes:
+    pos_xyz: camera position in the world reference frame.
+    quat_xyzw: camera unit quaternion in the world reference frame.
+  """
+  pos_xyz: Tuple[float, float, float]
+  quat_xyzw: Tuple[float, float, float, float]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -53,6 +66,22 @@ class Blob:
   """
   center: np.ndarray
   contour: np.ndarray
+
+
+@dataclasses.dataclass(frozen=True)
+class Camera:
+  """Camera parameters.
+
+  Attributes:
+    width: image width.
+    height: image height.
+    extrinsics: camera extrinsics.
+    intrinsics: camera intrinsics.
+  """
+  width: int
+  height: int
+  extrinsics: Optional[Extrinsics] = None
+  intrinsics: Optional[Intrinsics] = None
 
 
 @dataclasses.dataclass(frozen=True)

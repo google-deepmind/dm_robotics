@@ -44,43 +44,65 @@ class PointData:
 class CameraInfoHandler:
   """Handler for receiving camera info."""
 
-  def __init__(self, topic: str, queue_size: int = 1):
-    """Constructs a `CameraInfoHandler` instance.
+  def __init__(
+      self,
+      topic: str,
+      queue_size: int = 1,
+  ):
+    """Constructs a CameraInfoHandler instance.
 
     Args:
       topic: The ROS topic to subscribe to.
       queue_size: The ROS subscriber queue size.
     """
-    self._lock = threading.RLock()
-    self._camera_matrix = None
-    self._distortions = None
+    self._topic = topic
+    self._queue_size = queue_size
+    self._lock = threading.Condition(threading.RLock())
     self._subscriber = rospy.Subscriber(
-        name=topic,
+        name=self._topic,
         data_class=sensor_msgs.CameraInfo,
         callback=self.__call__,
-        queue_size=queue_size,
-        tcp_nodelay=True)
-    logging.info('Waiting for message on topic %s', topic)
+        queue_size=self._queue_size,
+        tcp_nodelay=True,
+    )
+    logging.info("Waiting for the first message on topic %s", topic)
     rospy.wait_for_message(topic, sensor_msgs.CameraInfo)
 
+  def close(self) -> None:
+    """Gently cleans up CameraInfoHandler and closes ROS topics."""
+    logging.info("Unregistering subscriber.")
+    with self._lock:
+      self._subscriber.unregister()
+
+  def wait(self) -> None:
+    """Waits for next camera matrix and distortion params to be available."""
+    with self._lock:
+      self._lock.wait()
+
   @property
-  def matrix(self) -> np.ndarray:
-    """Returns the most current camera matrix."""
+  def camera_matrix(self) -> np.ndarray:
+    """The latest received camera matrix."""
     with self._lock:
       return self._camera_matrix
 
   @property
-  def distortions(self) -> np.ndarray:
-    """Returns the most current camera distortions."""
+  def distortion_parameters(self) -> Optional[np.ndarray]:
+    """The latest received camera distortions."""
     with self._lock:
-      return self._distortions
+      return self._distortion_parameters
+
+  @property
+  def stamp(self) -> rospy.Time:
+    """The latest received timestamp."""
+    with self._lock:
+      return self._stamp
 
   def __call__(self, camera_info_msg: sensor_msgs.CameraInfo) -> None:
-    camera_matrix = np.array(camera_info_msg.K).reshape((3, 3))
-    distortions = np.array(camera_info_msg.D)
     with self._lock:
-      self._camera_matrix = camera_matrix
-      self._distortions = distortions
+      self._stamp = camera_info_msg.header.stamp
+      self._camera_matrix = np.array(camera_info_msg.K).reshape((3, 3))
+      self._distortion_parameters = np.array(camera_info_msg.D)
+      self._lock.notify()
 
   def __enter__(self) -> bool:
     return self._lock.__enter__()
@@ -92,7 +114,12 @@ class CameraInfoHandler:
 class ImageHandler:
   """Handler for receiving and decoding images."""
 
-  def __init__(self, topic: str, encoding: str = 'rgb8', queue_size: int = 1):
+  def __init__(
+      self,
+      topic: str,
+      encoding: str = "rgb8",
+      queue_size: int = 1,
+  ):
     """Constructs a `ImageHandler` instance.
 
     Args:
@@ -103,16 +130,21 @@ class ImageHandler:
     self._encoding = encoding
     self._bridge = cv_bridge.CvBridge()
     self._lock = threading.Condition(threading.RLock())
-    self._data = None
-    self._frame_id = None
-    self._stamp = None
     self._subscriber = rospy.Subscriber(
         name=topic,
         data_class=sensor_msgs.Image,
         callback=self.__call__,
         queue_size=queue_size,
-        tcp_nodelay=True)
+        tcp_nodelay=True,
+    )
+    logging.info("Waiting for the first message on topic %s", topic)
     rospy.wait_for_message(topic, sensor_msgs.Image)
+
+  def close(self) -> None:
+    """Gently cleans up ImageHandler and closes ROS topics."""
+    logging.info("Unregistering subscriber.")
+    with self._lock:
+      self._subscriber.unregister()
 
   def wait(self) -> None:
     """Waits for the next image to be available."""
@@ -121,23 +153,24 @@ class ImageHandler:
 
   @property
   def data(self) -> np.ndarray:
-    """Returns the most current image data."""
+    """The latest received image data."""
     with self._lock:
       return self._data
 
   @property
   def frame_id(self) -> str:
-    """Returns the most current frame id."""
+    """The latest received frame id."""
     with self._lock:
       return self._frame_id
 
   @property
   def stamp(self) -> rospy.Time:
-    """Returns the most current timestamp."""
+    """The latest received timestamp."""
     with self._lock:
       return self._stamp
 
   def __call__(self, image_msg: sensor_msgs.Image):
+    """Grabs an image frame and convert it into OpenCV (i.e. NumPy) image."""
     data = self._bridge.imgmsg_to_cv2(image_msg, self._encoding)
     with self._lock:
       self._data = data
@@ -157,7 +190,7 @@ class ImagePublisher:
 
   def __init__(self,
                topic: str,
-               encoding: str = 'rgb8',
+               encoding: str = "rgb8",
                frame_id: Optional[str] = None,
                queue_size: int = 1):
     """Constructs an `ImagePublisher` instance.
@@ -191,6 +224,11 @@ class ImagePublisher:
     message.header.stamp = stamp
     self._publisher.publish(message)
 
+  def close(self) -> None:
+    """Gently cleans up ImagePublisher and closes ROS topics."""
+    logging.info("Unregistering publisher.")
+    self._publisher.unregister()
+
 
 class PointHandler:
   """Handler for receiving point data."""
@@ -202,36 +240,54 @@ class PointHandler:
       topic: The ROS topic to subscribe to.
       queue_size: The ROS subscriber queue size.
     """
-    self._lock = threading.Lock()
-    self._point_data: Optional[PointData] = None
+    self._lock = threading.Condition(threading.RLock())
     self._subscriber = rospy.Subscriber(
         name=topic,
         data_class=geometry_msgs.PointStamped,
         callback=self.__call__,
         queue_size=queue_size,
         tcp_nodelay=True)
-    logging.info('Waiting for message on topic %s', topic)
+    logging.info("Waiting for the first message on topic %s", topic)
     try:
       rospy.wait_for_message(topic, geometry_msgs.PointStamped, timeout=10.)
     except rospy.exceptions.ROSException:
       logging.warning(
-          'Did not reveive a message on topic %s, object may be '
-          'occluded or colors may be poorly calibrated.', topic)
+          "Did not reveive a message on topic %s, object may be "
+          "occluded or colors may be poorly calibrated.", topic)
+
+  def close(self) -> None:
+    """Gently cleans up `PointHandler` and closes ROS topics."""
+    logging.info("Unregistering subscriber.")
+    with self._lock:
+      self._subscriber.unregister()
+
+  def wait(self) -> None:
+    """Waits for the next point to be available."""
+    with self._lock:
+      self._lock.wait()
 
   @property
-  def point_data(self) -> Optional[PointData]:
-    """Returns the most current point."""
+  def point_data(self) -> PointData:
+    """The latest received point."""
     with self._lock:
       return self._point_data
+
+  @property
+  def stamp(self) -> rospy.Time:
+    """The latest received timestamp."""
+    with self._lock:
+      return self._stamp
 
   def __call__(self, point_msg: geometry_msgs.PointStamped) -> None:
     """Callback used by ROS subscriber."""
     data = np.array([point_msg.point.x, point_msg.point.y, point_msg.point.z])
     with self._lock:
+      self._stamp = point_msg.header.stamp
       self._point_data = PointData(
           data=data,
           frame_id=point_msg.header.frame_id,
           stamp=point_msg.header.stamp)
+      self._lock.notify()
 
 
 class PointMessage(geometry_msgs.PointStamped):
@@ -291,6 +347,11 @@ class PointPublisher:
     message = PointMessage(point, frame_id=self._frame_id, stamp=stamp)
     self._publisher.publish(message)
 
+  def close(self) -> None:
+    """Gently cleans up PointPublisher and closes ROS topics."""
+    logging.info("Unregistering publisher.")
+    self._publisher.unregister()
+
 
 class PoseMessage(geometry_msgs.PoseStamped):
   """Simplifies constructions of `PoseStamped` messages."""
@@ -347,3 +408,8 @@ class PosePublisher:
     """
     message = PoseMessage(pose, frame_id=self._frame_id, stamp=stamp)
     self._publisher.publish(message)
+
+  def close(self) -> None:
+    """Gently cleans up PosePublisher and closes ROS topics."""
+    logging.info("Unregistering publisher.")
+    self._publisher.unregister()

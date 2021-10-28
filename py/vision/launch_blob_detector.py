@@ -40,13 +40,15 @@ _PROPS = flags.DEFINE_list(
 _VISUALISE = flags.DEFINE_boolean(
     name="visualize",
     default=False,
-    help="Whether to publish helper images of the detected blobs or not.")
+    help="Whether to publish helper images of the detected blobs or not.",
+)
 
 _TOOLKIT = flags.DEFINE_boolean(
     name="toolkit",
     default=False,
     help=("Whether to display a YUV GUI toolkit to find good YUV parameters to "
-          "detect blobs or not. Sets `visualize = True`."))
+          "detect blobs or not. Sets `visualize = True`."),
+)
 
 
 def main(_):
@@ -72,16 +74,19 @@ def main(_):
       min_area=config.min_area,
       mask_points=config.mask_by_camera_name[_CAMERA.value],
       visualize=_VISUALISE.value,
-      toolkit=_TOOLKIT.value)
+      toolkit=_TOOLKIT.value,
+  )
   ros_node = detector_node.DetectorNode(
       topic=topic,
       detector=detector,
       input_queue_size=config.input_queue_size,
-      output_queue_size=config.output_queue_size)
+      output_queue_size=config.output_queue_size,
+  )
 
   logging.info("Spinning ROS node.")
   ros_node.spin()
   logging.info("ROS node terminated.")
+  ros_node.close()
 
 
 if __name__ == "__main__":
