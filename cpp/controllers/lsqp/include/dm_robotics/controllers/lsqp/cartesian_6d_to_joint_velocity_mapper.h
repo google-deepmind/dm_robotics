@@ -70,12 +70,11 @@ class Cartesian6dToJointVelocityMapper {
   // Initialization parameters for Cartesian6dToJointVelocityMapper.
   //
   // The caller retains ownership of lib and model.
-  // It is the caller's responsibility to ensure that the *lib object has been
-  // activated through a valid MuJoCo license, and to ensure that the *lib and
-  // *model objects outlive any Cartesian6dToJointVelocityMapper instances
-  // created with this object.
+  // It is the caller's responsibility to ensure the *lib and *model objects
+  // outlive any Cartesian6dToJointVelocityMapper instances created with this
+  // object.
   struct Parameters {
-    // Pointer to an activated MjLib object.
+    // Pointer to an MjLib object.
     const MjLib* lib;
 
     // Pointer to a MuJoCo model.

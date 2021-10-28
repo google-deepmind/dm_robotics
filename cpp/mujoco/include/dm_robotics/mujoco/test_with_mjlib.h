@@ -21,8 +21,8 @@
 namespace dm_robotics::testing {
 
 // A base class for test fixtures that require MjLib.
-// This class loads and activates libmujoco.so when the test suite is set up,
-// and deactivates it when the test suite is torn down.
+// This class loads libmujoco.so when the test suite is set up,
+// and destroys (unloads) it when the test suite is torn down.
 class TestWithMjLib : public ::testing::Test {
  protected:
   static void SetUpTestSuite();

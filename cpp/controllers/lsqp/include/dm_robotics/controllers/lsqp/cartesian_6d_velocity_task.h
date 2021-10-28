@@ -49,10 +49,9 @@ class Cartesian6dVelocityTask : public LsqpTask {
   // are the joint velocities; and `b` is the bias.
   //
   // The caller retains ownership of lib and model.
-  // It is the caller's responsibility to ensure that the *lib object has been
-  // activated through a valid MuJoCo license, and to ensure that the *lib and
-  // *model objects outlive any Cartesian6dVelocityTask instances created with
-  // this object.
+  // It is the caller's responsibility to ensure that the *lib and *model
+  // objects outlive any Cartesian6dVelocityTask instances created with this
+  // object.
   struct Parameters {
     const MjLib* lib;
     const mjModel* model;

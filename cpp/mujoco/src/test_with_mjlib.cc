@@ -30,15 +30,10 @@ namespace dm_robotics::testing {
 MjLib* TestWithMjLib::mjlib_ = nullptr;
 
 void TestWithMjLib::SetUpTestSuite() {
-  // Load and activate library with provided key.
-  mjlib_ = new MjLib(kMujocoLibNoGlPath, RTLD_NOW);
-  CHECK_EQ(mjlib_->mj_activate(kMujocoKeyPath), 1)
-      << "Unable to activate MuJoCo with license located in: "
-      << kMujocoKeyPath;
+  mjlib_ = new MjLib(kMujocoLibNoGlPath, RTLD_NOW);  // Load MuJoCo.
 }
 
 void TestWithMjLib::TearDownTestSuite() {
-  mjlib_->mj_deactivate();
   delete mjlib_;
 }
 

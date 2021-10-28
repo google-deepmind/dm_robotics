@@ -87,16 +87,7 @@ const MjLib* LoadMjLibFromDmControl() {
       mjbindings.attr("mjlib").attr("_name").cast<std::string>();
 
   // Create the MjLib object by dlopen'ing the DSO.
-  auto* mjlib = new MjLib(dso_path, RTLD_NOW);
-
-  // Activate the MuJoCo library.
-  const py::module mjutil(py::module::import("dm_control.mujoco.wrapper.util"));
-  const std::string key_path =
-      mjutil.attr("get_mjkey_path")().cast<std::string>();
-  CHECK_EQ(mjlib->mj_activate(key_path.c_str()), 1)
-      << "Unable to activate MuJoCo with license located in: " << key_path;
-
-  return mjlib;
+  return new MjLib(dso_path, RTLD_NOW);
 }
 
 // Helper function for getting an mjModel object from a py::handle.

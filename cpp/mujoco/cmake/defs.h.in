@@ -1,19 +1,15 @@
 #ifndef LEARNING_DEEPMIND_ROBOTICS_MUJOCO_DEFS_H_
 #define LEARNING_DEEPMIND_ROBOTICS_MUJOCO_DEFS_H_
 
-// Paths to the MuJoCo key file and dynamic libraries. Users must specify these
-// constants through CMake if they wish to run the tests and examples provided
-// with this library.
-#cmakedefine DMR_MUJOCO_KEY_PATH "@DMR_MUJOCO_KEY_PATH@"
+// Paths to the dynamic libraries. Users must specify these constants through
+// CMake if they wish to run the tests and examples provided with this library.
 #cmakedefine DMR_MUJOCO_LIB_NOGL_PATH "@DMR_MUJOCO_LIB_NOGL_PATH@"
 #cmakedefine DMR_DMCONTROL_SUITE_HUMANOID_XML_PATH "@DMR_DMCONTROL_SUITE_HUMANOID_XML_PATH@"
 
-inline constexpr char kMujocoKeyPath[] = DMR_MUJOCO_KEY_PATH;
 inline constexpr char kMujocoLibNoGlPath[] = DMR_MUJOCO_LIB_NOGL_PATH;
 inline constexpr char kDmControlSuiteHumanoidXmlPath[] =
     DMR_DMCONTROL_SUITE_HUMANOID_XML_PATH;
 
-#undef DMR_MUJOCO_KEY_PATH
 #undef DMR_MUJOCO_LIB_NOGL_PATH
 #undef DMR_DMCONTROL_SUITE_HUMANOID_XML_PATH
 

@@ -19,7 +19,6 @@ project(dmr_mujoco
 )
 
 # Generate defs.h from configuration with the MuJoCo constants.
-set(DMR_MUJOCO_KEY_PATH "$ENV{HOME}/.mujoco/mjkey.txt" CACHE STRING "Path to the MuJoCo license key.")
 set(DMR_MUJOCO_LIB_NOGL_PATH "$ENV{HOME}/.mujoco/mujoco210/bin/libmujoco210nogl.so" CACHE STRING "Path to the MuJoCo shared library (`libmujoco210nogl.so`)")
 set(DMR_DMCONTROL_SUITE_PATH "$ENV{HOME}/.local/lib/python3.8/site-packages/dm_control/suite" CACHE STRING "Path to `dm_control.suite`")
 set(DMR_DMCONTROL_SUITE_HUMANOID_XML_PATH "${DMR_DMCONTROL_SUITE_PATH}/humanoid.xml")

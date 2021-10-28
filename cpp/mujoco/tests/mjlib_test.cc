@@ -26,12 +26,8 @@
 namespace dm_robotics {
 namespace {
 
-TEST(MjlibTest, CanLoadAndActivateMjLib) {
-  // Load and activate library with provided key.
-  MjLib mjlib(kMujocoLibNoGlPath, RTLD_NOW);
-  ASSERT_EQ(mjlib.mj_activate(kMujocoKeyPath), 1)
-      << "Unable to activate MuJoCo with license located in: "
-      << kMujocoKeyPath;
+TEST(MjlibTest, CanLoadMjLib) {
+  MjLib mjlib(kMujocoLibNoGlPath, RTLD_NOW);  // Load library.
 }
 
 }  // namespace
