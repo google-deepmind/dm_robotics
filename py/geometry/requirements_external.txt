@@ -1,2 +1,2 @@
 numpy >= 1.16.0
-dm_control
+dm_control >= 0.0.403778684
