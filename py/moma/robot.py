@@ -153,9 +153,10 @@ class StandardRobot(Robot):
   @property
   def effectors(self) -> List[effector.Effector]:
     effectors = [self._arm_effector]
-    if self.gripper_effector:
+    if self.gripper_effector is not None:
+      assert self.gripper_effector is not None  # This placates pytype.
       effectors.append(self.gripper_effector)
-    return effectors  # pytype: disable=bad-return-type  # bind-properties
+    return effectors
 
   @property
   def arm_effector(self) -> effector.Effector:
