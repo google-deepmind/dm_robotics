@@ -79,13 +79,11 @@ void RaiseRuntimeErrorWithMessage(absl::string_view message) {
 
 const MjLib* LoadMjLibFromDmControl() {
   py::gil_scoped_acquire gil;
-
   // Get the path to the DSO.
   const py::module mjbindings(
       py::module::import("dm_control.mujoco.wrapper.mjbindings"));
   const std::string dso_path =
       mjbindings.attr("mjlib").attr("_name").cast<std::string>();
-
   // Create the MjLib object by dlopen'ing the DSO.
   return new MjLib(dso_path, RTLD_NOW);
 }
