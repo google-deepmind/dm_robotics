@@ -57,10 +57,10 @@ class BlobTriangulationNode:
       deadzones: A mapping specifying deadzones with their limits, specified in
         the same terms of `limits`.
       fuse_tolerance: Maximum time interval between fused data points.
-      planar_constraint: An optional mapping of prop names to planes (in
-        global frame) that the blob must lie in. This is useful for example
-        for tracking a ball which is guaranteed to be on the ground plane.
-        If provided then a single camera is enough for "triangulation".
+      planar_constraint: An optional mapping of prop names to planes (in global
+        frame) that the blob must lie in. This is useful for example for
+        tracking a ball which is guaranteed to be on the ground plane. If
+        provided then a single camera is enough for "triangulation".
       base_frame: The frame id to use when publishing poses.
       input_queue_size: The size of input queues.
       output_queue_size: The size of output queues.
@@ -146,6 +146,15 @@ class BlobTriangulationNode:
       # Append a default orientation.
       prop_poses[prop_name] = np.append(position, [0, 0, 0, 1])
     return prop_poses
+
+  def close(self) -> None:
+    """Gently cleans up BlobTriangulationNode and closes ROS topics."""
+    logging.info("Closing ROS topics.")
+    for prop_name in self._prop_names:
+      for camera_name in self._camera_names:
+        self._point_handler[prop_name][camera_name].close()
+    for pose_publishers in self._pose_publishers.values():
+      pose_publishers.close()
 
   def _powerset(self, iterable, min_cardinality=1, max_cardinality=None):
     """Creates an iterable with all the powerset elements of `iterable`.

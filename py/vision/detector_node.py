@@ -83,7 +83,7 @@ class DetectorNode:
 
   def close(self) -> None:
     """Gently cleans up DetectorNode and closes ROS topics."""
-    logging.info("Closing ROS nodes.")
+    logging.info("Closing ROS topics.")
     self._image_handler.close()
     for point_publisher in self._point_publishers.values():
       point_publisher.close()
