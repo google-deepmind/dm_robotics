@@ -45,11 +45,12 @@ from dm_robotics.agentflow.options.basic_options import any_terminates
 from dm_robotics.agentflow.options.basic_options import ArgAdaptor
 from dm_robotics.agentflow.options.basic_options import ConcurrentOption
 from dm_robotics.agentflow.options.basic_options import DelegateOption
-from dm_robotics.agentflow.options.basic_options import DelegatePolicy
 from dm_robotics.agentflow.options.basic_options import FixedOp
 from dm_robotics.agentflow.options.basic_options import LambdaOption
+from dm_robotics.agentflow.options.basic_options import OptionAdapter
 from dm_robotics.agentflow.options.basic_options import options_terminate
 from dm_robotics.agentflow.options.basic_options import PadOption
+from dm_robotics.agentflow.options.basic_options import PolicyAdapter
 from dm_robotics.agentflow.options.basic_options import RandomOption
 
 from dm_robotics.agentflow.preprocessors.timestep_preprocessor import PreprocessorTimestep

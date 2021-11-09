@@ -361,10 +361,10 @@ class ConcurrentOption(core.Option):
       opt.render_frame(canvas)
 
 
-class DelegatePolicy(core.Policy):
+class PolicyAdapter(core.Policy):
   """A policy that delegates `step` to a given object.
 
-  Use this to up-class arbitrary agent-like objects to run in AgentFlow graphs.
+  Used to up-class an arbitrary agent-like object to be usable as a `Policy`.
   """
 
   def __init__(self, delegate: Any):
@@ -376,6 +376,34 @@ class DelegatePolicy(core.Policy):
 
   def step(self, timestep: dm_env.TimeStep):
     return self._delegate.step(timestep)
+
+  def render_frame(self, canvas) -> None:
+    # Pass-through `render_frame` call if available
+    if callable(getattr(self._delegate, 'render_frame', None)):
+      self._delegate.render_frame(canvas)
+
+
+class OptionAdapter(core.Option):
+  """An Option that delegates `step` to a given object.
+
+  Used to up-class an arbitrary agent-like object to be usable as an `Option`.
+  Note that this Option will never terminate.
+  """
+
+  def __init__(self, delegate: Any):
+    super().__init__()
+    self._delegate = delegate
+
+  def child_policies(self) -> Iterable[core.Policy]:
+    return [self._delegate]
+
+  def step(self, timestep: dm_env.TimeStep):
+    return self._delegate.step(timestep)
+
+  def render_frame(self, canvas) -> None:
+    # Pass-through `render_frame` call if available
+    if callable(getattr(self._delegate, 'render_frame', None)):
+      self._delegate.render_frame(canvas)
 
 
 class DelegateOption(core.Option, abc.ABC):
