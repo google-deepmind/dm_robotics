@@ -309,58 +309,80 @@ class UniformPoseDistribution(PoseDistribution):
     return mean_pos, mean_quat
 
 
-def _pos_quat_to_target(
+def _points_to_pose(
     to_pos: np.ndarray,
     from_pos: np.ndarray,
-    xnormal: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:
-  """Computes pose at `from_pos` s.t. z-axis is pointing away from `to_pos`."""
-  if xnormal is None:
-    xnormal = np.array([0., 1., 0.])
+    y_hint: Optional[np.ndarray] = None,
+    extra_quat: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:
+  """Computes pose at `from_pos` s.t. z-axis is pointing towards `to_pos`."""
+  if y_hint is None:
+    y_hint = np.array([0., 1., 0.])
   else:
-    xnormal = xnormal / np.linalg.norm(xnormal)
+    y_hint = y_hint / np.linalg.norm(y_hint)
 
   view_dir = to_pos - from_pos
   view_dir /= np.linalg.norm(view_dir)
-  z = -view_dir  # mujoco camera looks down negative z
-  x = np.cross(z, xnormal)
+
+  # Build right-handed coordinate system with z-axis towards target, and x-axis
+  # orthogonal to y-axis hint.
+  z = view_dir
+  x = np.cross(y_hint, z)
   y = np.cross(z, x)
   rmat = np.stack([x, y, z], axis=1)
   rmat = rmat / np.linalg.norm(rmat, axis=0)
   quat = tr.axisangle_to_quat(tr.rmat_to_axisangle(rmat))
 
+  if extra_quat is not None:
+    quat = tr.quat_mul(quat, extra_quat)
+
   return from_pos, quat
 
 
 class LookAtPoseDistribution(PoseDistribution):
-  """Distribution looking from a point to a target."""
+  """Distribution looking from a view-point to a target-point."""
 
   def __init__(self,
                look_at: Distribution,
                look_from: Distribution,
-               xnormal: Optional[np.ndarray] = None):
-    """Constructor.
+               y_hint: Optional[Union[np.ndarray, Callable[[],
+                                                           np.ndarray]]] = None,
+               extra_quat: Optional[np.ndarray] = None):
+    """Initialize LookAtPoseDistribution.
+
+    This distribution returns poses centered at `look_from` and with the +z-axis
+    pointing towards `look_at`. It is parameterized by two distributions over
+    points, and accepts a user-provided constraint for the remaining degree-of-
+    freedom around the z-axis.
 
     Args:
       look_at: A `Distribution` over the 3D point to look at.
       look_from: A `Distribution` over the 3D point to look from.
-      xnormal: (3,) optional array containing a vector to cross with the looking
-        direction to produce the x-axis of the sampled pose. This can be
-        anything, but typically would be something that's constant w.r.t. the
-        object being viewed (e.g. its y-axis). This is required because the full
-        pose is under-constrained given only `from` and `to` points, so rather
-        than hard-coding a world-frame value we expose this to the user. If the
-        object moves, providing an axis attached to the object will force
-        `LookAtPoseDistribution` to produce poses that maintain a fixed view
-        (modulo randomness), rather than rolling.
+      y_hint: Optional array or callable returning 3-vector to cross with the
+        looking direction to produce the x-axis of the sampled pose. This is
+        required because the full pose is under-constrained given only
+        `from` and `to` points, so rather than baking in a solution we expose
+        this to the user as a "hint". This can be anything, but the motivating
+        examples are:
+          1) Maintaining a fixed pose as the object moves -- pass the y-axis of
+             object's current pose.
+          2) Minimizing the difference w.r.t. the current (wrist-mounted) camera
+             pose -- pass the y-axis of TCP's current pose.
+        Failure to do either of these will result in a "rolling" behavior along
+        the z-axis as the object or robot moves.
+      extra_quat: Optional quaternion [w, i, j, k] to apply as a final rotation
+        after solving for the viewing direction. If omitted, the z-axis will
+        point towards `look_at`, and the x-axis will be orthogonal to `y_hint`.
     """
     super().__init__()
     self._look_at = look_at
     self._look_from = look_from
 
-    if xnormal is None:
-      self._xnormal = np.array([0., 1., 0.])
+    if y_hint is None:
+      self._y_hint = np.array([0., 1., 0.])
+    elif isinstance(y_hint, np.ndarray):
+      self._y_hint = y_hint / np.linalg.norm(y_hint)
     else:
-      self._xnormal = xnormal / np.linalg.norm(xnormal)
+      self._y_hint = y_hint
 
   def sample_pose(
       self,
@@ -370,7 +392,8 @@ class LookAtPoseDistribution(PoseDistribution):
     del physics
     look_at = self._look_at.sample(random_state)
     look_from = self._look_from.sample(random_state)
-    return _pos_quat_to_target(look_at, look_from, self._xnormal)
+    y_hint = self._y_hint() if callable(self._y_hint) else self._y_hint
+    return _points_to_pose(look_at, look_from, y_hint)
 
   def mean_pose(
       self,
@@ -379,7 +402,7 @@ class LookAtPoseDistribution(PoseDistribution):
     del physics
     look_at = self._look_at.mean()
     look_from = self._look_from.mean()
-    return _pos_quat_to_target(look_at, look_from, self._xnormal)
+    return _points_to_pose(look_at, look_from, self._y_hint)
 
 
 class DomePoseDistribution(PoseDistribution):

@@ -41,7 +41,7 @@ class PoseDistributionTest(parameterized.TestCase):
 
     # Test `sample_pose`
     actual_pos, actual_quat = look_at_dist.sample_pose(None)
-    expected_pos, expected_quat = pose_distribution._pos_quat_to_target(
+    expected_pos, expected_quat = pose_distribution._points_to_pose(
         target_dist.sample(), source_dist.sample(), xnormal)
 
     np.testing.assert_allclose(actual_pos, expected_pos)
@@ -51,7 +51,7 @@ class PoseDistributionTest(parameterized.TestCase):
 
     # Test `mean_pose`
     actual_pos, actual_quat = look_at_dist.mean_pose(None)
-    expected_pos, expected_quat = pose_distribution._pos_quat_to_target(
+    expected_pos, expected_quat = pose_distribution._points_to_pose(
         target_dist.mean(), source_dist.mean(), xnormal)
 
     np.testing.assert_allclose(actual_pos, expected_pos)
