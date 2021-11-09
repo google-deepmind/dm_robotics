@@ -376,6 +376,7 @@ class LookAtPoseDistribution(PoseDistribution):
     super().__init__()
     self._look_at = look_at
     self._look_from = look_from
+    self._extra_quat = extra_quat
 
     if y_hint is None:
       self._y_hint = np.array([0., 1., 0.])
@@ -393,7 +394,7 @@ class LookAtPoseDistribution(PoseDistribution):
     look_at = self._look_at.sample(random_state)
     look_from = self._look_from.sample(random_state)
     y_hint = self._y_hint() if callable(self._y_hint) else self._y_hint
-    return _points_to_pose(look_at, look_from, y_hint)
+    return _points_to_pose(look_at, look_from, y_hint, self._extra_quat)
 
   def mean_pose(
       self,
@@ -402,7 +403,7 @@ class LookAtPoseDistribution(PoseDistribution):
     del physics
     look_at = self._look_at.mean()
     look_from = self._look_from.mean()
-    return _points_to_pose(look_at, look_from, self._y_hint)
+    return _points_to_pose(look_at, look_from, self._y_hint, self._extra_quat)
 
 
 class DomePoseDistribution(PoseDistribution):
