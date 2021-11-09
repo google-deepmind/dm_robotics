@@ -77,10 +77,13 @@ class _MujocoPhysics(geometry.Physics):
         xmat = physics.named.data.geom_xmat[frame.full_identifier]
       elif frame.tag == 'site':
         xmat = physics.named.data.site_xmat[frame.full_identifier]
+      elif frame.tag == 'camera':
+        xmat = physics.named.data.cam_xmat[frame.full_identifier]
       elif frame.tag == 'body':
         xmat = physics.named.data.xmat[frame.full_identifier]
       else:
-        raise ValueError(f'Frame {frame} is a {frame.tag} not a site/body/geom')
+        raise ValueError(f'Frame {frame} is a {frame.tag} not a geom/site/'
+                         'camera/body')
       hmat_world_element[0:3, 0:3] = xmat.reshape(3, 3)
 
     if get_pos:
@@ -89,10 +92,13 @@ class _MujocoPhysics(geometry.Physics):
         xpos = physics.named.data.geom_xpos[frame.full_identifier]
       elif frame.tag == 'site':
         xpos = physics.named.data.site_xpos[frame.full_identifier]
+      elif frame.tag == 'camera':
+        xpos = physics.named.data.cam_xpos[frame.full_identifier]
       elif frame.tag == 'body':
         xpos = physics.named.data.xpos[frame.full_identifier]
       else:
-        raise ValueError(f'Frame {frame} is a {frame.tag} not a site/body/geom')
+        raise ValueError(f'Frame {frame} is a {frame.tag} not a geom/site/'
+                         'camera/body')
       hmat_world_element[0:3, 3] = xpos
 
     return geometry.Pose.from_hmat(hmat_world_element)
