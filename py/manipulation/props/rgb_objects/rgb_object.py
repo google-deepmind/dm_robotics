@@ -62,11 +62,15 @@ PropsSetType = object_collection.VersionedSequence
 
 
 class PropsVersion(enum.Enum):
-  """Available types of RGB-objects."""
-  RGB_OBJECTS_V1 = parametric_rgb_object.RgbVersion.v1_3
+  """Supported revisions of the RGB-objects.
+
+  Several iterations of RGB-objects have been designed. Listed below are those
+  we support in simulation and for real robot manipulation.
+  """
+  RGB_OBJECTS_V1_3 = parametric_rgb_object.RgbVersion.v1_3
 
 
-V1 = PropsVersion.RGB_OBJECTS_V1  # short name.
+V1_3 = PropsVersion.RGB_OBJECTS_V1_3  # short name.
 
 
 @dataclasses.dataclass
@@ -85,9 +89,9 @@ _RESOURCES_ROOT_DIR = (
 
 ## RGB-objects definitions.
 _RGB_OBJECTS_MESHES = [
-    os.path.join(_RESOURCES_ROOT_DIR, 'rgb_v1/meshes/test_triplets'),
-    os.path.join(_RESOURCES_ROOT_DIR, 'rgb_v1/meshes/train'),
-    os.path.join(_RESOURCES_ROOT_DIR, 'rgb_v1/meshes/heldout')
+    os.path.join(_RESOURCES_ROOT_DIR, 'rgb_v1.3/meshes/test_triplets'),
+    os.path.join(_RESOURCES_ROOT_DIR, 'rgb_v1.3/meshes/train'),
+    os.path.join(_RESOURCES_ROOT_DIR, 'rgb_v1.3/meshes/heldout')
 ]
 _RGB_OBJECTS_PARAMS = rgb_object_names.RgbObjectsNames(
     parametric_rgb_object.RgbVersion.v1_3).nicknames
@@ -141,9 +145,9 @@ _RGB_OBJECTS_ID_FROM_FILE_FUNC = lambda filename: filename.split('_')[0]
 RGB_OBJECTS_MESH_SCALE = 1.0
 
 PROP_FEATURES = {
-    V1:
+    V1_3:
         PropsDatasetType(
-            version=V1,
+            version=V1_3,
             ids=RGB_OBJECTS_FULL_SET,
             mesh_paths=_RGB_OBJECTS_MESHES,
             scale=RGB_OBJECTS_MESH_SCALE,
@@ -158,20 +162,16 @@ DEFAULT_COLOR_SET = {
 
 
 def random_triplet(
-    rgb_version: PropsVersion = V1,
+    rgb_version: PropsVersion = V1_3,
     id_list: Optional[Iterable[str]] = None,
     id_list_red: Optional[Iterable[str]] = None,
     id_list_green: Optional[Iterable[str]] = None,
     id_list_blue: Optional[Iterable[str]] = None) -> PropsSetType:
   """Get a triplet of 3 randomly chosen props.
 
-  The function provides a distinct set of 3 prop names. The user can use each
-  one of these names to instantinate `RgbObjectProp` object and provide the
+  The function provides a distinct set of 3 prop names. The user can then use
+  each one of the names to instantinate `RgbObjectProp` object and provide the
   desired color in the constructor.
-  For RGB-object dataset v1.0 which contains object names starting with 'R', 'G'
-  and 'B' only, the function ensures that exactly one object from each group is
-  chosen. For other datasets, the function randomly chooses 3 objects from all
-  available in the dataset, without any restrictions.
 
   Args:
     rgb_version: RGB-Objects version.
@@ -204,16 +204,16 @@ def random_triplet(
   return PropsSetType(version=rgb_version, ids=prop_ids)
 
 
-def fixed_random_triplet(rgb_version: PropsVersion = V1) -> PropsSetType:
+def fixed_random_triplet(rgb_version: PropsVersion = V1_3) -> PropsSetType:
   """Gets one of the predefined triplets randomly.
 
   Args:
-    rgb_version: RGB-Objects version. Only v1.0 supported.
+    rgb_version: RGB-Objects version. Only v1.3 supported.
 
   Returns:
     Triplet of object names from a predefined set.
   """
-  if rgb_version == V1:
+  if rgb_version == V1_3:
     obj_triplet = np.random.choice(
         [s for s in PROP_TRIPLETS_TEST if s.startswith('rgb_test_triplet')])
     return PROP_TRIPLETS_TEST[obj_triplet]
@@ -234,7 +234,7 @@ def _define_blue_prop_triplets(
     # random from the full set.
     blue_obj_triplets[f'{base_str}{a}'] = functools.partial(
         random_triplet,
-        rgb_version=V1,
+        rgb_version=V1_3,
         id_list=id_list,
         id_list_blue=RGB_OBJECTS_DIM[a])
   return blue_obj_triplets
@@ -242,23 +242,23 @@ def _define_blue_prop_triplets(
 
 PROP_TRIPLETS_TEST = {
     # Object groups as per 'Triplets v1.0':
-    'rgb_test_triplet1': PropsSetType(V1, ('r3', 's0', 'b2')),
-    'rgb_test_triplet2': PropsSetType(V1, ('r5', 'g2', 'b3')),
-    'rgb_test_triplet3': PropsSetType(V1, ('r6', 'g3', 'b5')),
-    'rgb_test_triplet4': PropsSetType(V1, ('s0', 'g5', 'b6')),
-    'rgb_test_triplet5': PropsSetType(V1, ('r2', 'g6', 's0')),
+    'rgb_test_triplet1': PropsSetType(V1_3, ('r3', 's0', 'b2')),
+    'rgb_test_triplet2': PropsSetType(V1_3, ('r5', 'g2', 'b3')),
+    'rgb_test_triplet3': PropsSetType(V1_3, ('r6', 'g3', 'b5')),
+    'rgb_test_triplet4': PropsSetType(V1_3, ('s0', 'g5', 'b6')),
+    'rgb_test_triplet5': PropsSetType(V1_3, ('r2', 'g6', 's0')),
 }
 
 RANDOM_PROP_TRIPLETS_FUNCTIONS = object_collection.PropSetDict({
     # Return changing triplets on every access.
     'rgb_train_random':
         functools.partial(
-            random_triplet, rgb_version=V1, id_list=RGB_OBJECTS_TRAIN_SET),
+            random_triplet, rgb_version=V1_3, id_list=RGB_OBJECTS_TRAIN_SET),
     'rgb_heldout_random':
         functools.partial(
-            random_triplet, rgb_version=V1, id_list=RGB_OBJECTS_HELDOUT_SET),
+            random_triplet, rgb_version=V1_3, id_list=RGB_OBJECTS_HELDOUT_SET),
     'rgb_test_random':   # Randomly loads one of the 5 test triplets.
-        functools.partial(fixed_random_triplet, rgb_version=V1),
+        functools.partial(fixed_random_triplet, rgb_version=V1_3),
 })
 
 PROP_TRIPLETS = object_collection.PropSetDict({
@@ -267,7 +267,7 @@ PROP_TRIPLETS = object_collection.PropSetDict({
 })
 
 
-def _get_all_meshes(rgb_version: PropsVersion = V1) -> Iterable[str]:
+def _get_all_meshes(rgb_version: PropsVersion = V1_3) -> Iterable[str]:
   """Get all mesh files from a list of directories."""
   meshes = []
   mesh_paths = PROP_FEATURES[rgb_version].mesh_paths
@@ -309,7 +309,7 @@ class RgbObjectParameters:
     return (params_min, params_max)
 
   def __init__(self,
-               rgb_version: PropsVersion = V1,
+               rgb_version: PropsVersion = V1_3,
                obj_id: Optional[str] = None):
     self._rgb_version = rgb_version
     if rgb_version not in self.supported_versions:
@@ -350,7 +350,7 @@ class RgbDataset(metaclass=_Singleton):
   def clear_cache(self):
     self._dataset_stl_paths = {i: None for i in PropsVersion}
 
-  def __call__(self, rgb_version: PropsVersion = V1):
+  def __call__(self, rgb_version: PropsVersion = V1_3):
     if not self._dataset_stl_paths[rgb_version]:
       self._dataset_stl_paths[rgb_version] = _get_all_meshes(rgb_version)
     return self._dataset_stl_paths[rgb_version]
@@ -360,7 +360,7 @@ class RgbObjectProp(mesh_object.MeshProp):
   """RGB-Object from meshes."""
 
   def _build(self,
-             rgb_version: PropsVersion = V1,
+             rgb_version: PropsVersion = V1_3,
              obj_id: Optional[str] = None,
              name: str = 'rgb_object',
              size: Optional[Sequence[float]] = None,
@@ -412,7 +412,7 @@ class RandomRgbObjectProp(mesh_object.MeshProp):
   """
 
   def _build(self,
-             rgb_version: PropsVersion = V1,
+             rgb_version: PropsVersion = V1_3,
              name: str = 'rgb_object',
              size: Optional[Sequence[float]] = None,
              color: Optional[str] = None,

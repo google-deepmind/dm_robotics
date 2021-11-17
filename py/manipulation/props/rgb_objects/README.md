@@ -71,7 +71,7 @@ filename for the `b3` object.
 load a mesh from a command line:
 
 ```bash
-$ cd props/rgb_objects/assets/rgb_v1/meshes
+$ cd props/rgb_objects/assets/rgb_v1.3/meshes
 $ meshlab test_triplets/b3_sds4_shr48_drf0_hlw0_shx0_shy0_scx46_scy49_scz63.stl
 ```
 
@@ -258,10 +258,10 @@ If you use `rgb_objects` in your work, please cite the accompanying [paper][pick
 [pick_and_place_paper]: http://arxiv.org/abs/2110.06192
 [rgb_object_package]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects
 [rgb_stacking]: https://github.com/deepmind/rgb_stacking/tree/main/README.md
-[meshes_dir]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/assets/rgb_v1/meshes
-[meshes_heldout_dir]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/assets/rgb_v1/meshes/heldout
-[meshes_test_dir]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/assets/rgb_v1/meshes/test_triplets
-[meshes_train_dir]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/assets/rgb_v1/meshes/train
+[meshes_dir]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/assets/rgb_v1.3/meshes
+[meshes_heldout_dir]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/assets/rgb_v1.3/meshes/heldout
+[meshes_test_dir]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/assets/rgb_v1.3/meshes/test_triplets
+[meshes_train_dir]: https://github.com/deepmind/dm_robotics/tree/main/py/manipulation/props/rgb_objects/assets/rgb_v1.3/meshes/train
 [object_disk]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/rgb_objects_disk.png?raw=true
 [rgb_benchmark]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/rgb_benchmark.png?raw=true
 [test_triplets]: https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/doc/images/tile_triplets.gif?raw=true
