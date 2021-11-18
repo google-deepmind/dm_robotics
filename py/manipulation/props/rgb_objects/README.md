@@ -60,14 +60,14 @@ are further split between following subdirectories:
 - [`heldout`][meshes_heldout_dir] directory with 36 objects.
 
 ### File name convention
-All asset files are in STL format and have an `*.stl` extention. The
+All asset files are in STL format and have an `*.stl` extension. The
 file name starts with the object ID and is followed by a sequence of
 parameters that uniquely describe the object.
 For example, `b3_sds4_shr48_drf0_hlw0_shx0_shy0_scx46_scy49_scz63.stl` is the
 filename for the `b3` object.
 
 ### Visualizing STL assets
-[`meshlab`][meshlab] is a convinient tool to work with the provided meshes. To
+[`meshlab`][meshlab] is a convenient tool to work with the provided meshes. To
 load a mesh from a command line:
 
 ```bash
