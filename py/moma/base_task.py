@@ -15,7 +15,7 @@
 """A Moma Base Task."""
 
 import collections
-from typing import Callable, Dict, Optional, Sequence
+from typing import Callable, Dict, Optional, Sequence, List
 
 from absl import logging
 from dm_control import composer
@@ -92,6 +92,7 @@ class BaseTask(composer.Task):
     self._episode_initializer = episode_initializer
     self.control_timestep = control_timestep
     self._initialize_sensors()
+    self._teardown_callables: List[Callable[[], None]] = []
 
   def _initialize_sensors(self):
     for s in self.sensors:
@@ -199,6 +200,10 @@ class BaseTask(composer.Task):
     for ef in self.effectors:
       ef.after_compile(self.root_entity.mjcf_model.root)
 
+  def add_teardown_callable(self, teardown_fn: Callable[[], None]):
+    """Adds function to be called when the task is closed."""
+    self._teardown_callables.append(teardown_fn)
+
   def close(self):
     """Closes all the effectors and  sensors of the tasks.
 
@@ -210,6 +215,8 @@ class BaseTask(composer.Task):
       eff.close()
     for sen in self.sensors:
       sen.close()
+    for teardown_fn in self._teardown_callables:
+      teardown_fn()
 
   def get_reward(self, physics):
     return _REWARD_TYPE(0.0)
