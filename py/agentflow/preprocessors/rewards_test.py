@@ -18,6 +18,8 @@
 from typing import Sequence, Text, Union
 
 from absl.testing import absltest
+from absl.testing import parameterized
+
 from dm_env import specs
 from dm_robotics.agentflow import spec_utils
 from dm_robotics.agentflow import testing_functions
@@ -196,7 +198,7 @@ class ComputeRewardTest(absltest.TestCase):
     np.testing.assert_allclose(output_timestep.reward, [2.0, 3.0])
 
 
-class CombineRewardsTest(absltest.TestCase):
+class CombineRewardsTest(parameterized.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -310,6 +312,89 @@ class CombineRewardsTest(absltest.TestCase):
     combined_reward.setup_io_spec(input_spec)
     output_timestep = combined_reward.process(self._input_timestep)
     self.assertEqual(output_timestep.reward, 0.5)
+
+  def test_staged_active_monotonous(self):
+    """More stages above threshold mean more reward, no matter the values."""
+    reward_100 = _TestReward(reward_value=100.)
+    reward_0 = _TestReward(reward_value=0.)
+    staged_combination = rewards.StagedWithActiveThreshold(threshold=1e-6)
+    combined_reward_1_above_thresh = rewards.CombineRewards(
+        reward_preprocessors=[reward_100, reward_0],
+        combination_strategy=staged_combination)
+
+    reward_100 = _TestReward(reward_value=100.)
+    reward_001 = _TestReward(reward_value=0.001)
+    staged_combination = rewards.StagedWithActiveThreshold(threshold=1e-6)
+    combined_reward_2_above_thresh = rewards.CombineRewards(
+        reward_preprocessors=[reward_100, reward_001],
+        combination_strategy=staged_combination)
+
+    combined_reward_1_above_thresh.setup_io_spec(self._input_spec)
+    combined_reward_2_above_thresh.setup_io_spec(self._input_spec)
+
+    output_timestep_1_above_thresh = combined_reward_1_above_thresh.process(
+        self._input_timestep)
+    output_timestep_2_above_thresh = combined_reward_2_above_thresh.process(
+        self._input_timestep)
+
+    self.assertLess(output_timestep_1_above_thresh.reward,
+                    output_timestep_2_above_thresh.reward)
+
+  @parameterized.named_parameters(
+      # Count 1, value 1.
+      ('_contiguous', (1., 1., 0.5, 0.8, 0.), 0.9, 0.4),
+      # Count 3 despite 0.5 among them; value 0.8.
+      ('_count_below_thresh', (1., 1., 0.5, 0.8, 0.), 0.7, 0.76),
+      # Count 3; value 1, NOT 100.
+      ('_clip_final', (1., 1., 0.5, 100, 0.), 0.7, 0.8),
+      # Count 3 despite 500 among them.
+      ('_clip_mid', (1., 1., 500, 0.8, 0.), 0.7, 0.76),
+  )
+  def test_staged_active_clipping(self, term_rewards, threshold,
+                                  expected_reward):
+    """Terms are clipped if too large."""
+    reward_preprocessors = [_TestReward(reward_value=r) for r in term_rewards]
+    staged_combination = rewards.StagedWithActiveThreshold(threshold=threshold)
+    combined_reward = rewards.CombineRewards(
+        reward_preprocessors=reward_preprocessors,
+        combination_strategy=staged_combination)
+
+    combined_reward.setup_io_spec(self._input_spec)
+    output_timestep = combined_reward.process(self._input_timestep)
+
+    self.assertAlmostEqual(expected_reward, output_timestep.reward)
+
+  @parameterized.named_parameters(
+      # Should work even on a single stage, and round up if above thresh.
+      ('_singleton_above_thresh', (0.92,), 0.9, 1., True),
+      # Should work even on a single stage, and give shaped val if below thresh.
+      ('_singleton_below_thresh', (0.82,), 0.9, 0.82, True),
+      # First two tasks are solved so we work on third. `assume` flag irrelevant
+      ('_monotonic_cumululative', (0.92, 0.91, 0.1), 0.9, 0.7, True),
+      # First two tasks are solved so we work on third. `assume` flag irrelevant
+      ('_monotonic_not_cumululative', (0.92, 0.91, 0.1), 0.9, 0.7, False),
+      # Second task is solved so we assume first is too and work on third.
+      ('_not_monotonic_cumululative', (0.6, 0.91, 0.1), 0.9, 0.7, True),
+      # Second task is solved but first isn't so we work on that.
+      ('_not_monotonic_not_cumululative', (0.6, 0.91, 0.1), 0.9, 0.2, False),
+      # Nothing is solved so we work on the first task.
+      ('_none_solved', (0.6, 0.2, 0.6), 0.9, 0.2, False),
+  )
+  def test_staged_success(self, term_rewards, threshold, expected_reward,
+                          assume_cumulative_success):
+    """Terms are clipped if too large."""
+    reward_preprocessors = [_TestReward(reward_value=r) for r in term_rewards]
+    staged_combination = rewards.StagedWithSuccessThreshold(
+        threshold=threshold,
+        assume_cumulative_success=assume_cumulative_success)
+    combined_reward = rewards.CombineRewards(
+        reward_preprocessors=reward_preprocessors,
+        combination_strategy=staged_combination)
+
+    combined_reward.setup_io_spec(self._input_spec)
+    output_timestep = combined_reward.process(self._input_timestep)
+
+    self.assertAlmostEqual(expected_reward, output_timestep.reward)
 
 
 class _TestReward(timestep_preprocessor.TimestepPreprocessor):

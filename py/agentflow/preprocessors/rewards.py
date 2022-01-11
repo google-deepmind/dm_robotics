@@ -27,6 +27,10 @@ import numpy as np
 
 # All rewards should either be a single float or array of floats.
 RewardVal = Union[float, np.floating, np.ndarray]
+
+# Callable for reward composition for `CombineRewards`.
+# This callable receives the list of rewards generated from the list of
+# `reward_preprocessors` passed to `CombineRewards` and returns a single reward.
 RewardCombinationStrategy = Callable[[Sequence[RewardVal]], RewardVal]
 
 
@@ -167,6 +171,126 @@ class ComputeReward(af.TimestepPreprocessor):
         shape=self._output_shape, dtype=input_spec.reward_spec.dtype))
 
 
+class StagedWithActiveThreshold(RewardCombinationStrategy):
+  """A RewardCombinationStrategy that stages a sequences of rewards.
+
+  It creates a reward for following a particular sequence of tasks in order,
+  given a reward value for each individual task.
+
+  This works by cycling through the terms backwards and using the last reward
+  that gives a response above the provided threshold + the number of terms
+  preceding it.
+
+  With this strategy the agent starts working on a task as soon as it's above
+  the provided threshold. This was useful for the RGB stacking task in which it
+  wasn't clear how close a reward could get to 1.0 for many tasks, but it was
+  easy to see when a reward started to move and should therefore be switched to.
+
+  E.g. if the threshold is 0.9 and the reward sequence is [0.95, 0.92, 0.6] it
+  will output (1 + 0.92) / 3 = 0.64.
+
+  Note: Preceding terms are given 1.0, not their current reward value.
+  This assumes tasks are ordered such that success on task `i` implies all
+  previous tasks `<i` are also solved, and thus removes the need to tune earlier
+  rewards to remain above-threshold in all down-stream tasks.
+
+  Use this for tasks in which it is more natural to express a threshold on which
+  a task is active, vs. when it is solved. See `StagedWithSuccessThreshold` if
+  the converse is true.
+
+  Rewards must be in [0;1], otherwise they will be clipped.
+  """
+
+  def __init__(self, threshold: float = 0.1):
+    """Initialize Staged.
+
+    Args:
+      threshold: A threshold that a reward must exceed for that task to be
+        considered "active". All previous tasks are assumed solved.
+    """
+    self._thresh = threshold
+
+  def __call__(self, rewards: Sequence[RewardVal]) -> RewardVal:
+    rewards = np.clip(rewards, 0, 1)
+    last_reward = 0.
+    num_stages = len(rewards)
+    for i, last_reward in enumerate(reversed(rewards)):
+      if last_reward >= self._thresh:
+        # Found a reward at/above the threshold, add number of preceding terms
+        # and normalize with the number of terms.
+        return (num_stages - (i + 1) + last_reward) / float(num_stages)
+
+    # Return the accumulated rewards.
+    return last_reward / num_stages
+
+
+class StagedWithSuccessThreshold(RewardCombinationStrategy):
+  """A RewardCombinationStrategy that stages a sequences of rewards.
+
+  It creates a reward for following a particular sequence of tasks in order,
+  given a reward value for each individual task.
+
+  Unlike `StagedWithActiveThreshold`, which only gives reward for tasks above
+  threshold, this function gives (normalized) reward 1.0 for all solved tasks,
+  as well as the current shaped value for the first unsolved task.
+
+  E.g. if the threshold is 0.9 and the reward sequence is [0.95, 0.92, 0.6] it
+  will output (2 + 0.6) / 3 = 0.8666.
+
+  With this strategy the agent starts working on a task as soon as the PREVIOUS
+  task is above the provided threshold. Use this for tasks in which it is more
+  natural to express a threshold on which a task is solved, vs. when it is
+  active.
+
+  E.g. a sequence of object-rearrangement tasks may have arbitrary starting
+  reward due to their current positions, but the reward will always saturate
+  towards 1 when the task is solved. In this case it would be difficult to set
+  an "active" threshold without skipping stages.
+
+  Rewards must be in [0;1], otherwise they will be clipped.
+  """
+
+  def __init__(self,
+               threshold: float = 0.9,
+               assume_cumulative_success: bool = True):
+    """Initialize Staged.
+
+    Args:
+      threshold: A threshold that each reward must exceed for that task to be
+        considered "solved".
+      assume_cumulative_success: If True, assumes all tasks before the last task
+        above threshold are also solved and given reward 1.0, regardless of
+        their current value. If False, only the first K continguous tasks above
+        threshold are considered solved.
+    """
+    self._thresh = threshold
+    self._assume_cumulative_success = assume_cumulative_success
+
+  def __call__(self, rewards: Sequence[RewardVal]) -> RewardVal:
+    rewards = np.clip(rewards, 0, 1)
+
+    num_stages = len(rewards)
+    tasks_above_threshold = np.asarray(rewards) > self._thresh
+
+    if self._assume_cumulative_success:
+      if np.any(tasks_above_threshold):
+        solved_task_idxs = np.argwhere(tasks_above_threshold)  # last "True"
+        num_tasks_solved = solved_task_idxs.max() + 1
+      else:
+        num_tasks_solved = 0
+
+    else:
+      num_tasks_solved = np.argmin(tasks_above_threshold)  # first "False"
+
+    current_task_idx = num_tasks_solved + 1
+    if current_task_idx > len(rewards):
+      current_task_reward = 0
+    else:
+      current_task_reward = rewards[num_tasks_solved]
+
+    return (num_tasks_solved + current_task_reward) / float(num_stages)
+
+
 class CombineRewards(af.TimestepPreprocessor, core.Renderable):
   """Preprocessor which steps multiple rewards in sequence and combines them."""
 
@@ -213,6 +337,7 @@ class CombineRewards(af.TimestepPreprocessor, core.Renderable):
         rewards.append(timestep.reward)
 
     reward = self._combination_strategy(rewards)
+
     return timestep._replace(
         reward=_cast_reward_to_type(reward, self._output_type))
 
