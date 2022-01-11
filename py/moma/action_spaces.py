@@ -14,7 +14,7 @@
 
 """Action spaces for manipulation."""
 
-from typing import Callable, List
+from typing import Callable, List, Optional, Sequence
 
 from dm_control import mjcf  # type: ignore
 from dm_env import specs
@@ -116,13 +116,35 @@ class ReframeVelocityActionSpace(af.ActionSpace):
                physics_getter: Callable[[], mjcf.Physics],
                input_frame: geometry.Frame,
                output_frame: geometry.Frame,
-               name: str = 'ReframeVelocity'):
+               name: str = 'ReframeVelocity',
+               *,
+               velocity_dims: Optional[Sequence[int]] = None):
+    """Initializes ReframeVelocityActionSpace.
+
+    Args:
+      spec: The spec for the original un-transformed action.
+      physics_getter: A callable returning a mjcf.Physics
+      input_frame: The frame in which the input twist is defined.
+      output_frame: The frame in which the output twist should be expressed.
+      name: A name for this action_space.
+      velocity_dims: Optional sub-dimensions of the full twist which the action
+        will contain. This can be used to allow `ReframeVelocityActionSpace` to
+        operate on reduced-DOF cartesian action-spaces, e.g. the 4D used by the
+        RGB-stacking tasks. To use, velocity_dims should have the same shape as
+        `spec.shape`, and contain the indices of the twist that that action
+        space uses (e.g. [0, 1, 2, 5] for `Cartesian4dVelocityEffector`).
+    """
     self._spec = spec
     self._physics_getter = physics_getter
     self._physics = mujoco_physics.from_getter(physics_getter)
     self._input_frame = input_frame
     self._output_frame = output_frame
     self._name = name
+
+    if velocity_dims is not None and np.shape(velocity_dims) != spec.shape:
+      raise ValueError(f'Expected velocity_dims to have shape {spec.shape} but '
+                       f'it has shape {np.shape(velocity_dims)}.')
+    self._velocity_dims = velocity_dims
 
   @property
   def name(self) -> str:
@@ -132,8 +154,20 @@ class ReframeVelocityActionSpace(af.ActionSpace):
     return self._spec
 
   def project(self, action: np.ndarray) -> np.ndarray:
+    if self._velocity_dims is not None:
+      # If action isn't a full twist (e.g. 4-DOF cartesian action space), expand
+      # it for the frame-transformation operation.
+      full_action = np.zeros(6)
+      full_action[self._velocity_dims] = action
+      action = full_action
+
     input_twist = geometry.TwistStamped(action, self._input_frame)
     output_twist = input_twist.to_frame(
         self._output_frame, physics=self._physics)
     output_action = output_twist.twist.full
+
+    if self._velocity_dims is not None:
+      # If action was reduced-dof, slice out the original dims.
+      output_action = output_action[self._velocity_dims]
+
     return spec_utils.shrink_to_fit(value=output_action, spec=self._spec)
