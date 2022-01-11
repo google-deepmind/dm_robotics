@@ -29,7 +29,7 @@ import numpy as np
 # Internal profiling
 
 
-class SubTask(abc.ABC):
+class SubTask(abc.ABC, core.Renderable):
   """A SubTask defines a task for subtask policies, given a parent task.
 
   SubTask is used to define learning problems for agents used inside a larger
@@ -185,9 +185,6 @@ class SubTask(abc.ABC):
     del parent_timestep
     del own_arg_key
     return core.OptionResult(core.TerminationType.SUCCESS, data=None)
-
-  def render_frame(self, canvas) -> None:
-    pass
 
 
 class SubTaskObserver(abc.ABC):

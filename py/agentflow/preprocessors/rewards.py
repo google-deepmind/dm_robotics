@@ -19,6 +19,7 @@ from typing import Callable, Sequence, Text, Union
 
 from dm_env import specs
 import dm_robotics.agentflow as af
+from dm_robotics.agentflow import core
 from dm_robotics.agentflow import spec_utils
 from dm_robotics.agentflow.decorators import overrides
 import numpy as np
@@ -166,7 +167,7 @@ class ComputeReward(af.TimestepPreprocessor):
         shape=self._output_shape, dtype=input_spec.reward_spec.dtype))
 
 
-class CombineRewards(af.TimestepPreprocessor):
+class CombineRewards(af.TimestepPreprocessor, core.Renderable):
   """Preprocessor which steps multiple rewards in sequence and combines them."""
 
   def __init__(self,
@@ -223,3 +224,9 @@ class CombineRewards(af.TimestepPreprocessor):
     self._output_type = input_spec.reward_spec.dtype
     return input_spec.replace(reward_spec=specs.Array(
         shape=self._output_shape, dtype=self._output_type))
+
+  def render_frame(self, canvas) -> None:
+    """Callback to allow preprocessors to draw on a canvas."""
+    for preprocessor in self._reward_preprocessors:
+      if isinstance(preprocessor, core.Renderable):
+        preprocessor.render_frame(canvas)

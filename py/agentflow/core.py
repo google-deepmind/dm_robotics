@@ -152,8 +152,30 @@ class IdentityActionSpace(ActionSpace[Spec]):
     return action
 
 
+class Renderable:
+  """An interface for adding a `render_frame` method to a class."""
+
+  def render_frame(self, canvas) -> None:
+    """Renders to provided canvas object.
+
+    Args:
+      canvas: An object that instances can draw on. AgentFlow does not
+        assume any particular interface for the Canvas, but it does forward
+        calls down the agent-graph from the top-level `Option` in order to allow
+        users to implement arbitrary drawing logic. On the task-side, it is
+        also forwarded through subtasks to timestep-preprocessors, which allows
+        rendering from user-defined tasks.
+
+        I.e.:
+        canvas = MyCanvas()
+        agent = BigAgentFlowGraph()
+        agent.render_frame(canvas)  # All nodes should see `canvas`.
+    """
+    pass
+
+
 @register_class_properties
-class Policy(abc.ABC):
+class Policy(abc.ABC, Renderable):
   """Base class for agents."""
 
   def __init__(self, name: Optional[Text] = None) -> None:
@@ -176,22 +198,6 @@ class Policy(abc.ABC):
       A action that the environment (or SubTask) understands.
     """
     raise NotImplementedError
-
-  def render_frame(self, canvas) -> None:
-    """Optional method for rendering to a "canvas".
-
-    Args:
-      canvas: An object that instances can draw on. AgentFlow does not
-        assume any particular interface for the Canvas, but it does forward
-        calls down the graph from the top-level `Option` in order to allow
-        users to implement arbitrary drawing logic.
-
-        I.e.:
-        canvas = MyCanvas()
-        agent = BigAgentFlowGraph()
-        agent.render_frame(canvas)  # All nodes should see `canvas`.
-    """
-    pass
 
   @property
   @register_property

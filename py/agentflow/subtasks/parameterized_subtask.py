@@ -20,6 +20,7 @@ from typing import Any, Callable, Optional, Text
 import dm_env
 from dm_env import specs
 from dm_robotics import agentflow as af
+from dm_robotics.agentflow import core
 from dm_robotics.agentflow import spec_utils
 from dm_robotics.agentflow.decorators import overrides
 from dm_robotics.agentflow.preprocessors import timestep_preprocessor as processing
@@ -127,6 +128,11 @@ class ParameterizedSubTask(af.SubTask):
   def render_frame(self, canvas) -> None:
     if self._render_frame_cb is not None:
       self._render_frame_cb(canvas)
+
+    # Forward render call to timestep_preprocessor(s).
+    if (self._timestep_preprocessor is not None and
+        isinstance(self._timestep_preprocessor, core.Renderable)):
+      self._timestep_preprocessor.render_frame(canvas)
 
   def set_timestep_preprocessor(
       self, preprocessor: processing.TimestepPreprocessor):

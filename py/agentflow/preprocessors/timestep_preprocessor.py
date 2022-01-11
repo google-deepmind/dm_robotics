@@ -170,7 +170,7 @@ class TimestepPreprocessor(object):
     raise NotImplementedError('This should be overridden.')
 
 
-class CompositeTimestepPreprocessor(TimestepPreprocessor):
+class CompositeTimestepPreprocessor(TimestepPreprocessor, core.Renderable):
   """Apply an ordered list of timestep preprocessors."""
 
   def __init__(self, *preprocessors: TimestepPreprocessor):
@@ -200,3 +200,9 @@ class CompositeTimestepPreprocessor(TimestepPreprocessor):
           'Cannot append to an initialized CompositeTimestepPreprocessor.')
     else:
       self._timestep_preprocessors.append(preprocessor)
+
+  def render_frame(self, canvas) -> None:
+    """Callback to allow preprocessors to draw on a canvas."""
+    for preprocessor in self._timestep_preprocessors:
+      if isinstance(preprocessor, core.Renderable):
+        preprocessor.render_frame(canvas)
