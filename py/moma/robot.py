@@ -15,7 +15,7 @@
 """A module for encapsulating the robot arm, gripper, and bracelet."""
 
 import abc
-from typing import List, Optional, Sequence
+from typing import List, Optional, Sequence, Generic, TypeVar
 
 from dm_control import composer
 from dm_control import mjcf
@@ -29,8 +29,11 @@ from dm_robotics.moma.models.robots.robot_arms import robot_arm
 from dm_robotics.moma.utils import ik_solver
 import numpy as np
 
+Arm = TypeVar('Arm', bound=robot_arm.RobotArm)
+Gripper = TypeVar('Gripper', bound=robot_hand.AnyRobotHand)
 
-class Robot(abc.ABC):
+
+class Robot(abc.ABC, Generic[Arm, Gripper]):
   """Abstract base class for MOMA robotic arms and their attachments."""
 
   @property
@@ -60,12 +63,12 @@ class Robot(abc.ABC):
 
   @property
   @abc.abstractmethod
-  def arm(self) -> robot_arm.RobotArm:
+  def arm(self) -> Arm:
     pass
 
   @property
   @abc.abstractmethod
-  def gripper(self) -> robot_hand.AnyRobotHand:
+  def gripper(self) -> Gripper:
     pass
 
   @property
@@ -98,20 +101,19 @@ class Robot(abc.ABC):
     """Positions the arm joints to the given angles."""
 
 
-class StandardRobot(Robot):
+class StandardRobot(Generic[Arm, Gripper], Robot[Arm, Gripper]):
   """A Robot class representing the union of arm, gripper, and bracelet."""
 
-  def __init__(
-      self,
-      arm: robot_arm.RobotArm,
-      arm_base_site_name: str,
-      gripper: robot_hand.AnyRobotHand,
-      robot_sensors: Sequence[moma_sensor.Sensor],
-      arm_effector: effector.Effector,
-      gripper_effector: Optional[effector.Effector],
-      wrist_ft: Optional[composer.Entity] = None,
-      wrist_cameras: Optional[Sequence[prop.Camera]] = None,
-      name: str = 'robot'):
+  def __init__(self,
+               arm: Arm,
+               arm_base_site_name: str,
+               gripper: Gripper,
+               robot_sensors: Sequence[moma_sensor.Sensor],
+               arm_effector: effector.Effector,
+               gripper_effector: Optional[effector.Effector],
+               wrist_ft: Optional[composer.Entity] = None,
+               wrist_cameras: Optional[Sequence[prop.Camera]] = None,
+               name: str = 'robot'):
     """Robot constructor.
 
     Args:
@@ -167,11 +169,11 @@ class StandardRobot(Robot):
     return self._gripper_effector
 
   @property
-  def arm(self) -> robot_arm.RobotArm:
+  def arm(self) -> Arm:
     return self._arm
 
   @property
-  def gripper(self) -> robot_hand.AnyRobotHand:
+  def gripper(self) -> Gripper:
     return self._gripper
 
   @property
@@ -230,9 +232,12 @@ class StandardRobot(Robot):
     self.arm.set_joint_angles(physics, joint_angles)
 
 
-def standard_compose(arm: robot_arm.RobotArm, gripper: robot_hand.AnyRobotHand,
-                     wrist_ft: Optional[composer.Entity] = None,
-                     wrist_cameras: Sequence[prop.Camera] = ()) -> None:
+def standard_compose(
+    arm: Arm,
+    gripper: Gripper,
+    wrist_ft: Optional[composer.Entity] = None,
+    wrist_cameras: Sequence[prop.Camera] = ()
+) -> None:
   """Creates arm and attaches gripper."""
 
   if wrist_ft:
