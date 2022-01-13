@@ -214,15 +214,69 @@ class Cartesian6dVelocityEffectorTest(absltest.TestCase):
                                [0.1, 0.0, 0.1, 0.1, 0.1, 0.1],
                                atol=1e-3, rtol=0.0)
 
-    # Workspace limits on rotations are not yet supported.
-    min_workspace_limits = np.array([0.0, -0.9, 0.5,
-                                     -0.1, -0.1, -0.1])
-    max_workspace_limits = np.array([0.9, -0.5, 0.9,
-                                     0.1, 0.1, 0.1])
-    self.assertRaises(
-        ValueError, cartesian_6d_velocity_effector.limit_to_workspace,
-        effector_6d, arm.wrist_site, min_workspace_limits,
-        max_workspace_limits)
+  def test_limiting_orientation_to_workspace(self):
+    arm = sawyer.Sawyer(with_pedestal=False)
+    joints = arm.joints
+    element = arm.wrist_site
+    physics = mjcf.Physics.from_mjcf_model(arm.mjcf_model)
+    effector_6d = test_utils.Spy6dEffector(element)
+    sawyer_effector = arm_effector.ArmEffector(
+        arm=arm, action_range_override=None, robot_name='sawyer')
+
+    joint_vel_limits = np.ones(7) * 1e-2
+    cartesian_effector = (
+        cartesian_6d_velocity_effector.Cartesian6dVelocityEffector(
+            'robot0', sawyer_effector,
+            cartesian_6d_velocity_effector.ModelParams(element,
+                                                       joints),
+            cartesian_6d_velocity_effector.ControlParams(
+                control_timestep_seconds=1.0,
+                nullspace_gain=0.0,
+                max_lin_vel=1e3,
+                max_rot_vel=1e3,
+                joint_velocity_limits=joint_vel_limits)))
+    cartesian_effector.after_compile(arm.mjcf_model)
+    arm.set_joint_angles(
+        physics, joint_angles=test_utils.SAFE_SAWYER_JOINTS_POS)
+    # Propagate the changes to the rest of the physics.
+    physics.step()
+
+    # The arm is pointing down in front of the base. Create a
+    # workspace that encompasses it, and check that all commands are
+    # valid.
+    min_workspace_limits = np.array([0.0, -0.5, 0.0, 0.0, -np.pi, -np.pi])
+    max_workspace_limits = np.array([0.9, 0.5, 0.5, 2 * np.pi, np.pi, np.pi])
+    effector_with_limits = (
+        cartesian_6d_velocity_effector.limit_to_workspace(
+            effector_6d, arm.wrist_site, min_workspace_limits,
+            max_workspace_limits))
+    effector_with_limits.set_control(physics,
+                                     command=np.ones(6) * 0.1)
+    np.testing.assert_allclose(
+        effector_6d.previous_action, np.ones(6) * 0.1,
+        atol=1e-3,
+        rtol=0.0)
+
+    # The arm is pointing down in front of the base (x_rot = np.pi). Create a
+    # workspace where the Y and Z orientations are in bounds, but X is out of
+    # bounds.
+    arm.set_joint_angles(
+        physics, joint_angles=test_utils.SAFE_SAWYER_JOINTS_POS)
+    # Propagate the changes to the rest of the physics.
+    physics.step()
+    min_workspace_limits = np.array([0., -0.5, 0., -np.pi / 2, -np.pi, -np.pi])
+    max_workspace_limits = np.array([0.9, 0.5, 0.5, 0.0, np.pi, np.pi])
+    effector_with_limits = (
+        cartesian_6d_velocity_effector.limit_to_workspace(
+            effector_6d, arm.wrist_site, min_workspace_limits,
+            max_workspace_limits))
+    # The action should only affect DOFs that are out of bounds and
+    # are moving away from where they should.
+    effector_with_limits.set_control(physics,
+                                     command=np.ones(6) * 0.1)
+    np.testing.assert_allclose(effector_6d.previous_action,
+                               [0.1, 0.1, 0.1, 0., 0.1, 0.1],
+                               atol=1e-3, rtol=0.0)
 
   def test_collision_avoidance(self):
     # Add a sphere above the sawyer that it would collide with if it moves up.

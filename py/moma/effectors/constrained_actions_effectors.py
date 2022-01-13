@@ -124,6 +124,11 @@ class ConstrainedActionEffector(effector.Effector, Generic[T]):
     return self._delegate.action_spec(physics)
 
   def set_control(self, physics: mjcf.Physics, command: np.ndarray) -> None:
+    constrained_action = self._get_contstrained_action(physics, command)
+    self._delegate.set_control(physics, constrained_action)
+
+  def _get_contstrained_action(
+      self, physics: mjcf.Physics, command: np.ndarray) -> np.ndarray:
     # Limit any DOFs whose state falls outside the provided limits.
     constrained_action = command[:]
     state = self._get_state(physics)
@@ -131,7 +136,7 @@ class ConstrainedActionEffector(effector.Effector, Generic[T]):
         self._min_state_checker(state, self._min_limits, command)] = 0.
     constrained_action[
         self._max_state_checker(state, self._max_limits, command)] = 0.
-    self._delegate.set_control(physics, constrained_action)
+    return constrained_action
 
   @property
   def delegate(self) -> T:
