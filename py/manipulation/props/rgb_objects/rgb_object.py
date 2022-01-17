@@ -61,6 +61,7 @@ _Singleton = object_collection.Singleton
 PropsSetType = object_collection.VersionedSequence
 
 
+@enum.unique
 class PropsVersion(enum.Enum):
   """Supported revisions of the RGB-objects.
 
@@ -70,7 +71,7 @@ class PropsVersion(enum.Enum):
   RGB_OBJECTS_V1_3 = parametric_rgb_object.RgbVersion.v1_3
 
 
-V1_3 = PropsVersion.RGB_OBJECTS_V1_3  # short name.
+V1_3 = PropsVersion.RGB_OBJECTS_V1_3  # Shortened version name.
 
 
 @dataclasses.dataclass
@@ -144,7 +145,7 @@ RGB_OBJECTS_DIM = _define_deformation_axes()
 _RGB_OBJECTS_ID_FROM_FILE_FUNC = lambda filename: filename.split('_')[0]
 RGB_OBJECTS_MESH_SCALE = 1.0
 
-PROP_FEATURES = {
+PROP_FEATURES: Dict[PropsVersion, PropsDatasetType] = {
     V1_3:
         PropsDatasetType(
             version=V1_3,
@@ -154,7 +155,7 @@ PROP_FEATURES = {
             get_object_id_func=_RGB_OBJECTS_ID_FROM_FILE_FUNC),
 }
 
-DEFAULT_COLOR_SET = {
+DEFAULT_COLOR_SET: Dict[str, Sequence[int]] = {
     'RED': [1, 0, 0, 1],
     'GREEN': [0, 1, 0, 1],
     'BLUE': [0, 0, 1, 1]
@@ -239,8 +240,7 @@ def _define_blue_prop_triplets(
         id_list_blue=RGB_OBJECTS_DIM[a])
   return blue_obj_triplets
 
-
-PROP_TRIPLETS_TEST = {
+PROP_TRIPLETS_TEST: Dict[str, PropsSetType] = {
     # Object groups as per 'Triplets v1.0':
     'rgb_test_triplet1': PropsSetType(V1_3, ('r3', 's0', 'b2')),
     'rgb_test_triplet2': PropsSetType(V1_3, ('r5', 'g2', 'b3')),
@@ -248,6 +248,16 @@ PROP_TRIPLETS_TEST = {
     'rgb_test_triplet4': PropsSetType(V1_3, ('s0', 'g5', 'b6')),
     'rgb_test_triplet5': PropsSetType(V1_3, ('r2', 'g6', 's0')),
 }
+
+_BLUE_PROP_TRIPLETS = _define_blue_prop_triplets()
+_BLUE_PROP_TRIPLETS_TRAIN = _define_blue_prop_triplets(
+    base_str='rgb_train_blue_dim',
+    id_list=RGB_OBJECTS_TRAIN_SET,
+    axes=DEFORMATION_TRAIN_AXES)
+_BLUE_PROP_TRIPLETS_HELDOUT = _define_blue_prop_triplets(
+    base_str='rgb_heldout_blue_dim',
+    id_list=RGB_OBJECTS_HELDOUT_SET,
+    axes=DEFORMATION_HELDOUT_AXES)
 
 RANDOM_PROP_TRIPLETS_FUNCTIONS = object_collection.PropSetDict({
     # Return changing triplets on every access.

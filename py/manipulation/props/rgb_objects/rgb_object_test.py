@@ -36,7 +36,8 @@ class RgbObjectTest(parameterized.TestCase):
 
   @parameterized.named_parameters(("rgb_v1_3", rgb_object.V1_3))
   def test_random_props_creation(self, rgb_version):
-    for i in range(40):
+    num_runs = 40
+    for i in range(num_runs):
       obj_id = str(i)
       prop = rgb_object.RandomRgbObjectProp(
           rgb_version=rgb_version, name=obj_id)
