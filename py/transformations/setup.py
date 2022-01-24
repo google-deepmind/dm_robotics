@@ -45,6 +45,7 @@ setuptools.setup(
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/deepmind/dm_robotics/tree/main/py/transformations",
+    setup_requires=["wheel >= 0.31.0"],
     install_requires=_get_requirements("requirements.txt"),
     classifiers=[
         "Development Status :: 5 - Production/Stable",
