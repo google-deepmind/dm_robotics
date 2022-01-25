@@ -14,11 +14,10 @@
 
 """Sensor for a sim Robotiq gripper."""
 
-from typing import Dict
+from typing import Dict, Optional
 
 from dm_control import mjcf
 from dm_control.composer.observation import observable
-from dm_robotics.moma import sensor as moma_sensor
 from dm_robotics.moma.sensors import robotiq_gripper_observations
 import numpy as np
 import typing_extensions
@@ -34,7 +33,7 @@ class Gripper(typing_extensions.Protocol):
     pass
 
 
-class RobotiqGripperSensor(moma_sensor.Sensor):
+class RobotiqGripperSensor(robotiq_gripper_observations.RobotiqGripperSensor):
   """Robotiq gripper sensor for pos, vel, and grasp related observations."""
 
   def __init__(self, gripper: Gripper, name: str):
@@ -49,21 +48,23 @@ class RobotiqGripperSensor(moma_sensor.Sensor):
     def velocity_from_positions(cur_prev_positions):
       return cur_prev_positions[1] - cur_prev_positions[0]
 
+    observations = robotiq_gripper_observations.Observations
     self._observables = {
-        self.get_obs_key(robotiq_gripper_observations.Observations.POS):
+        self.get_obs_key(observations.POS):
             observable.Generic(
                 self._pos,
                 # Convert the raw joint pos to a sensor output.
                 corruptor=self._gripper.convert_position),
-        self.get_obs_key(robotiq_gripper_observations.Observations.VEL):
+        self.get_obs_key(observations.VEL):
             observable.Generic(
                 self._pos,
                 buffer_size=2,
                 update_interval=physics_steps_per_control_step,
                 corruptor=self._gripper.convert_position,
                 aggregator=velocity_from_positions),
-        self.get_obs_key(robotiq_gripper_observations.Observations.GRASP):
-            observable.Generic(self._grasp)
+        self.get_obs_key(observations.GRASP): observable.Generic(self._grasp),
+        self.get_obs_key(observations.HEALTH_STATUS):
+            observable.Generic(self.health_status),
     }
 
     for obs in self._observables.values():
@@ -89,4 +90,10 @@ class RobotiqGripperSensor(moma_sensor.Sensor):
 
   def _grasp(self, physics: mjcf.Physics) -> np.ndarray:
     return np.array([self._gripper.grasp_sensor_callable(physics)],
+                    dtype=np.uint8)
+
+  def health_status(self, physics: Optional[mjcf.Physics] = None) -> np.ndarray:
+    del physics
+    # Always report a "ready" status for the sim grippers.
+    return np.array([robotiq_gripper_observations.HealthStatus.READY.value],
                     dtype=np.uint8)
