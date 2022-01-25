@@ -230,6 +230,11 @@ class RgbObjectTest(parameterized.TestCase):
             "r5", "r6", "s0",
         ]))
 
+  @parameterized.named_parameters(("rgb_v1_3", rgb_object.V1_3))
+  def test_dataset(self, rgb_version):
+    stl_paths = rgb_object.RgbDataset()(rgb_version)
+    self.assertNotEmpty(stl_paths)
+
 
 if __name__ == "__main__":
   absltest.main()

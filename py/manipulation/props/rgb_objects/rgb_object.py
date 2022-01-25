@@ -249,16 +249,6 @@ PROP_TRIPLETS_TEST: Dict[str, PropsSetType] = {
     'rgb_test_triplet5': PropsSetType(V1_3, ('r2', 'g6', 's0')),
 }
 
-_BLUE_PROP_TRIPLETS = _define_blue_prop_triplets()
-_BLUE_PROP_TRIPLETS_TRAIN = _define_blue_prop_triplets(
-    base_str='rgb_train_blue_dim',
-    id_list=RGB_OBJECTS_TRAIN_SET,
-    axes=DEFORMATION_TRAIN_AXES)
-_BLUE_PROP_TRIPLETS_HELDOUT = _define_blue_prop_triplets(
-    base_str='rgb_heldout_blue_dim',
-    id_list=RGB_OBJECTS_HELDOUT_SET,
-    axes=DEFORMATION_HELDOUT_AXES)
-
 RANDOM_PROP_TRIPLETS_FUNCTIONS = object_collection.PropSetDict({
     # Return changing triplets on every access.
     'rgb_train_random':
