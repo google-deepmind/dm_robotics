@@ -187,7 +187,10 @@ class TransformationsTest(parameterized.TestCase):
   def test_euler_to_rmat_special(self, angles):
     # Test for special values that often cause numerical issues.
     r1, r2, r3 = angles
-    for ordering in transformations._eulermap.keys():
+    orderings = ('XYZ', 'XYX', 'XZY', 'ZYX', 'YZX', 'ZXY', 'YXZ', 'XZX', 'YXY',
+                 'YZY', 'ZXZ', 'ZYZ')
+
+    for ordering in orderings:
       r = transformations.euler_to_rmat(np.array([r1, r2, r3]), ordering)
       euler_angles = transformations.rmat_to_euler(r, ordering)
       np.testing.assert_allclose(euler_angles, [r1, r2, r3])

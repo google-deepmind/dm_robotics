@@ -47,6 +47,7 @@ setuptools.setup(
     url="https://github.com/deepmind/dm_robotics/tree/main/py/transformations",
     setup_requires=["wheel >= 0.31.0"],
     install_requires=_get_requirements("requirements.txt"),
+    extras_require={"quaternion": "numpy-quaternion == 2021.11.4.15.26.3"},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Programming Language :: Python :: 3",
