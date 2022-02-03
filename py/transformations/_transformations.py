@@ -1169,13 +1169,14 @@ def rmat_to_rot6(rmat: types.RotationMatrix) -> np.ndarray:
     https://arxiv.org/pdf/1812.07035.pdf
 
   Args:
-    rmat: A 3x3 rotation matrix.
+    rmat: A 3x3 rotation matrix, or larger rank-2 matrix containing a 3x3
+      rotation matrix in the leading 3-dimensions (e.g. a homogeneous 4x4).
 
   Returns:
     A 6-dimensional array containing the first two columns of `rmat`.  This
     representation can be mapped back to `rmat` using `rot6_to_rmat`.
   """
-  return rmat[:, :-1].T.flatten()
+  return rmat[:3, :2].T.flatten()  # concatenate the first 2 columns of `rmat`.
 
 
 # LINT.IfChange
