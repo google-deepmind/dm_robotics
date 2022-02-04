@@ -19,7 +19,7 @@ project(dmr_mujoco
 )
 
 # Generate defs.h from configuration with the MuJoCo constants.
-set(DMR_MUJOCO_LIB_NOGL_PATH "$ENV{HOME}/.mujoco/mujoco210/bin/libmujoco210nogl.so" CACHE STRING "Path to the MuJoCo shared library (`libmujoco210nogl.so`)")
+set(DMR_MUJOCO_LIB_NOGL_PATH "$ENV{HOME}/.mujoco/mujoco-2.1.1/lib/libmujoco_nogl.so" CACHE STRING "Path to the MuJoCo shared library (`libmujoco_nogl.so`)")
 set(DMR_DMCONTROL_SUITE_PATH "$ENV{HOME}/.local/lib/python3.8/site-packages/dm_control/suite" CACHE STRING "Path to `dm_control.suite`")
 set(DMR_DMCONTROL_SUITE_HUMANOID_XML_PATH "${DMR_DMCONTROL_SUITE_PATH}/humanoid.xml")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/defs.h.in
@@ -44,7 +44,7 @@ target_include_directories(dmr_mujoco
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
-    $<BUILD_INTERFACE:$ENV{HOME}/.mujoco/mujoco210/include>
+    $<BUILD_INTERFACE:$ENV{HOME}/.mujoco/mujoco-2.1.1/include>
 )
 target_link_libraries(dmr_mujoco
   PUBLIC
