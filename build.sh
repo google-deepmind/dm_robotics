@@ -71,7 +71,9 @@ if [[ -n "$DM_ROBOTICS_VERSION_SCRIPT" ]]; then
   # manylinux wheel (from an x86_64 wheel).
 
   cd "$root/cpp/dist"
-  python3 -m auditwheel repair --plat manylinux_2_27_x86_64 dm_robotics_controllers*.whl
+  for file in $(ls dm_robotics_controllers*.whl); do
+    python3 -m auditwheel repair --plat manylinux_2_27_x86_64 "$file"
+  done
 
   # Remove the x86_64 wheel, and replace with the manylinux version.
   rm dm_robotics_controllers*.whl
