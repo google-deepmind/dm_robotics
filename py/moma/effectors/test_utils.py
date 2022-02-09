@@ -30,15 +30,11 @@ SAFE_SAWYER_JOINTS_POS = np.array(
      1.26143456])
 
 
-class Spy6dEffector(effector.Effector):
+class SpyEffector(effector.Effector):
   """An effector that allows retrieving the most recent action."""
 
-  def __init__(self, element: _MjcfElement):
-    self._previous_action = np.zeros(6)
-    self._control_frame = geometry.HybridPoseStamped(
-        pose=None,
-        frame=element,
-        quaternion_override=geometry.PoseStamped(None, None))
+  def __init__(self, dofs: int):
+    self._previous_action = np.zeros(dofs)
 
   def after_compile(self, mjcf_model) -> None:
     pass
@@ -47,7 +43,9 @@ class Spy6dEffector(effector.Effector):
     pass
 
   def action_spec(self, physics) -> specs.BoundedArray:
-    return specs.BoundedArray((6,), np.float32, minimum=-1.0, maximum=1.0)
+    return specs.BoundedArray(
+        self._previous_action.shape, self._previous_action.dtype,
+        minimum=-1.0, maximum=1.0)
 
   def set_control(self, physics, command: np.ndarray) -> None:
     self._previous_action = command[:]
@@ -57,9 +55,20 @@ class Spy6dEffector(effector.Effector):
     return 'spy'
 
   @property
-  def control_frame(self) -> geometry.Frame:
-    return self._control_frame
-
-  @property
   def previous_action(self) -> np.ndarray:
     return self._previous_action
+
+
+class SpyEffectorWithControlFrame(SpyEffector):
+  """A spy effector with a control frame property."""
+
+  def __init__(self, element: _MjcfElement, dofs: int):
+    self._control_frame = geometry.HybridPoseStamped(
+        pose=None,
+        frame=element,
+        quaternion_override=geometry.PoseStamped(None, None))
+    super().__init__(dofs)
+
+  @property
+  def control_frame(self) -> geometry.Frame:
+    return self._control_frame

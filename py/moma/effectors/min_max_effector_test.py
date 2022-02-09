@@ -16,45 +16,15 @@
 
 from absl.testing import absltest
 from absl.testing import parameterized
-from dm_env import specs
-from dm_robotics.moma import effector
 from dm_robotics.moma.effectors import min_max_effector
+from dm_robotics.moma.effectors import test_utils
 import numpy as np
-
-
-class _SpyEffector(effector.Effector):
-  """Effector used to see what action is sent by the min_max_effector."""
-
-  def __init__(self, dofs: int = 3):
-    self._previous_action = np.zeros(dofs)
-
-  def after_compile(self, mjcf_model) -> None:
-    pass
-
-  def initialize_episode(self, physics, random_state) -> None:
-    pass
-
-  def action_spec(self, physics) -> specs.BoundedArray:
-    return specs.BoundedArray(
-        self._previous_action.shape, self._previous_action.dtype,
-        minimum=-1.0, maximum=1.0)
-
-  def set_control(self, physics, command: np.ndarray) -> None:
-    self._previous_action = command[:]
-
-  @property
-  def prefix(self) -> str:
-    return 'spy'
-
-  @property
-  def previous_action(self) -> np.ndarray:
-    return self._previous_action
 
 
 class MinMaxEffectorTest(parameterized.TestCase):
 
   def test_min_max_effector_sends_correct_command(self):
-    spy_effector = _SpyEffector()
+    spy_effector = test_utils.SpyEffector(dofs=3)
     min_action = np.array([-0.9, -0.5, -0.2])
     max_action = np.array([0.2, 0.5, 0.8])
     test_effector = min_max_effector.MinMaxEffector(
@@ -69,7 +39,7 @@ class MinMaxEffectorTest(parameterized.TestCase):
     np.testing.assert_allclose(expected_command, spy_effector.previous_action)
 
   def test_default_spec_min_max_effector_sends_correct_command(self):
-    spy_effector = _SpyEffector()
+    spy_effector = test_utils.SpyEffector(dofs=3)
     test_effector = min_max_effector.MinMaxEffector(base_effector=spy_effector)
 
     # Ensure that the effector correctly transforms the input command.
@@ -83,7 +53,7 @@ class MinMaxEffectorTest(parameterized.TestCase):
       ('max_action_wrong', np.array([1., 2., 3.]), np.array([4., 5.])),)
   def test_raises_if_wrong_shaped_action_is_passed(
       self, min_action, max_action):
-    spy_effector = _SpyEffector()
+    spy_effector = test_utils.SpyEffector(dofs=3)
     test_effector = min_max_effector.MinMaxEffector(
         base_effector=spy_effector,
         min_action=min_action,

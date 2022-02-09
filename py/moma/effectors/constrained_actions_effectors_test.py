@@ -17,45 +17,16 @@
 from absl.testing import absltest
 from absl.testing import parameterized
 from dm_control import mjcf
-from dm_env import specs
-from dm_robotics.moma import effector
 from dm_robotics.moma.effectors import constrained_actions_effectors
+from dm_robotics.moma.effectors import test_utils
 from dm_robotics.moma.models.robots.robot_arms import sawyer
 import numpy as np
-
-
-class _SpyEffector(effector.Effector):
-
-  def __init__(self, dofs: int = 7):
-    self._previous_action = np.zeros(dofs)
-
-  def after_compile(self, mjcf_model) -> None:
-    pass
-
-  def initialize_episode(self, physics, random_state) -> None:
-    pass
-
-  def action_spec(self, physics) -> specs.BoundedArray:
-    return specs.BoundedArray(
-        self._previous_action.shape, self._previous_action.dtype,
-        minimum=-1.0, maximum=1.0)
-
-  def set_control(self, physics, command: np.ndarray) -> None:
-    self._previous_action = command[:]
-
-  @property
-  def prefix(self) -> str:
-    return 'spy'
-
-  @property
-  def previous_action(self) -> np.ndarray:
-    return self._previous_action
 
 
 class ConstrainedActionsEffectorsTest(parameterized.TestCase):
 
   def test_joint_position_limits(self):
-    fake_joint_effector = _SpyEffector()
+    fake_joint_effector = test_utils.SpyEffector(dofs=7)
     min_joint_limits = -0.1 * np.ones(7)
     max_joint_limits = 0.1 * np.ones(7)
     arm = sawyer.Sawyer(with_pedestal=False)
@@ -95,7 +66,7 @@ class ConstrainedActionsEffectorsTest(parameterized.TestCase):
   def test_state_and_command_have_different_shapes(self):
     # Imagine a joint torque effector that you want to limit based on both
     # the current position AND velocity.
-    fake_joint_effector = _SpyEffector()
+    fake_joint_effector = test_utils.SpyEffector(dofs=7)
     min_joint_pos_limits = -0.2 * np.ones(7)
     max_joint_pos_limits = 0.2 * np.ones(7)
     min_joint_vel_limits = -0.1 * np.ones(7)

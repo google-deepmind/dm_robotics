@@ -159,7 +159,7 @@ class Cartesian6dVelocityEffectorTest(absltest.TestCase):
     joints = arm.joints
     element = arm.wrist_site
     physics = mjcf.Physics.from_mjcf_model(arm.mjcf_model)
-    effector_6d = test_utils.Spy6dEffector(element)
+    effector_6d = test_utils.SpyEffectorWithControlFrame(element, dofs=6)
     sawyer_effector = arm_effector.ArmEffector(
         arm=arm, action_range_override=None, robot_name='sawyer')
 
@@ -219,7 +219,7 @@ class Cartesian6dVelocityEffectorTest(absltest.TestCase):
     joints = arm.joints
     element = arm.wrist_site
     physics = mjcf.Physics.from_mjcf_model(arm.mjcf_model)
-    effector_6d = test_utils.Spy6dEffector(element)
+    effector_6d = test_utils.SpyEffectorWithControlFrame(element, dofs=6)
     sawyer_effector = arm_effector.ArmEffector(
         arm=arm, action_range_override=None, robot_name='sawyer')
 

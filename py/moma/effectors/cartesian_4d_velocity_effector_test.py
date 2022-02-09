@@ -34,7 +34,7 @@ class Cartesian4DVelocityEffectorTest(parameterized.TestCase):
     # apply any X or Y rotations.
     arm = sawyer.Sawyer(with_pedestal=False)
     physics = mjcf.Physics.from_mjcf_model(arm.mjcf_model)
-    effector_6d = test_utils.Spy6dEffector(arm.wrist_site)
+    effector_6d = test_utils.SpyEffectorWithControlFrame(arm.wrist_site, dofs=6)
     effector_4d = cartesian_4d_velocity_effector.Cartesian4dVelocityEffector(
         effector_6d, element=arm.wrist_site, effector_prefix='sawyer_4d')
     arm.set_joint_angles(
@@ -52,7 +52,7 @@ class Cartesian4DVelocityEffectorTest(parameterized.TestCase):
     # apply X and Y rotations to push it back to the desired quat.
     arm = sawyer.Sawyer(with_pedestal=False)
     physics = mjcf.Physics.from_mjcf_model(arm.mjcf_model)
-    effector_6d = test_utils.Spy6dEffector(arm.wrist_site)
+    effector_6d = test_utils.SpyEffectorWithControlFrame(arm.wrist_site, dofs=6)
     effector_4d = cartesian_4d_velocity_effector.Cartesian4dVelocityEffector(
         effector_6d, element=arm.wrist_site, effector_prefix='sawyer_4d')
     # random offset to all joints.
@@ -68,7 +68,7 @@ class Cartesian4DVelocityEffectorTest(parameterized.TestCase):
   def test_limiting_to_workspace(self):
     arm = sawyer.Sawyer(with_pedestal=False)
     physics = mjcf.Physics.from_mjcf_model(arm.mjcf_model)
-    effector_6d = test_utils.Spy6dEffector(arm.wrist_site)
+    effector_6d = test_utils.SpyEffectorWithControlFrame(arm.wrist_site, dofs=6)
     effector_4d = cartesian_4d_velocity_effector.Cartesian4dVelocityEffector(
         effector_6d, element=arm.wrist_site, effector_prefix='sawyer_4d')
     arm.set_joint_angles(
@@ -102,7 +102,7 @@ class Cartesian4DVelocityEffectorTest(parameterized.TestCase):
   def test_limiting_wrist_rotation(self):
     arm = sawyer.Sawyer(with_pedestal=False)
     physics = mjcf.Physics.from_mjcf_model(arm.mjcf_model)
-    effector_6d = test_utils.Spy6dEffector(arm.wrist_site)
+    effector_6d = test_utils.SpyEffectorWithControlFrame(arm.wrist_site, dofs=6)
     effector_4d = cartesian_4d_velocity_effector.Cartesian4dVelocityEffector(
         effector_6d, element=arm.wrist_site, effector_prefix='sawyer_4d')
     arm.set_joint_angles(
@@ -130,7 +130,7 @@ class Cartesian4DVelocityEffectorTest(parameterized.TestCase):
   def test_changing_control_frame(self):
     arm = sawyer.Sawyer(with_pedestal=False)
     physics = mjcf.Physics.from_mjcf_model(arm.mjcf_model)
-    effector_6d = test_utils.Spy6dEffector(arm.wrist_site)
+    effector_6d = test_utils.SpyEffectorWithControlFrame(arm.wrist_site, dofs=6)
     arm.set_joint_angles(
         physics, joint_angles=test_utils.SAFE_SAWYER_JOINTS_POS)
     physics.step()  # propagate the changes to the rest of the physics
