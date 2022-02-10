@@ -29,6 +29,21 @@ from dm_robotics.moma import subtask_env
 # Internal profiling
 
 
+class ComposerEnvironmentForRealMoMaSetup(composer.Environment):
+  """Sublclass of composer environment used when building a real MoMa setup.
+
+  When we use a real environment, we want to make sure the environment loop is
+  as fast as possible. To do this, we set the number of physics substeps to 0.
+  This removes the unessary physics simulation. However, when doing this we
+  need to override the control timestep property of the class to ensure it
+  still returns the correct value.
+  """
+
+  def control_timestep(self) -> float:
+    """Returns the interval between agent actions in seconds."""
+    return self.task.control_timestep
+
+
 class SubtaskEnvBuilder(object):
   """Builder for a SubTaskEnvironment."""
 
@@ -66,12 +81,15 @@ class SubtaskEnvBuilder(object):
     self._preprocessors.append(preprocessor)
     return self
 
-  def build_base_env(self) -> composer.Environment:
+  def build_base_env(self, real_env=False) -> composer.Environment:
     """Builds the base composer.Environment.
 
     Factored out as a separate call to allow users to build the base composer
     env before calling the top-level `build` method.  This can be necessary when
     preprocessors require parameters from the env, e.g. action specs.
+
+    Args:
+      real_env: If True, will ignore the physics simulation loop.
 
     Returns:
       The base composer.Environment
@@ -80,8 +98,15 @@ class SubtaskEnvBuilder(object):
       raise ValueError('Cannot build the base_env until the task is built')
 
     if self._base_env is None:
-      self._base_env = composer.Environment(self._task,
-                                            strip_singleton_obs_buffer_dim=True)
+      if real_env:
+        self._base_env = ComposerEnvironmentForRealMoMaSetup(
+            self._task,
+            strip_singleton_obs_buffer_dim=True,
+            n_sub_steps=0,
+            raise_exception_on_physics_error=False)
+      else:
+        self._base_env = composer.Environment(
+            self._task, strip_singleton_obs_buffer_dim=True)
 
     return self._base_env
 
