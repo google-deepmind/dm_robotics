@@ -124,7 +124,7 @@ def _action_range_from_actuators(
   num_actions = len(actuators)
 
   control_range = physics.bind(actuators).ctrlrange
-  is_limited = physics.bind(actuators).ctrllimited.astype(np.bool)
+  is_limited = physics.bind(actuators).ctrllimited.astype(bool)
 
   minima = np.full(num_actions, fill_value=-np.inf, dtype=np.float32)
   maxima = np.full(num_actions, fill_value=np.inf, dtype=np.float32)
