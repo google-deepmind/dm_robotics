@@ -14,11 +14,11 @@
 
 """Sensor for gathering pose and image observations from mjcf cameras."""
 
+import dataclasses
 import enum
 from typing import Dict, Mapping, Optional, Sequence, Tuple, Union
 
 from absl import logging
-import dataclasses
 from dm_control import mjcf
 from dm_control.composer.observation import observable
 from dm_robotics.moma import sensor as moma_sensor

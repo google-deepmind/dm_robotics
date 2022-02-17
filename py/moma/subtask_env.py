@@ -276,7 +276,7 @@ class SubTaskEnvironment(dm_env.Environment):
     """
     self._teardown_callables.append(teardown_fn)
 
-  def close(self):
+  def close(self) -> None:
     """Cleanup when we are done using the environment."""
     if self._is_closed:
       logging.warning('The environment has already been closed.')
