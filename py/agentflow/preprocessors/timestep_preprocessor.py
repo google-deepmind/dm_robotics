@@ -20,6 +20,7 @@ and define reward functions.
 """
 
 import abc
+import enum
 from typing import NamedTuple, Optional, Text, Union
 
 import dm_env
@@ -80,6 +81,23 @@ class PreprocessorTimestep(NamedTuple):
     return self._replace(**kwargs)
 
 
+@enum.unique
+class ValidationFrequency(enum.Enum):
+  """Determines how often a TimestepPreprocessor should validate specs.
+
+  Calling `spec_utils.validate()` can be expensive, so users should tune how
+  often they would like to check the timestep specs.
+  """
+  # Check the specs once during the lifetime of the TimestepPreprocessor.
+  ONCE = 0
+  # Check the specs once per episode.
+  ONCE_PER_EPISODE = 1
+  # Never check the specs.
+  NEVER = 2
+  # Always check the specs each time process() is called.
+  ALWAYS = 3
+
+
 @six.add_metaclass(abc.ABCMeta)
 class TimestepPreprocessor(object):
   """Instances of this class update values in time steps.
@@ -91,9 +109,14 @@ class TimestepPreprocessor(object):
   with a step_type of FIRST.
   """
 
-  def __init__(self):
+  def __init__(
+      self,
+      validation_frequency: ValidationFrequency = (
+          ValidationFrequency.ONCE_PER_EPISODE)):
     self._in_spec = None  # type: spec_utils.TimeStepSpec
     self._out_spec = None  # type: spec_utils.TimeStepSpec
+    self._validation_freq = validation_frequency
+    self._validated_specs = False
 
   def process(self, input_ts: PreprocessorTimestep) -> PreprocessorTimestep:
     """Process the timestep.
@@ -107,11 +130,12 @@ class TimestepPreprocessor(object):
     This should not be overridden in subclasses.
     """
     output_ts = self._process_impl(input_ts)
-    if spec_utils.debugging_flag():
+    if self._should_validate(input_ts):
       # Make sure all the required keys are present and have the correct specs
       # Ignore the extra keys in the input and output timesteps.
       self._validate(self._in_spec, input_ts, 'input timestamp')
       self._validate(self._out_spec, output_ts, 'output timestamp')
+      self._validated_specs = True
 
     return output_ts
 
@@ -143,6 +167,18 @@ class TimestepPreprocessor(object):
     """Output spec getter."""
     return self._out_spec
 
+  def _should_validate(self, timestep: PreprocessorTimestep) -> bool:
+    """Returns whether or not to validate the specs."""
+    if self._validation_freq == ValidationFrequency.ALWAYS:
+      return True
+    if (self._validation_freq == ValidationFrequency.ONCE_PER_EPISODE and
+        (timestep.first() or not self._validated_specs)):
+      return True
+    if (self._validation_freq == ValidationFrequency.ONCE and
+        not self._validated_specs):
+      return True
+    return False
+
   def _validate(self, spec: spec_utils.TimeStepSpec,
                 timestep: PreprocessorTimestep, message: Text):
     """Validate the observation against the environment specs."""
@@ -173,8 +209,12 @@ class TimestepPreprocessor(object):
 class CompositeTimestepPreprocessor(TimestepPreprocessor, core.Renderable):
   """Apply an ordered list of timestep preprocessors."""
 
-  def __init__(self, *preprocessors: TimestepPreprocessor):
-    super().__init__()
+  def __init__(
+      self,
+      *preprocessors: TimestepPreprocessor,
+      validation_frequency: ValidationFrequency = (
+          ValidationFrequency.ONCE_PER_EPISODE)):
+    super().__init__(validation_frequency=validation_frequency)
     self._timestep_preprocessors = list(preprocessors)
 
   @overrides(TimestepPreprocessor)

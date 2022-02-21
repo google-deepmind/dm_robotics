@@ -16,7 +16,6 @@
 """Tests for dm_robotics.agentflow.spec_utils."""
 
 import copy
-from unittest import mock
 
 from absl.testing import absltest
 from absl.testing import parameterized
@@ -38,12 +37,6 @@ valid_value = testing_functions.valid_value
 
 
 class ValidationTest(parameterized.TestCase):
-
-  def setUp(self):
-    super().setUp()
-    patcher = mock.patch.object(spec_utils, 'debugging_flag', return_value=True)
-    self.mock_sum = patcher.start()
-    self.addCleanup(patcher.stop)
 
   def assert_invalid_observation(self, spec, value, msg_substring=None):
     try:

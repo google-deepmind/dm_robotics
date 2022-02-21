@@ -20,7 +20,6 @@ subclass `BoundedArray`.
 
 from typing import Any, Mapping, Optional, Sequence, Tuple, Type, TypeVar
 
-from absl import flags
 from absl import logging
 import dm_env
 from dm_env import specs
@@ -28,23 +27,10 @@ import numpy as np
 
 # Internal profiling
 
-FLAGS = flags.FLAGS
-
-# Defaulting to True, to prefer failing fast and closer to the bug.
-flags.DEFINE_boolean('debug_specs', True,
-                     'Debugging switch for checking values match specs.')
-flags.DEFINE_integer('max_validations', 1000,
-                     'Stop validating after this many calls.')
-
-_validation_count = 0
 
 ObservationSpec = Mapping[str, specs.Array]
 ObservationValue = Mapping[str, np.ndarray]
 ScalarOrArray = TypeVar('ScalarOrArray', np.floating, np.ndarray)
-
-
-def debugging_flag() -> bool:
-  return FLAGS.debug_specs
 
 
 class TimeStepSpec(object):
@@ -464,12 +450,6 @@ def validate(spec: specs.Array,
   Raises:
     ValueError: On a validation failure.
   """
-
-  # If only validating for debugging, and the debug flag is off, don't validate.
-  global _validation_count
-  if not debugging_flag() or _validation_count >= FLAGS.max_validations:
-    return
-  _validation_count += 1
 
   if value is None:
     return  # ASSUME this is ok.
