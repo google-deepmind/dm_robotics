@@ -52,6 +52,8 @@ class ImageObservations(enum.Enum):
   RGB_IMAGE = '{}_rgb_img'
   # The depth image sensed by the camera.
   DEPTH_IMAGE = '{}_depth_img'
+  # The segmentation image sensed by the camera.
+  SEGMENTATION_IMAGE = '{}_segmentation_img'
   # The intrinsics of the cameras.
   INTRINSICS = '{}_intrinsics'
 
@@ -74,12 +76,17 @@ class CameraConfig:
         `_get_instrinsics`).
     has_rgb: Is the camera producing rgb channels.
     has_depth: Is the camera producing a depth channel.
+    has_segmentation: Is the camera producing a segmentation image. If `True`,
+      adds a 2-channel NumPy int32 array of label values where the pixels of
+      each object are labeled with the pair (mjModel ID, mjtObj object_type).
+      Background pixels are labeled (-1, -1)
   """
   width: int = 128
   height: int = 128
   fovy: float = 90.0
   has_rgb: bool = True
   has_depth: bool = False
+  has_segmentation: bool = False
 
 
 class CameraPoseSensor(moma_sensor.Sensor):
@@ -159,6 +166,10 @@ class CameraImageSensor(moma_sensor.Sensor):
       self._observables[self.get_obs_key(
           ImageObservations.DEPTH_IMAGE)] = observable.Generic(
               self._camera_depth)
+    if self._cfg.has_segmentation:
+      self._observables[self.get_obs_key(
+          ImageObservations.SEGMENTATION_IMAGE)] = observable.Generic(
+              self._camera_segmentation)
 
     for obs in self._observables.values():
       obs.enabled = True
@@ -213,6 +224,14 @@ class CameraImageSensor(moma_sensor.Sensor):
             width=self._cfg.width,
             camera_id=self.element.full_identifier,  # pytype: disable=attribute-error
             depth=True))
+
+  def _camera_segmentation(self, physics: mjcf.Physics) -> np.ndarray:
+    return np.atleast_3d(
+        physics.render(
+            height=self._cfg.height,
+            width=self._cfg.width,
+            camera_id=self.element.full_identifier,  # pytype: disable=attribute-error
+            segmentation=True))
 
 
 def get_sensor_bundle(

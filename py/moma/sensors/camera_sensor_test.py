@@ -14,7 +14,10 @@
 
 """Tests for camera sensors."""
 
+import itertools
+
 from absl.testing import absltest
+from absl.testing import parameterized
 from dm_control import mjcf
 from dm_robotics.moma.sensors import camera_sensor
 
@@ -51,7 +54,7 @@ class CameraPoseSensorTest(absltest.TestCase):
     self.assertCountEqual(sensor.observables.keys(), expected_obs)
 
 
-class CameraImageSensorTest(absltest.TestCase):
+class CameraImageSensorTest(parameterized.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -69,15 +72,17 @@ class CameraImageSensorTest(absltest.TestCase):
 
     self._camera_element = mjcf_root.find('camera', 'test_camera')
 
-  def test_rgb_camera(self):
-    sensor_name = 'rgb_test'
-
+  @parameterized.parameters(
+      itertools.product([True, False], [True, False], [True, False]))
+  def test_camera(self, has_rgb, has_depth, has_segmentation):
+    sensor_name = 'camera_sensor_test'
     camera_config = camera_sensor.CameraConfig(
         width=128,
         height=128,
         fovy=45.,
-        has_rgb=True,
-        has_depth=False,
+        has_rgb=has_rgb,
+        has_depth=has_depth,
+        has_segmentation=has_segmentation,
     )
 
     sensor = camera_sensor.CameraImageSensor(
@@ -86,59 +91,13 @@ class CameraImageSensorTest(absltest.TestCase):
         name=sensor_name,
     )
 
-    expected_obs = [
-        f'{sensor_name}_rgb_img',
-        f'{sensor_name}_intrinsics',
-    ]
-
-    self.assertCountEqual(sensor.observables.keys(), expected_obs)
-
-  def test_d_camera(self):
-    sensor_name = 'd_test'
-
-    camera_config = camera_sensor.CameraConfig(
-        width=128,
-        height=128,
-        fovy=45.,
-        has_rgb=False,
-        has_depth=True,
-    )
-
-    sensor = camera_sensor.CameraImageSensor(
-        camera_element=self._camera_element,
-        config=camera_config,
-        name=sensor_name,
-    )
-
-    expected_obs = [
-        f'{sensor_name}_depth_img',
-        f'{sensor_name}_intrinsics',
-    ]
-
-    self.assertCountEqual(sensor.observables.keys(), expected_obs)
-
-  def test_rgbd_camera(self):
-    sensor_name = 'rgbd_test'
-
-    camera_config = camera_sensor.CameraConfig(
-        width=128,
-        height=128,
-        fovy=45.,
-        has_rgb=True,
-        has_depth=True,
-    )
-
-    sensor = camera_sensor.CameraImageSensor(
-        camera_element=self._camera_element,
-        config=camera_config,
-        name=sensor_name,
-    )
-
-    expected_obs = [
-        f'{sensor_name}_rgb_img',
-        f'{sensor_name}_depth_img',
-        f'{sensor_name}_intrinsics',
-    ]
+    expected_obs = [f'{sensor_name}_intrinsics']
+    if has_rgb:
+      expected_obs.append(f'{sensor_name}_rgb_img')
+    if has_depth:
+      expected_obs.append(f'{sensor_name}_depth_img')
+    if has_segmentation:
+      expected_obs.append(f'{sensor_name}_segmentation_img')
 
     self.assertCountEqual(sensor.observables.keys(), expected_obs)
 
