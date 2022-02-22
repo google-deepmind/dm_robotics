@@ -27,6 +27,10 @@ import numpy as np
 
 CameraSensorBundle = Tuple['CameraPoseSensor', 'CameraImageSensor']
 
+# A quatenion representing a rotation from the mujoco camera, which has the -z
+# axis towards the scene, to the opencv camera, which has +z towards the scene.
+_OPENGL_TO_OPENCV_CAM_QUAT = np.array([0., 1., 0., 0.])
+
 
 @enum.unique
 class PoseObservations(enum.Enum):
@@ -120,7 +124,11 @@ class CameraPoseSensor(moma_sensor.Sensor):
     return physics.bind(self.element).xpos  # pytype: disable=attribute-error
 
   def _camera_quat(self, physics: mjcf.Physics) -> np.ndarray:
-    return tr.mat_to_quat(np.reshape(physics.bind(self.element).xmat, [3, 3]))  # pytype: disable=attribute-error
+    # Rotate the camera to have +z towards the scene to be consistent with
+    # real-robot camera calibration.
+    mujoco_cam_quat = tr.mat_to_quat(
+        np.reshape(physics.bind(self.element).xmat, (3, 3)))  # pytype: disable=attribute-error
+    return tr.quat_mul(mujoco_cam_quat, _OPENGL_TO_OPENCV_CAM_QUAT)
 
 
 class CameraImageSensor(moma_sensor.Sensor):
@@ -178,7 +186,15 @@ class CameraImageSensor(moma_sensor.Sensor):
     half_angle_rad = half_angle * np.pi / 180
     focal_len = self._cfg.height / 2 / np.tan(half_angle_rad)
 
-    return np.array([[focal_len, 0, (self._cfg.height - 1) / 2, 0],
+    # Note: These intrinsics do not include the negation of the x-focal-length
+    # that mujoco uses in its camera matrix. To utilize this camera matrix for
+    # projection and back-projection you must rotate the camera xmat from mujoco
+    # by 180- degrees around the Y-axis. This is performed by CameraPoseSensor.
+    #
+    # Background: Mujoco cameras view along the -z-axis, and require fovx and
+    # depth-negation to do reprojection. This camera matrix follows the OpenCV
+    # convention of viewing along +z, which does not require these hacks.
+    return np.array([[focal_len, 0, (self._cfg.width - 1) / 2, 0],
                      [0, focal_len, (self._cfg.height - 1) / 2, 0],
                      [0, 0, 1, 0]])
 
