@@ -21,6 +21,10 @@ import numpy as np
 import six
 
 
+SamplePoseFn = Callable[[np.random.RandomState, Optional[geometry.Physics]],
+                        Tuple[np.ndarray, np.ndarray]]
+
+
 class Distribution(six.with_metaclass(abc.ABCMeta, object)):
   """A basic interface for probability distributions."""
 
@@ -199,9 +203,7 @@ class ConstantPoseDistribution(PoseDistribution):
 class LambdaPoseDistribution(PoseDistribution):
   """A distribution the samples using given lambdas."""
 
-  def __init__(self, sample_pose_fn: Callable[
-      [np.random.RandomState, Optional[geometry.Physics]], Tuple[np.ndarray,
-                                                                 np.ndarray]],
+  def __init__(self, sample_pose_fn: SamplePoseFn,
                mean_pose_fn: Callable[[Optional[geometry.Physics]],
                                       Tuple[np.ndarray, np.ndarray]]):
     """Constructor.
