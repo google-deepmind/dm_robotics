@@ -45,11 +45,16 @@ py::module GetCtypesModule() {
 // Returns a pointer to the underlying object pointed to by `ctypes_obj`.
 // Note that does not increment the reference count.
 template <class T>
-T* GetPointer(py::handle ctypes_obj) {
+T* GetPointer(py::handle mjwrapper_object) {
+#ifdef DM_ROBOTICS_USE_NEW_MUJOCO_BINDINGS
+  return reinterpret_cast<T*>(
+      mjwrapper_object.attr("_address").cast<std::uintptr_t>());
+#else
   auto ctypes_module = GetCtypesModule();
   return reinterpret_cast<T*>(
-      ctypes_module.attr("addressof")(ctypes_obj.attr("contents"))
+      ctypes_module.attr("addressof")(mjwrapper_object.attr("contents"))
           .cast<std::uintptr_t>());
+#endif
 }
 
 // Returns a pointer to a MuJoCo mjModel or mjData from the dm_control wrappers
