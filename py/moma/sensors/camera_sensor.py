@@ -190,24 +190,9 @@ class CameraImageSensor(moma_sensor.Sensor):
     return obs.get_obs_key(self._name)
 
   def _camera_intrinsics(self, physics: mjcf.Physics) -> np.ndarray:
-    # Calculate the focal length to get the requested image height given the
-    # field of view. For more details see:
-    # https://en.wikipedia.org/wiki/Pinhole_camera_model
-    half_angle = self._cfg.fovy / 2
-    half_angle_rad = half_angle * np.pi / 180
-    focal_len = self._cfg.height / 2 / np.tan(half_angle_rad)
-
-    # Note: These intrinsics do not include the negation of the x-focal-length
-    # that mujoco uses in its camera matrix. To utilize this camera matrix for
-    # projection and back-projection you must rotate the camera xmat from mujoco
-    # by 180- degrees around the Y-axis. This is performed by CameraPoseSensor.
-    #
-    # Background: Mujoco cameras view along the -z-axis, and require fovx and
-    # depth-negation to do reprojection. This camera matrix follows the OpenCV
-    # convention of viewing along +z, which does not require these hacks.
-    return np.array([[focal_len, 0, (self._cfg.width - 1) / 2, 0],
-                     [0, focal_len, (self._cfg.height - 1) / 2, 0],
-                     [0, 0, 1, 0]])
+    del physics  # unused.
+    return pinhole_intrinsics(
+        img_shape=(self._cfg.height, self._cfg.width), fovy=self._cfg.fovy)
 
   def _camera_rgb(self, physics: mjcf.Physics) -> np.ndarray:
     return np.atleast_3d(
@@ -232,6 +217,51 @@ class CameraImageSensor(moma_sensor.Sensor):
             width=self._cfg.width,
             camera_id=self.element.full_identifier,  # pytype: disable=attribute-error
             segmentation=True))
+
+
+def pinhole_intrinsics(img_shape: Tuple[int, int],
+                       fovy: float,
+                       negate_x_focal_len: bool = False) -> np.ndarray:
+  """Builds camera intrinsic matrix for simple pinhole model.
+
+  This function returns a camera intrinsic matrix for projecting 3D camera-
+  frame points to the image plane.
+
+  For background see:
+  https://en.wikipedia.org/wiki/Pinhole_camera_model
+
+  Args:
+    img_shape: (2,) array containing image height and width.
+    fovy: Field-of-view in Y, in degrees.
+    negate_x_focal_len: If True, negate the X focal_len following mujoco's -z
+      convention. This matrix will be identical to mujoco's camera intrinsics,
+      but will be inconsistent with the +z-towards-scene achieved by
+      CameraPoseSensor.
+
+  Returns:
+    (3, 4) array containing camera intrinsics
+  """
+  height, width = img_shape
+
+  # Calculate the focal length to get the requested image height given the
+  # field of view.
+  half_angle = fovy / 2
+  half_angle_rad = half_angle * np.pi / 180
+  focal_len = height / 2 / np.tan(half_angle_rad)
+
+  # Note: By default these intrinsics do not include the negation of the x-
+  # focal-length that mujoco uses in its camera matrix. To utilize this camera
+  # matrix for projection and back-projection you must rotate the camera xmat
+  # from mujoco by 180- degrees around the Y-axis. This is performed by
+  # CameraPoseSensor.
+  #
+  # Background: Mujoco cameras view along the -z-axis, and require fovx and
+  # depth-negation to do reprojection. This camera matrix follows the OpenCV
+  # convention of viewing along +z, which does not require these hacks.
+  x_focal_len = -focal_len if negate_x_focal_len else focal_len
+  return np.array([[x_focal_len, 0, (width - 1) / 2, 0],
+                   [0, focal_len, (height - 1) / 2, 0],
+                   [0, 0, 1, 0]])
 
 
 def get_sensor_bundle(
