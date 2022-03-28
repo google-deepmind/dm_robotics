@@ -49,6 +49,7 @@ class CameraPoseSensorTest(absltest.TestCase):
     expected_obs = [
         f'{sensor_name}_pos',
         f'{sensor_name}_quat',
+        f'{sensor_name}_pose',
     ]
 
     self.assertCountEqual(sensor.observables.keys(), expected_obs)

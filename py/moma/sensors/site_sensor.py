@@ -34,6 +34,8 @@ class Observations(enum.Enum):
   POS = '{}_pos'
   # The world orientation quaternion of the site.
   QUAT = '{}_quat'
+  # The concatenated world pos and quat x,y,z,w,i,j,k of the site.
+  POSE = '{}_pose'
   # The world rotation matrix of the site.
   RMAT = '{}_rmat'
   # The Linear+Euler world velocity of the site.
@@ -65,6 +67,8 @@ class SiteSensor(moma_sensor.Sensor):
             observable.Generic(self._site_quat),
         self.get_obs_key(Observations.RMAT):
             observable.Generic(self._site_rmat),
+        self.get_obs_key(Observations.POSE):
+            observable.Generic(self._site_pose),
         self.get_obs_key(Observations.VEL_WORLD):
             observable.Generic(self._site_vel_world),
         self.get_obs_key(Observations.VEL_RELATIVE):
@@ -99,6 +103,11 @@ class SiteSensor(moma_sensor.Sensor):
   def _site_rmat(self, physics: mjcf.Physics) -> np.ndarray:
     return physics.bind(self._site).xmat  # pytype: disable=attribute-error
 
+  def _site_pose(self, physics: mjcf.Physics) -> np.ndarray:
+    # TODO(jscholz): rendundant with pos & quat; remove pos & quat?
+    return np.concatenate((self._site_pos(physics), self._site_quat(physics)),
+                          axis=0)
+
   def _site_vel_world(self, physics: mjcf.Physics) -> np.ndarray:
     return mujoco_utils.get_site_vel(
         physics, self._site, world_frame=True)  # pytype: disable=attribute-error
@@ -106,4 +115,3 @@ class SiteSensor(moma_sensor.Sensor):
   def _site_vel_relative(self, physics: mjcf.Physics) -> np.ndarray:
     return mujoco_utils.get_site_vel(
         physics, self._site, world_frame=False)  # pytype: disable=attribute-error
-

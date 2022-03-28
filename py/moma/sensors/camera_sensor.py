@@ -39,6 +39,8 @@ class PoseObservations(enum.Enum):
   POS = '{}_pos'
   # The orientation of the camera.
   QUAT = '{}_quat'
+  # The full pose of the camera, as 7-dim posquat.
+  POSE = '{}_pose'
 
   def get_obs_key(self, name: str) -> str:
     """Returns the key to the observation in the observables dict."""
@@ -107,6 +109,8 @@ class CameraPoseSensor(moma_sensor.Sensor):
             observable.Generic(self._camera_pos),
         self.get_obs_key(PoseObservations.QUAT):
             observable.Generic(self._camera_quat),
+        self.get_obs_key(PoseObservations.POSE):
+            observable.Generic(self._camera_pose),
     }
 
     for obs in self._observables.values():
@@ -136,6 +140,11 @@ class CameraPoseSensor(moma_sensor.Sensor):
     mujoco_cam_quat = tr.mat_to_quat(
         np.reshape(physics.bind(self.element).xmat, (3, 3)))  # pytype: disable=attribute-error
     return tr.quat_mul(mujoco_cam_quat, _OPENGL_TO_OPENCV_CAM_QUAT)
+
+  def _camera_pose(self, physics: mjcf.Physics) -> np.ndarray:
+    # TODO(jscholz): rendundant with pos & quat; remove pos & quat?
+    return np.concatenate(
+        (self._camera_pos(physics), self._camera_quat(physics)), axis=-1)
 
 
 class CameraImageSensor(moma_sensor.Sensor):
