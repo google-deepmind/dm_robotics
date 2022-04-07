@@ -14,6 +14,7 @@
 """Tests for cartesian_6d_to_joint_velocity_mapper PyBind11 module."""
 
 from absl.testing import absltest
+from absl.testing import parameterized
 from dm_control import mujoco
 from dm_control.suite import humanoid
 from dm_robotics.controllers import cartesian_6d_to_joint_velocity_mapper
@@ -107,12 +108,20 @@ class Cartesian6DToJointVelocityMapperTest(absltest.TestCase):
         "clamp_nullspace_bias_to_feasible_space",
         "max_nullspace_control_iterations",
         "nullspace_projection_slack",
+        "use_adaptive_step_size",
         "log_nullspace_failure_warnings",
         "log_collision_warnings",
     ])
     self.assertEqual(expected_attributes, attributes)
 
-  def test_mapper_attributes(self):
+
+@parameterized.named_parameters(
+    ("use_adaptive_step_size", True),
+    ("do_not_use_adaptive_step_size", False),
+)
+class Cartesian6DToJointVelocityMapperParameterizedTest(absltest.TestCase):
+
+  def test_mapper_attributes(self, use_adaptive_step_size):
     physics = humanoid.Physics.from_xml_string(*humanoid.get_model_and_assets())
 
     params = cartesian_6d_to_joint_velocity_mapper.Parameters()
@@ -122,11 +131,13 @@ class Cartesian6DToJointVelocityMapperTest(absltest.TestCase):
     params.object_name = "left_hand"
     params.integration_timestep = 1.0
     params.enable_nullspace_control = True
+    params.use_adaptive_step_size = use_adaptive_step_size
     mapper = cartesian_6d_to_joint_velocity_mapper.Mapper(params)
 
     self.assertTrue(hasattr(mapper, "compute_joint_velocities"))
 
-  def test_solution_without_nullspace_realizes_target(self):
+  def test_solution_without_nullspace_realizes_target(self,
+                                                      use_adaptive_step_size):
     physics = humanoid.Physics.from_xml_string(*humanoid.get_model_and_assets())
 
     params = cartesian_6d_to_joint_velocity_mapper.Parameters()
@@ -137,6 +148,7 @@ class Cartesian6DToJointVelocityMapperTest(absltest.TestCase):
     params.integration_timestep = 1.0
     params.solution_tolerance = 1.0e-15
     params.regularization_weight = 0.0
+    params.use_adaptive_step_size = use_adaptive_step_size
     mapper = cartesian_6d_to_joint_velocity_mapper.Mapper(params)
 
     # Set target to a realizable velocity and solve.
@@ -168,7 +180,8 @@ class Cartesian6DToJointVelocityMapperTest(absltest.TestCase):
         ord=np.inf)
     self.assertLess(e_dual, params.solution_tolerance)
 
-  def test_solution_with_nullspace_realizes_target(self):
+  def test_solution_with_nullspace_realizes_target(self,
+                                                   use_adaptive_step_size):
     physics = humanoid.Physics.from_xml_string(*humanoid.get_model_and_assets())
 
     target_velocity = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -184,6 +197,7 @@ class Cartesian6DToJointVelocityMapperTest(absltest.TestCase):
     params.integration_timestep = 1.0
     params.solution_tolerance = 1.0e-6
     params.regularization_weight = 1.0e-3
+    params.use_adaptive_step_size = use_adaptive_step_size
 
     # Compute solution without nullspace.
     no_nullspace_mapper = cartesian_6d_to_joint_velocity_mapper.Mapper(params)
@@ -232,7 +246,8 @@ class Cartesian6DToJointVelocityMapperTest(absltest.TestCase):
             ord=np.inf),
         params.solution_tolerance + params.nullspace_projection_slack)
 
-  def test_solution_with_all_constraints_and_nullspace_not_in_collision(self):
+  def test_solution_with_all_constraints_and_nullspace_not_in_collision(
+      self, use_adaptive_step_size):
     physics = humanoid.Physics.from_xml_string(*humanoid.get_model_and_assets())
 
     # Increase collision detection margin for all geoms.
@@ -277,6 +292,7 @@ class Cartesian6DToJointVelocityMapperTest(absltest.TestCase):
     params.enable_nullspace_control = True
     params.return_error_on_nullspace_failure = False
     params.nullspace_projection_slack = 1e-7
+    params.use_adaptive_step_size = use_adaptive_step_size
     mapper = cartesian_6d_to_joint_velocity_mapper.Mapper(params)
 
     # Approximate the distance of the left hand and floor geoms by the
@@ -328,7 +344,7 @@ class Cartesian6DToJointVelocityMapperTest(absltest.TestCase):
 
           self.assertFalse(is_any_left_arm and is_any_floor)
 
-  def test_invalid_parameters_throws(self):
+  def test_invalid_parameters_throws(self, use_adaptive_step_size):
     physics = humanoid.Physics.from_xml_string(*humanoid.get_model_and_assets())
 
     params = cartesian_6d_to_joint_velocity_mapper.Parameters()
@@ -338,6 +354,7 @@ class Cartesian6DToJointVelocityMapperTest(absltest.TestCase):
     params.object_name = "invalid_geom_name"
     params.integration_timestep = 1.0
     params.enable_nullspace_control = True
+    params.use_adaptive_step_size = use_adaptive_step_size
     with self.assertRaises(Exception):
       _ = cartesian_6d_to_joint_velocity_mapper.Mapper(params)
 

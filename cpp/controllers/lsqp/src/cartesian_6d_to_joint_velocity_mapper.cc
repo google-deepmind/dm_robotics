@@ -47,6 +47,7 @@ LsqpStackOfTasksSolver::Parameters ToLsqpParams(
   output_params.relative_tolerance = 0.0;
   output_params.hierarchical_projection_slack =
       params.nullspace_projection_slack;
+  output_params.use_adaptive_rho = params.use_adaptive_step_size;
 
   // We always ensure that the infeasibility tolerance is less than the absolute
   // tolerance, by making them a tenth of the absolute tolerance. This prevents

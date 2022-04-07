@@ -26,13 +26,23 @@
 namespace dm_robotics {
 namespace {
 
-using Cartesian6dToJointVelocityMapperTest =
-    ::dm_robotics::testing::TestWithMujocoModel;
 using ::dm_robotics::testing::ComputeObject6dJacobianForJoints;
 using ::dm_robotics::testing::ComputeObjectCartesian6dVelocityWithJacobian;
 using ::dm_robotics::testing::SetSubsetOfJointVelocities;
+using ::dm_robotics::testing::TestWithMujocoModel;
+using ::testing::ValuesIn;
+using ::testing::WithParamInterface;
 
-TEST_F(Cartesian6dToJointVelocityMapperTest,
+class Cartesian6dToJointVelocityMapperTest : public TestWithMujocoModel,
+                                             public WithParamInterface<bool> {};
+
+constexpr bool kCartesian6dToJointVelocityMapperParameterSet[] = {true, false};
+
+INSTANTIATE_TEST_SUITE_P(
+    Cartesian6dToJointVelocityMapperTests, Cartesian6dToJointVelocityMapperTest,
+    ValuesIn(kCartesian6dToJointVelocityMapperParameterSet));
+
+TEST_P(Cartesian6dToJointVelocityMapperTest,
        SolutionWithoutNullspaceIsOkAndRealizesTarget) {
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
   const std::string kObjectName = "right_hand";
@@ -53,6 +63,7 @@ TEST_F(Cartesian6dToJointVelocityMapperTest,
   params.integration_timestep = absl::Seconds(1);
   params.solution_tolerance = kSolutionTolerance;
   params.regularization_weight = kRegularizationWeight;
+  params.use_adaptive_step_size = GetParam();
 
   ASSERT_OK(Cartesian6dToJointVelocityMapper::ValidateParameters(params));
   Cartesian6dToJointVelocityMapper mapper(params);
@@ -87,7 +98,7 @@ TEST_F(Cartesian6dToJointVelocityMapperTest,
   EXPECT_LE(e_dual, kSolutionTolerance);
 }
 
-TEST_F(Cartesian6dToJointVelocityMapperTest,
+TEST_P(Cartesian6dToJointVelocityMapperTest,
        SolutionWithNullspaceIsOkAndRealizesTarget) {
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
   const std::string kObjectName = "right_foot";
@@ -111,6 +122,8 @@ TEST_F(Cartesian6dToJointVelocityMapperTest,
   params.integration_timestep = absl::Seconds(1);
   params.solution_tolerance = kSolutionTolerance;
   params.regularization_weight = kRegularizationWeight;
+  params.use_adaptive_step_size = GetParam();
+
   ASSERT_OK(Cartesian6dToJointVelocityMapper::ValidateParameters(params));
 
   // First compute the solution without nullspace projection and the realized
@@ -194,7 +207,7 @@ TEST_F(Cartesian6dToJointVelocityMapperTest,
             kSolutionTolerance + kNullspaceProjectionSlack);
 }
 
-TEST_F(Cartesian6dToJointVelocityMapperTest,
+TEST_P(Cartesian6dToJointVelocityMapperTest,
        SolutionWithNonIdentityWeightingMatrixIsOkAndRealizesTarget) {
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
   const std::string kObjectName = "right_hand";
@@ -223,6 +236,7 @@ TEST_F(Cartesian6dToJointVelocityMapperTest,
   };
   params.solution_tolerance = kSolutionTolerance;
   params.regularization_weight = kRegularizationWeight;
+  params.use_adaptive_step_size = GetParam();
 
   ASSERT_OK(Cartesian6dToJointVelocityMapper::ValidateParameters(params));
   Cartesian6dToJointVelocityMapper mapper(params);
@@ -265,7 +279,7 @@ TEST_F(Cartesian6dToJointVelocityMapperTest,
   EXPECT_LE(e_dual, kSolutionTolerance);
 }
 
-TEST_F(Cartesian6dToJointVelocityMapperTest,
+TEST_P(Cartesian6dToJointVelocityMapperTest,
        SolutionWithAllConstraintsAndNullspaceIsOkAndNotInCollision) {
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
 
@@ -317,6 +331,7 @@ TEST_F(Cartesian6dToJointVelocityMapperTest,
   params.enable_nullspace_control = true;
   params.return_error_on_nullspace_failure = false;
   params.nullspace_projection_slack = kNullspaceProjectionSlack;
+  params.use_adaptive_step_size = GetParam();
   params.log_nullspace_failure_warnings = false;
 
   ASSERT_OK(Cartesian6dToJointVelocityMapper::ValidateParameters(params));

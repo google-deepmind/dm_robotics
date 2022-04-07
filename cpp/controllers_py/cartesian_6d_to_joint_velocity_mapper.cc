@@ -201,6 +201,10 @@ Attributes:
     projection. As a general rule, the solution to the nullspace projection
     optimization problem will at most decrease the accuracy of the Cartesian
     velocity by `solution_tolerance` + `nullspace_projection_slack`.
+  use_adaptive_step_size: (`bool`) if true, the internal LSQP solver will use
+    an adaptive step size when solving the resultant QP problem. Note that
+    setting this to true can greatly speed up the convergence of the algorithm,
+    but the solution will no longer be numerically deterministic.
   log_nullspace_failure_warnings: (`bool`) if true, a warning will be logged
     if the internal LSQP solver is unable to solve the nullspace optimization
     problem (second hierarchy). Ignored if `return_error_on_nullspace_failure`
@@ -449,6 +453,11 @@ class PyCartesian6dToJointVelocityMapperParameters {
   PYBIND_CARTESIAN_MAPPER_PARAMETERS_PROPERTY(nullspace_projection_slack,
                                               GetNullspaceProjectionSlack,
                                               SetNullspaceProjectionSlack)
+
+  // `use_adaptive_step_size` property.
+  PYBIND_CARTESIAN_MAPPER_PARAMETERS_PROPERTY(use_adaptive_step_size,
+                                              GetUseAdaptiveStepSize,
+                                              SetUseAdaptiveStepSize)
 
   // `log_nullspace_failure_warnings` property.
   PYBIND_CARTESIAN_MAPPER_PARAMETERS_PROPERTY(log_nullspace_failure_warnings,
@@ -737,6 +746,10 @@ PYBIND11_MODULE(cartesian_6d_to_joint_velocity_mapper, m) {
                         GetNullspaceProjectionSlack,
                     &PyCartesian6dToJointVelocityMapperParameters::
                         SetNullspaceProjectionSlack)
+      .def_property(
+          "use_adaptive_step_size",
+          &PyCartesian6dToJointVelocityMapperParameters::GetUseAdaptiveStepSize,
+          &PyCartesian6dToJointVelocityMapperParameters::SetUseAdaptiveStepSize)
       .def_property("log_nullspace_failure_warnings",
                     &PyCartesian6dToJointVelocityMapperParameters::
                         GetLogNullspaceFailureWarnings,

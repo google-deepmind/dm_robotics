@@ -268,6 +268,12 @@ class Cartesian6dToJointVelocityMapper {
     // `nullspace_projection_slack`.
     double nullspace_projection_slack = 1.0e-4;
 
+    // If `true`, the internal LSQP solver will use an adaptive step size when
+    // solving the resultant QP problem. Note that setting this to `true` can
+    // greatly speed up the convergence of the algorithm, but the solution will
+    // no longer be numerically deterministic.
+    bool use_adaptive_step_size = false;
+
     // If `true`, a warning will be logged if the internal LSQP solver is unable
     // to solve the nullspace optimization problem (second hierarchy). Ignored
     // if `return_error_on_nullspace_failure` is `true`.
