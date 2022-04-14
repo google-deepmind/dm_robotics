@@ -13,7 +13,7 @@
 # limitations under the License.
 """Rigid-body transformations including velocities and static forces."""
 
-from typing import Union
+from typing import Tuple, Union
 
 from dm_robotics.transformations import _types as types
 import numpy as np
@@ -209,6 +209,22 @@ def quat_to_mat(quat: types.QuatArray) -> types.HomogeneousMatrix:
   return mat
 
 
+def pos_quat_to_hmat(pos: types.PositionArray,
+                     quat: types.QuatArray) -> types.HomogeneousMatrix:
+  """Returns a 4x4 Homogeneous transform for the given configuration.
+
+  Args:
+    pos: A cartesian position [x, y, z].
+    quat: A unit quaternion [w, i, j, k].
+
+  Returns:
+    A 4x4 Homogenous transform as a numpy array.
+  """
+  hmat = quat_to_mat(quat)
+  hmat[:3, 3] = pos
+  return hmat
+
+
 def integrate_quat(quat: types.QuatArray,
                    vel: types.AngVelArray) -> types.QuatArray:
   """Integrates the unit quaternion by the given angular velocity.
@@ -245,6 +261,22 @@ def mat_to_quat(
   """
   quat = quaternion.from_rotation_matrix(mat)
   return quaternion.as_float_array(quat)
+
+
+def hmat_to_pos_quat(
+    hmat: types.HomogeneousMatrix
+) -> Tuple[types.PositionArray, types.QuatArray]:
+  """Return a cartesian position and quaternion from a homogeneous matrix.
+
+  Args:
+    hmat: A homogeneous transform or rotation matrix
+
+  Returns:
+    A tuple containing:
+    - A cartesian position [x, y, z].
+    - A quaternion [w, i, j, k].
+  """
+  return hmat[:3, 3], mat_to_quat(hmat)
 
 
 # LINT.ThenChange(_transformations.py)

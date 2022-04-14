@@ -26,12 +26,14 @@ from dm_robotics.transformations._transformations import euler_to_rmat
 from dm_robotics.transformations._transformations import force_transform
 from dm_robotics.transformations._transformations import force_transform_2d
 from dm_robotics.transformations._transformations import hmat_inv
+from dm_robotics.transformations._transformations import hmat_to_pos_quat
 from dm_robotics.transformations._transformations import hmat_to_poseuler
 from dm_robotics.transformations._transformations import hmat_to_twist
 from dm_robotics.transformations._transformations import integrate_hmat
 from dm_robotics.transformations._transformations import integrate_quat
 from dm_robotics.transformations._transformations import mat_to_quat
 from dm_robotics.transformations._transformations import matrix_to_postheta_2d
+from dm_robotics.transformations._transformations import pos_quat_to_hmat
 from dm_robotics.transformations._transformations import pos_to_hmat
 from dm_robotics.transformations._transformations import poseuler_to_hmat
 from dm_robotics.transformations._transformations import positive_leading_quat
@@ -71,8 +73,10 @@ from dm_robotics.transformations._transformations import velocity_transform_2d
 try:
   # Use faster C extension versions if _transformations_quat is available.
   from dm_robotics.transformations._transformations_quat import axisangle_to_quat
+  from dm_robotics.transformations._transformations_quat import hmat_to_pos_quat
   from dm_robotics.transformations._transformations_quat import integrate_quat
   from dm_robotics.transformations._transformations_quat import mat_to_quat
+  from dm_robotics.transformations._transformations_quat import pos_quat_to_hmat
   from dm_robotics.transformations._transformations_quat import quat_conj
   from dm_robotics.transformations._transformations_quat import quat_exp
   from dm_robotics.transformations._transformations_quat import quat_inv

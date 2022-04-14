@@ -108,12 +108,55 @@ class TransformationsTest(parameterized.TestCase):
     np.testing.assert_allclose(mat[0:3, 0:3], truemat, atol=1e-7)
 
   @parameterized.parameters(
-      {'twist': [1, 0, 0, 0, 0, 0],
-       'cfg': (0, 0, 0, np.radians(0), np.radians(90), np.radians(0))},
-
-      {'twist': [1, 2, 3, -3, 2, -1],
-       'cfg': (-1, 2, 3, np.radians(30), np.radians(60), np.radians(90))}
+      {
+          'pos': [0.34243, -0.8763, 0.01273],
+          'quat': [-0.41473841, 0.59483601, -0.45089078, 0.52044181],
+          'hmat':
+              np.array([[0.05167565, -0.10471773, 0.99315851, 0.34243],
+                        [-0.96810656, -0.24937912, 0.02407785, -0.8763],
+                        [0.24515162, -0.96272751, -0.114264750, 0.01273],
+                        [0.0, 0.0, 0.0, 1.0]])
+      },
+      {
+          'pos': [1.693, 0.9734, -2.7178],
+          'quat': [0.08769298, 0.69897558, 0.02516888, 0.7093022],
+          'hmat':
+              np.array([[-0.00748615, -0.08921678, 0.9959841, 1.693],
+                        [0.15958651, -0.98335294, -0.08688582, 0.9734],
+                        [0.98715556, 0.15829519, 0.02159933, -2.7178],
+                        [0.0, 0.0, 0.0, 1.0]])
+      },
+      {
+          'pos': [-0.7298, -0.1995, 0.3666],
+          'quat': [0.58847272, 0.44682507, 0.51443343, -0.43520737],
+          'hmat':
+              np.array([[0.09190557, 0.97193884, 0.21653695, -0.7298],
+                        [-0.05249182, 0.22188379, -0.97365918, -0.1995],
+                        [-0.99438321, 0.07811829, 0.07141119, 0.3666],
+                        [0.0, 0.0, 0.0, 1.0]])
+      },
   )
+  def test_pos_quat_to_hmat_and_inverse(self, pos, quat, hmat):
+    """Tests hard-coded pos-quat-hmat triples if mj not avail."""
+    mat = transformations.pos_quat_to_hmat(pos, quat)
+    np.testing.assert_allclose(mat, hmat, atol=1e-7)
+    np.testing.assert_allclose(mat[3], [0, 0, 0, 1], atol=1e-7)
+
+    # Test inverse
+    new_pos, new_quat = transformations.hmat_to_pos_quat(hmat)
+    np.testing.assert_allclose(new_pos, pos, atol=1e-7)
+    self.assertTrue(
+        np.allclose(new_quat, quat, atol=1e-7) or
+        np.allclose(-new_quat, quat, atol=1e-7))
+
+  @parameterized.parameters(
+      {
+          'twist': [1, 0, 0, 0, 0, 0],
+          'cfg': (0, 0, 0, np.radians(0), np.radians(90), np.radians(0))
+      }, {
+          'twist': [1, 2, 3, -3, 2, -1],
+          'cfg': (-1, 2, 3, np.radians(30), np.radians(60), np.radians(90))
+      })
   def test_velocity_transform_special(self, twist, cfg):
     # Test for special values that often cause numerical issues.
     x, y, z, rx, ry, rz = cfg
