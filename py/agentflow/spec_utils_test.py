@@ -69,6 +69,27 @@ class ValidationTest(parameterized.TestCase):
     except ValueError as expected:
       del expected
 
+  def test_StringArray(self):
+    test_string = 'test string'
+    spec = specs.StringArray(shape=(), string_type=str, name='foo')
+    spec_utils.validate(
+        spec, test_string, ignore_nan=False, ignore_ranges=False)
+
+    with self.assertRaises(ValueError):
+      spec_utils.validate(
+          spec,
+          test_string.encode('ASCII'),
+          ignore_nan=False,
+          ignore_ranges=False)
+
+    # Test that StringArray is amenable to maximum/minimum. This is not of
+    # obvious utility, but arises due to the occasional need to derive a spec
+    # from a sample value, e.g. in AddObservation.
+    string_minimum = spec_utils.minimum(spec)
+    string_maximum = spec_utils.maximum(spec)
+    spec.validate(string_minimum)
+    spec.validate(string_maximum)
+
   def test_NoneAlwaysAccepted(self):
     spec_utils.validate(
         random_array_spec(), None, ignore_nan=False, ignore_ranges=False)

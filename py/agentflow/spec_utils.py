@@ -121,6 +121,8 @@ def minimum(spec: specs.Array):
     return clip(np.asarray(spec.minimum, dtype=spec.dtype), spec)
   elif np.issubdtype(spec.dtype, np.integer):
     return np.full(spec.shape, np.iinfo(spec.dtype).min)
+  elif isinstance(spec, specs.StringArray):
+    return np.full(spec.shape, spec.string_type(''), dtype=object)
   else:
     return np.full(spec.shape, np.finfo(spec.dtype).min)
 
@@ -130,6 +132,8 @@ def maximum(spec: specs.Array):
     return clip(np.asarray(spec.maximum, dtype=spec.dtype), spec)
   elif np.issubdtype(spec.dtype, np.integer):
     return np.full(spec.shape, np.iinfo(spec.dtype).max)
+  elif isinstance(spec, specs.StringArray):
+    return np.full(spec.shape, spec.string_type(''), dtype=object)
   else:
     return np.full(spec.shape, np.finfo(spec.dtype).max)
 
@@ -477,12 +481,16 @@ def validate(spec: specs.Array,
       raise ValueError('NaN in value: {}, spec: {} ({})'.format(
           value, spec, msg))
 
-  if not ignore_ranges:
+  if not ignore_ranges or isinstance(spec, specs.StringArray):
+    # Perform full validation if user cares about range, or if a StringArray.
+    # Explanation: StringArray.validate has no range, but `validate` outputs an
+    # array with `object` dtype rather than `string_type`. Therefore it will
+    # fail the dtype check below even if it is a valid input.
     spec.validate(value)
   else:
     if spec.shape != value.shape:
       raise ValueError('shape mismatch {}. {} vs. {}'.format(msg, spec, value))
-    if value.dtype != value.dtype:
+    if spec.dtype != value.dtype:
       raise ValueError('dtype mismatch {}. {} vs. {}'.format(msg, spec, value))
 
 
