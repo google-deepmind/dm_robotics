@@ -24,6 +24,8 @@ from dm_robotics.agentflow import spec_utils
 from dm_robotics.agentflow.decorators import overrides
 import numpy as np
 
+# Internal profiling
+
 
 # All rewards should either be a single float or array of floats.
 RewardVal = Union[float, np.floating, np.ndarray]
@@ -66,10 +68,10 @@ class L2Reward(af.TimestepPreprocessor):
     try:
       obs0_val = timestep.observation[self._obs0]
       obs1_val = timestep.observation[self._obs1]
-    except KeyError:
-      raise KeyError(('{} or {} not a valid observation name. Valid names are '
-                      '{}').format(self._obs0, self._obs1,
-                                   list(timestep.observation.keys())))
+    except KeyError as key_missing:
+      raise KeyError(
+          f'{self._obs0} or {self._obs1} not a valid observation name. Valid '
+          f'names are {list(timestep.observation.keys())}') from key_missing
 
     dist = np.linalg.norm(obs0_val - obs1_val)
     reward = self._output_type.type(-1 * dist * self._reward_scale +
@@ -108,10 +110,10 @@ class ThresholdedL2Reward(af.TimestepPreprocessor):
     try:
       obs0_val = timestep.observation[self._obs0]
       obs1_val = timestep.observation[self._obs1]
-    except KeyError:
-      raise KeyError(('{} or {} not a valid observation name. Valid names are '
-                      '{}').format(self._obs0, self._obs1,
-                                   list(timestep.observation.keys())))
+    except KeyError as key_missing:
+      raise KeyError(
+          f'{self._obs0} or {self._obs1} not a valid observation name. Valid '
+          f'names are {list(timestep.observation.keys())}') from key_missing
 
     dist = np.linalg.norm(obs0_val - obs1_val)
     reward = self._reward if dist < self._threshold else self._zero_reward
@@ -159,6 +161,7 @@ class ComputeReward(af.TimestepPreprocessor):
     self._output_shape = output_spec_shape
 
   @overrides(af.TimestepPreprocessor)
+  # Profiling for .wrap_scope('ComputeReward._process_impl')
   def _process_impl(
       self, timestep: af.PreprocessorTimestep) -> af.PreprocessorTimestep:
     reward = self._reward_function(timestep.observation)
@@ -326,6 +329,7 @@ class CombineRewards(af.TimestepPreprocessor, core.Renderable):
     self._output_type = None  # type: np.dtype
 
   @overrides(af.TimestepPreprocessor)
+  # Profiling for .wrap_scope('CombineRewards._process_impl')
   def _process_impl(
       self, timestep: af.PreprocessorTimestep) -> af.PreprocessorTimestep:
     rewards = []

@@ -1038,6 +1038,7 @@ class AddObservation(tsp.TimestepPreprocessor):
     self._obs_spec = obs_spec
 
   @overrides(tsp.TimestepPreprocessor)
+  # Profiling for .wrap_scope('AddObservation._process_impl')
   def _process_impl(
       self, timestep: tsp.PreprocessorTimestep) -> tsp.PreprocessorTimestep:
 
