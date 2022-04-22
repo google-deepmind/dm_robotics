@@ -28,7 +28,7 @@ _GRIPPER_SITE_NAME = 'pinch_site'
 _ACTUATOR_NAME = 'fingers_actuator'
 _SENSOR_NAME = 'fingers_pos'
 _JOINT_NAME = 'left_driver_joint'
-_COLLISION_CLASS = 'reinforced_fingertip'
+COLLISION_CLASS = 'reinforced_fingertip'
 _PAD_GEOM_NAMES = [
     'reinforced_right_fingertip_geom',
     'reinforced_left_fingertip_geom',
@@ -210,7 +210,7 @@ class Robotiq2F85(robot_hand.RobotHand):
     """Set physics related properties."""
     # Set collision and friction parameter to the same values as in the jaco
     # hand - as we know they work very stable.
-    padbox_class = self._mjcf_root.find('default', _COLLISION_CLASS)
+    padbox_class = self._mjcf_root.find('default', COLLISION_CLASS)
     if use_realistic_friction:
       padbox_class.geom.friction = _DEFAULT_GRIPPER_FRICTION
     else:
