@@ -209,7 +209,7 @@ if (DM_ROBOTICS_BUILD_TESTS)
     GIT_REPO
       https://github.com/google/googletest.git
     GIT_TAG
-      origin/master
+      origin/main
     TARGETS
       gtest
       gmock

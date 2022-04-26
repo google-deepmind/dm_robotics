@@ -20,7 +20,7 @@ project(dmr_mujoco
 
 # Pick up the version of mujoco to use from the environment,
 # with an appropriate default if unset.
-set(MUJOCO_VERSION $ENV{MUJOCO_VERSION})
+set(MUJOCO_VERSION $ENV{MUJOCO_VERSION} CACHE STRING "Mujoco library version")
 if(NOT MUJOCO_VERSION)
     set(MUJOCO_VERSION "2.1.1")
 endif()
