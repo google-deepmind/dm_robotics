@@ -410,8 +410,11 @@ def valid_value(spec: Union[specs.Array, spec_utils.ObservationSpec,
   def valid_primitive(prim_spec):
     value = np.random.random(size=prim_spec.shape).astype(prim_spec.dtype)
     if isinstance(prim_spec, specs.BoundedArray):
-      value *= (prim_spec.maximum - prim_spec.minimum)
-      value += prim_spec.minimum
+      # Clip specs to handle +/- np.inf in the specs.
+      maximum = np.clip(prim_spec.maximum, -1e10, 1e10)
+      minimum = np.clip(prim_spec.minimum, -1e10, 1e10)
+      value *= (maximum - minimum)
+      value += minimum
     else:
       value *= 1e10  # Make range / magnitude assumptions unlikely to hold.
     return value.astype(prim_spec.dtype)
