@@ -25,6 +25,7 @@ from dm_robotics.agentflow.decorators import overrides
 from dm_robotics.agentflow.preprocessors import timestep_preprocessor as preprocessors
 from dm_robotics.geometry import geometry
 import numpy as np
+import tree
 
 
 class MaxStepsTermination(preprocessors.TimestepPreprocessor):
@@ -42,7 +43,7 @@ class MaxStepsTermination(preprocessors.TimestepPreprocessor):
     self._max_steps = max_steps
     self._terminal_discount = terminal_discount
     self._steps = 0
-    self._episode_reward_sum = 0.0
+    self._episode_reward_sum = None
 
   @overrides(preprocessors.TimestepPreprocessor)
   def _process_impl(
@@ -51,10 +52,17 @@ class MaxStepsTermination(preprocessors.TimestepPreprocessor):
 
     if timestep.first():
       self._steps = 0
-      self._episode_reward_sum = 0.0
+      self._episode_reward_sum = None
 
     self._steps += 1
-    self._episode_reward_sum += timestep.reward
+    if timestep.reward is not None:
+      if self._episode_reward_sum is None:
+        # Initialize (possibly nested) reward sum.
+        self._episode_reward_sum = tree.map_structure(
+            lambda _: 0.0, timestep.reward)
+      # Update (possibly nested) reward sum.
+      self._episode_reward_sum = tree.map_structure(
+          lambda x, y: x + y, self._episode_reward_sum, timestep.reward)
 
     if self._steps >= self._max_steps:
       ts = timestep._replace(pterm=1.0, discount=self._terminal_discount,
@@ -64,7 +72,7 @@ class MaxStepsTermination(preprocessors.TimestepPreprocessor):
           'Terminating with discount %s because maximum steps reached '
           '(%s)', ts.discount, self._max_steps)
       logging.info(
-          'Reward Sum: %f, Last Reward: %f',
+          'Reward Sum: %r, Last Reward: %r',
           self._episode_reward_sum, ts.reward)
       return ts
     return timestep
@@ -196,10 +204,11 @@ class LeavingWorkspaceTermination(preprocessors.TimestepPreprocessor):
   ) -> preprocessors.PreprocessorTimestep:
     try:
       tcp_site_pos = timestep.observation[self._tcp_pos_obs]
-    except KeyError:
-      raise KeyError(('{} not a valid observation name. Valid names are '
-                      '{}').format(self._tcp_pos_obs,
-                                   list(timestep.observation.keys())))
+    except KeyError as key_error:
+      raise KeyError(
+          ('{} not a valid observation name. Valid names are '
+           '{}').format(self._tcp_pos_obs,
+                        list(timestep.observation.keys()))) from key_error
 
     dist = np.linalg.norm(tcp_site_pos[:3] - self._workspace_centre)
     if dist > self._workspace_radius:
