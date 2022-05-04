@@ -23,6 +23,7 @@ from dm_robotics.agentflow import core
 from dm_robotics.agentflow import spec_utils
 from dm_robotics.agentflow.decorators import overrides
 import numpy as np
+import tree
 
 # Internal profiling
 
@@ -165,8 +166,11 @@ class ComputeReward(af.TimestepPreprocessor):
   def _process_impl(
       self, timestep: af.PreprocessorTimestep) -> af.PreprocessorTimestep:
     reward = self._reward_function(timestep.observation)
-    return timestep.replace(
-        reward=_cast_reward_to_type(reward, self._out_spec.reward_spec.dtype))
+    # Cast (possibly nested) reward to expected dtype.
+    reward = tree.map_structure(
+        lambda r: _cast_reward_to_type(r, self._out_spec.reward_spec.dtype),
+        reward)
+    return timestep.replace(reward=reward)
 
   def _output_spec(
       self, input_spec: spec_utils.TimeStepSpec) -> spec_utils.TimeStepSpec:
@@ -342,8 +346,10 @@ class CombineRewards(af.TimestepPreprocessor, core.Renderable):
 
     reward = self._combination_strategy(rewards)
 
-    return timestep._replace(
-        reward=_cast_reward_to_type(reward, self._output_type))
+    # Cast (possibly nested) reward to expected dtype.
+    reward = tree.map_structure(
+        lambda r: _cast_reward_to_type(r, self._output_type), reward)
+    return timestep.replace(reward=reward)
 
   @overrides(af.TimestepPreprocessor)
   def _output_spec(
