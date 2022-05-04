@@ -885,6 +885,86 @@ class StackObservationsTest(parameterized.TestCase):
     np.testing.assert_allclose(expected_output_pos, output_pos)
     np.testing.assert_allclose(expected_output_pos.shape, output_shape)
 
+  @parameterized.parameters(
+      (False, (4,), (12,)),
+      (True, (4,), (3, 4)),
+      (False, (1,), (3,)),
+      (True, (1,), (3, 1)),
+      (False, (4, 4), (12, 4)),
+      (True, (4, 4), (3, 4, 4)),
+  )
+  def test_add_stack_observations_spec(
+      self, add_leading_dim, input_shape, output_shape):
+    # Generate the input spec and input timestep.
+    input_obs_spec = {
+        'pos': specs.Array(shape=input_shape, dtype=np.float32, name='pos'),
+    }
+    input_spec = _build_unit_timestep_spec(
+        observation_spec=input_obs_spec)
+
+    # Generate the expected stacked output spec.
+    expected_output_obs_spec = {
+        'pos': specs.Array(shape=input_shape, dtype=np.float32, name='pos'),
+        'stacked_pos': specs.Array(
+            shape=output_shape, dtype=np.float32, name='pos'),
+    }
+    expected_output_spec = _build_unit_timestep_spec(
+        observation_spec=expected_output_obs_spec)
+
+    preprocessor = observation_transforms.StackObservations(
+        obs_to_stack=['pos'],
+        stack_depth=3,
+        add_leading_dim=add_leading_dim,
+        override_obs=False)
+
+    output_spec = preprocessor.setup_io_spec(input_spec)
+    self.assertEqual(expected_output_spec, output_spec)
+
+  @parameterized.parameters(
+      (False, (4,), (12,)),
+      (True, (4,), (3, 4)),
+      (False, (1,), (3,)),
+      (True, (1,), (3, 1)),
+      (False, (4, 4), (12, 4)),
+      (True, (4, 4), (3, 4, 4)),
+  )
+  def test_add_stack_observations(self,
+                                  add_leading_dim, input_shape, output_shape):
+    # Generate the input spec.
+    input_obs_spec = {
+        'pos': specs.Array(shape=input_shape, dtype=np.float32, name='pos'),
+    }
+    input_spec = _build_unit_timestep_spec(
+        observation_spec=input_obs_spec)
+
+    preprocessor = observation_transforms.StackObservations(
+        obs_to_stack=['pos'],
+        stack_depth=3,
+        add_leading_dim=add_leading_dim,
+        override_obs=False)
+
+    preprocessor.setup_io_spec(input_spec)
+
+    input_pos = np.random.random(input_shape).astype(np.float32)
+
+    if add_leading_dim:
+      expected_output_pos = np.stack([input_pos for _ in range(3)], axis=0)
+    else:
+      expected_output_pos = np.concatenate(
+          [input_pos for _ in range(3)], axis=0)
+
+    input_timestep = testing_functions.random_timestep(
+        spec=input_spec,
+        step_type=dm_env.StepType.FIRST,
+        observation={'pos': input_pos,})
+
+    output_timestep = preprocessor.process(input_timestep)
+    output_stacked_pos = output_timestep.observation['stacked_pos']
+    output_pos = output_timestep.observation['pos']
+    np.testing.assert_allclose(expected_output_pos, output_stacked_pos)
+    np.testing.assert_allclose(input_pos, output_pos)
+    np.testing.assert_allclose(expected_output_pos.shape, output_shape)
+
 
 class AddObservationTest(absltest.TestCase):
 

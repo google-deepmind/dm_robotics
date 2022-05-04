@@ -546,23 +546,32 @@ class StackObservations(tsp.TimestepPreprocessor):
                obs_to_stack: Sequence[str],
                stack_depth: np.integer,
                *,
-               add_leading_dim: bool = False):
+               add_leading_dim: bool = False,
+               override_obs: bool = True,
+               added_obs_prefix: str = 'stacked_',):
     """StackObservations preprocessor constructor.
 
     Args:
       obs_to_stack: A list of observation to stack.
       stack_depth: How deep to stack them. The stacked observations will be
-        concatenated and replace the original observation.
+        concatenated and replace the original observation if
+        `override_obs` is set to True. Otherwise, extra observations with
+        prefix `added_obs_prefix` will be added.
       add_leading_dim: If False, stacks the observations along the first
-      dimension. If True, stacks the observations along an extra leading
-      dimension.
-        E.g:
+        dimension. If True, stacks the observations along an extra leading
+        dimension.
+        E.g.:
           (7,) stacked 3 times becomes:
           - (21,) if add_leading_dim=True
           - (3,7) if add_leading_dim=True
           (4,5) stacked 3 times becomes:
           - (12, 5) if add_leading_dim=False
           - (3, 4, 5) if add_leading_dim=True
+      override_obs: If True, add the stacked observations and replace the
+        existing ones. Otherwise, the stacked observations will be
+        added to the existing ones. The name of the stacked observation is given
+        by `added_obs_prefix` added to their original name.
+      added_obs_prefix: The prefix to be added to the original observation name.
 
     """
     super().__init__()
@@ -573,15 +582,26 @@ class StackObservations(tsp.TimestepPreprocessor):
         name: collections.deque(maxlen=self._stack_depth)
         for name in self._obs_to_stack
     }
+    self._override_obs = override_obs
+    self._added_obs_prefix = added_obs_prefix
 
   @overrides(tsp.TimestepPreprocessor)
   # Profiling for .wrap('StackObservations._process_impl')
   def _process_impl(
       self, timestep: tsp.PreprocessorTimestep) -> tsp.PreprocessorTimestep:
-    processed_obs = {
-        k: self._maybe_process(timestep, k, v)
-        for k, v in six.iteritems(timestep.observation)
-    }
+    if self._override_obs:
+      processed_obs = {
+          k: self._maybe_process(timestep, k, v)
+          for k, v in six.iteritems(timestep.observation)
+      }
+    else:
+      stacked_obs = {
+          self._added_obs_prefix + str(k):
+          self._maybe_process(timestep, k, timestep.observation[k])
+          for k in self._obs_to_stack
+      }
+      processed_obs = {**timestep.observation, **stacked_obs}
+
     return timestep._replace(observation=processed_obs)
 
   def _maybe_process(self, timestep, key, val):
@@ -613,11 +633,20 @@ class StackObservations(tsp.TimestepPreprocessor):
   @overrides(tsp.TimestepPreprocessor)
   def _output_spec(
       self, input_spec: spec_utils.TimeStepSpec) -> spec_utils.TimeStepSpec:
-    return input_spec.replace(
-        observation_spec={
-            k: self._maybe_process_spec(k, v)
-            for k, v in six.iteritems(input_spec.observation_spec)
-        })
+    if self._override_obs:
+      processed_obs_spec = {
+          k: self._maybe_process_spec(k, v)
+          for k, v in six.iteritems(input_spec.observation_spec)
+      }
+    else:
+      stacked_obs_spec = {
+          self._added_obs_prefix + str(k): self._maybe_process_spec(
+              k, input_spec.observation_spec[k])
+          for k in self._obs_to_stack
+      }
+      processed_obs_spec = {**input_spec.observation_spec, **stacked_obs_spec}
+
+    return input_spec.replace(processed_obs_spec)
 
 
 class FoldObservations(tsp.TimestepPreprocessor):
