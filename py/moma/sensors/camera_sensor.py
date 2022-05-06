@@ -20,7 +20,9 @@ from typing import Dict, Mapping, Optional, Sequence, Tuple, Union
 
 from absl import logging
 from dm_control import mjcf
+from dm_control import mujoco
 from dm_control.composer.observation import observable
+from dm_control.mujoco.wrapper.mjbindings import enums
 from dm_robotics.moma import sensor as moma_sensor
 from dm_robotics.transformations import transformations as tr
 import numpy as np
@@ -82,6 +84,9 @@ class CameraConfig:
       adds a 2-channel NumPy int32 array of label values where the pixels of
       each object are labeled with the pair (mjModel ID, mjtObj object_type).
       Background pixels are labeled (-1, -1)
+    render_shadows: If true the camera will render the shadows of the scene.
+      Note that when using CPU for rendering, shadow rendering increases
+      significantly the amount of processing time.
   """
   width: int = 128
   height: int = 128
@@ -89,6 +94,7 @@ class CameraConfig:
   has_rgb: bool = True
   has_depth: bool = False
   has_segmentation: bool = False
+  render_shadows: bool = False
 
 
 class CameraPoseSensor(moma_sensor.Sensor):
@@ -162,6 +168,7 @@ class CameraImageSensor(moma_sensor.Sensor):
     self.element = camera_element
     self._cfg = config
     self._name = name
+    self._camera: Optional[mujoco.Camera] = None
 
     self._observables = {
         self.get_obs_key(ImageObservations.INTRINSICS):
@@ -187,6 +194,13 @@ class CameraImageSensor(moma_sensor.Sensor):
                          random_state: np.random.RandomState) -> None:
     pass
 
+  def after_compile(self, mjcf_model: mjcf.RootElement,
+                    physics: mjcf.Physics) -> None:
+    # We create the camera at the beginning of every episode. This is to improve
+    # speed of rendering. Previously we used `physics.render` which creates a
+    # new camera every single time you render.
+    self._create_camera(physics)
+
   @property
   def observables(self) -> Dict[str, observable.Observable]:
     return self._observables
@@ -204,28 +218,24 @@ class CameraImageSensor(moma_sensor.Sensor):
         img_shape=(self._cfg.height, self._cfg.width), fovy=self._cfg.fovy)
 
   def _camera_rgb(self, physics: mjcf.Physics) -> np.ndarray:
-    return np.atleast_3d(
-        physics.render(
-            height=self._cfg.height,
-            width=self._cfg.width,
-            camera_id=self.element.full_identifier,  # pytype: disable=attribute-error
-            depth=False))
+    return np.atleast_3d(self._camera.render(depth=False, segmentation=False))
 
   def _camera_depth(self, physics: mjcf.Physics) -> np.ndarray:
-    return np.atleast_3d(
-        physics.render(
-            height=self._cfg.height,
-            width=self._cfg.width,
-            camera_id=self.element.full_identifier,  # pytype: disable=attribute-error
-            depth=True))
+    return np.atleast_3d(self._camera.render(depth=True))
 
   def _camera_segmentation(self, physics: mjcf.Physics) -> np.ndarray:
-    return np.atleast_3d(
-        physics.render(
-            height=self._cfg.height,
-            width=self._cfg.width,
-            camera_id=self.element.full_identifier,  # pytype: disable=attribute-error
-            segmentation=True))
+    return np.atleast_3d(self._camera.render(segmentation=True))
+
+  def _create_camera(self, physics: mjcf.Physics) -> None:
+    self._camera = mujoco.Camera(
+        physics=physics,
+        height=self._cfg.height,
+        width=self._cfg.width,
+        camera_id=self.element.full_identifier)
+    if self._cfg.render_shadows:
+      self._camera.scene.flags[enums.mjtRndFlag.mjRND_SHADOW] = 1
+    else:
+      self._camera.scene.flags[enums.mjtRndFlag.mjRND_SHADOW] = 0
 
 
 def pinhole_intrinsics(img_shape: Tuple[int, int],
