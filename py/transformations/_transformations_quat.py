@@ -161,9 +161,6 @@ def quat_rotate(quat: types.QuatArray,
   """
 
   quat = quaternion.from_float_array(quat)
-  # For multiple vectors and one quaternion, this is faster:
-  # quaternion.as_float_array(quaternion.rotate_vectors(quat, vec))
-  # But here we have a single vector, so:
   vec = quaternion.from_vector_part(vec)
   return quaternion.as_vector_part(quat * vec * quat.conj())
 
