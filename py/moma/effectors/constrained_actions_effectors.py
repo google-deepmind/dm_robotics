@@ -108,8 +108,9 @@ class ConstrainedActionEffector(effector.Effector, Generic[T]):
     self._max_state_checker = (max_state_checker or
                                self._default_max_state_checker)
 
-  def after_compile(self, mjcf_model: mjcf.RootElement) -> None:
-    self._delegate.after_compile(mjcf_model)
+  def after_compile(self, mjcf_model: mjcf.RootElement,
+                    physics: mjcf.Physics) -> None:
+    self._delegate.after_compile(mjcf_model, physics)
 
   def initialize_episode(self, physics, random_state) -> None:
     self._delegate.initialize_episode(physics, random_state)

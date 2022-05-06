@@ -28,9 +28,6 @@ class _FooEffector(moma_effector.Effector):
   def __init__(self):
     pass
 
-  def after_compile(self, mjcf_model) -> None:
-    pass
-
   def initialize_episode(self, physics, random_state) -> None:
     pass
 

@@ -146,8 +146,9 @@ class Cartesian4dVelocityEffector(effector.Effector):
 
     self._element_frame = geometry.PoseStamped(pose=None, frame=element)
 
-  def after_compile(self, mjcf_model: mjcf.RootElement) -> None:
-    self._effector_6d.after_compile(mjcf_model)
+  def after_compile(self, mjcf_model: mjcf.RootElement,
+                    physics: mjcf.Physics) -> None:
+    self._effector_6d.after_compile(mjcf_model, physics)
 
   def initialize_episode(self, physics, random_state) -> None:
     self._effector_6d.initialize_episode(
@@ -209,7 +210,8 @@ class Cartesian4dVelocityEffector(effector.Effector):
           mujoco_physics.wrap(physics)).twist.full
     except AttributeError as error:
       raise AttributeError(
-          'The 6D effector does not have a `control_frame` attribute.')
+          'The 6D effector does not have a `control_frame` attribute.'
+      ) from error
 
     self._effector_6d.set_control(physics=physics, command=twist)
 

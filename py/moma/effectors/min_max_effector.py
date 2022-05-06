@@ -96,8 +96,9 @@ class MinMaxEffector(effector.Effector):
     new_cmd[max_idxs] = self._max_act[max_idxs]
     self._effector.set_control(physics, new_cmd)
 
-  def after_compile(self, mjcf_model: mjcf.RootElement) -> None:
-    self._effector.after_compile(mjcf_model)
+  def after_compile(self, mjcf_model: mjcf.RootElement,
+                    physics: mjcf.Physics) -> None:
+    self._effector.after_compile(mjcf_model, physics)
 
   def initialize_episode(self, physics: mjcf.Physics,
                          random_state: np.random.RandomState) -> None:

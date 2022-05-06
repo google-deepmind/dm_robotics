@@ -38,9 +38,6 @@ class DefaultGripperEffector(effector.Effector):
   def set_control(self, physics: mjcf.Physics, command: np.ndarray) -> None:
     self._mujoco_effector.set_control(physics, command)
 
-  def after_compile(self, mjcf_model: mjcf.RootElement) -> None:
-    pass
-
   def initialize_episode(self, physics: mjcf.Physics,
                          random_state: np.random.RandomState) -> None:
     pass

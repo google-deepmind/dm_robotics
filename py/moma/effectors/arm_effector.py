@@ -47,9 +47,6 @@ class ArmEffector(effector.Effector):
         action_range_override
     )
 
-  def after_compile(self, mjcf_model: mjcf.RootElement) -> None:
-    pass
-
   def initialize_episode(self, physics, random_state) -> None:
     pass
 

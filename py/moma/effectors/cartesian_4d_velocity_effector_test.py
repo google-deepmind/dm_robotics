@@ -164,7 +164,7 @@ class Cartesian4DVelocityEffectorTest(parameterized.TestCase):
               element=arm.wrist_site,
               control_frame=control_frame,
               effector_prefix='sawyer_4d'))
-      cartesian_effector.after_compile(arm.mjcf_model)
+      cartesian_effector.after_compile(arm.mjcf_model, physics)
 
       # Create a cartesian command, this command is expressed in the
       # control frame.

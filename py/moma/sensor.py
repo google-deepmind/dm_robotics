@@ -50,7 +50,6 @@ class Sensor(abc.ABC):
       physics_steps_per_control_step: Number of physics steps for every control
         timestep.  (`control_timestep_seconds` / `physics_timestep_seconds`)
     """
-    pass
 
   def close(self):
     """Clean up after we are done using the sensor.
@@ -59,7 +58,15 @@ class Sensor(abc.ABC):
     mainly used for real sensors that might need to close all the connections
     to the robot.
     """
-    pass
+
+  def after_compile(self, mjcf_model: mjcf.RootElement,
+                    physics: mjcf.Physics) -> None:
+    """Method called after the MJCF model has been compiled and finalized.
+
+    Args:
+      mjcf_model: The root element of the scene MJCF model.
+      physics: Compiled physics.
+    """
 
   @abc.abstractmethod
   def initialize_episode(self, physics: mjcf.Physics,
@@ -73,7 +80,6 @@ class Sensor(abc.ABC):
       physics: The MuJoCo physics the environment uses.
       random_state: A PRNG seed.
     """
-    pass
 
   @property
   @abc.abstractmethod
@@ -92,7 +98,6 @@ class Sensor(abc.ABC):
 
     See the code `dm_control.composer.observation` for more information.
     """
-    pass
 
   @property
   @abc.abstractmethod
@@ -102,4 +107,3 @@ class Sensor(abc.ABC):
   @abc.abstractmethod
   def get_obs_key(self, obs: enum.Enum) -> str:
     """Returns the key to an observable provided by this sensor."""
-    pass

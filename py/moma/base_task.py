@@ -195,10 +195,13 @@ class BaseTask(composer.Task):
     # MomaOption.
     pass
 
-  def after_compile(self, physics, random_state):
+  def after_compile(self, physics: mjcf.Physics,
+                    random_state: np.random.RandomState):
     """Initialization requiring access to physics or completed mjcf model."""
     for ef in self.effectors:
-      ef.after_compile(self.root_entity.mjcf_model.root)
+      ef.after_compile(self.root_entity.mjcf_model.root, physics)
+    for se in self.sensors:
+      se.after_compile(self.root_entity.mjcf_model.root, physics)
 
   def add_teardown_callable(self, teardown_fn: Callable[[], None]):
     """Adds function to be called when the task is closed."""

@@ -48,7 +48,7 @@ class Cartesian6dVelocityEffectorTest(parameterized.TestCase):
         cartesian_6d_velocity_effector.ControlParams(
             control_timestep_seconds=1.0, nullspace_gain=0.0),
         use_adaptive_qp_step_size=use_adaptive_qp_step_size)
-    cartesian_effector.after_compile(arm.mjcf_model)
+    cartesian_effector.after_compile(arm.mjcf_model, physics)
 
     # Set a Cartesian command that can be tracked at the initial Sawyer
     # configuration, and step physics.
@@ -97,7 +97,7 @@ class Cartesian6dVelocityEffectorTest(parameterized.TestCase):
               max_rot_vel=10.0,
               nullspace_gain=0.0),
           use_adaptive_qp_step_size=use_adaptive_qp_step_size)
-      cartesian_effector.after_compile(arm.mjcf_model)
+      cartesian_effector.after_compile(arm.mjcf_model, physics)
 
       # Create a cartesian command stamped on the control frame, and compute the
       # expected 6D target that is passed to the mapper.
@@ -152,7 +152,7 @@ class Cartesian6dVelocityEffectorTest(parameterized.TestCase):
                 max_rot_vel=1e3,
                 joint_velocity_limits=joint_vel_limits),
             use_adaptive_qp_step_size=use_adaptive_qp_step_size))
-    cartesian_effector.after_compile(arm.mjcf_model)
+    cartesian_effector.after_compile(arm.mjcf_model, physics)
 
     # Set a very large Cartesian command, and ensure that joint velocity limits
     # are never violated.
@@ -186,7 +186,7 @@ class Cartesian6dVelocityEffectorTest(parameterized.TestCase):
                 max_rot_vel=1e3,
                 joint_velocity_limits=joint_vel_limits),
             use_adaptive_qp_step_size=use_adaptive_qp_step_size))
-    cartesian_effector.after_compile(arm.mjcf_model)
+    cartesian_effector.after_compile(arm.mjcf_model, physics)
     arm.set_joint_angles(
         physics, joint_angles=test_utils.SAFE_SAWYER_JOINTS_POS)
     # Propagate the changes to the rest of the physics.
@@ -246,7 +246,7 @@ class Cartesian6dVelocityEffectorTest(parameterized.TestCase):
                 max_rot_vel=1e3,
                 joint_velocity_limits=joint_vel_limits),
             use_adaptive_qp_step_size=use_adaptive_qp_step_size))
-    cartesian_effector.after_compile(arm.mjcf_model)
+    cartesian_effector.after_compile(arm.mjcf_model, physics)
     arm.set_joint_angles(
         physics, joint_angles=test_utils.SAFE_SAWYER_JOINTS_POS)
     # Propagate the changes to the rest of the physics.
@@ -297,7 +297,11 @@ class Cartesian6dVelocityEffectorTest(parameterized.TestCase):
     # object to be used with this effector.
     unsafe_physics = mjcf.Physics.from_mjcf_model(arm.mjcf_model)
     unsafe_effector = _create_cartesian_effector(
-        unsafe_physics.model.opt.timestep, arm, None, use_adaptive_qp_step_size)
+        unsafe_physics.model.opt.timestep,
+        arm,
+        None,
+        use_adaptive_qp_step_size,
+        physics=unsafe_physics)
 
     # Make an effector with collision avoidance, and initialize a physics object
     # to be used with this effector.
@@ -307,7 +311,8 @@ class Cartesian6dVelocityEffectorTest(parameterized.TestCase):
     safe_physics = mjcf.Physics.from_mjcf_model(arm.mjcf_model)
     safe_effector = _create_cartesian_effector(safe_physics.model.opt.timestep,
                                                arm, collision_params,
-                                               use_adaptive_qp_step_size)
+                                               use_adaptive_qp_step_size,
+                                               safe_physics)
 
     # Assert the no-collision avoidance setup collides.
     # This should happen between iterations 250 & 300.
@@ -360,7 +365,7 @@ def _collisions_between(lhs, rhs: mjcf.Element):
 
 
 def _create_cartesian_effector(timestep, arm, collision_params,
-                               use_adaptive_qp_step_size):
+                               use_adaptive_qp_step_size, physics):
   joint_effector = arm_effector.ArmEffector(
       arm=arm, action_range_override=None, robot_name='sawyer')
   cartesian_effector = cartesian_6d_velocity_effector.Cartesian6dVelocityEffector(
@@ -371,7 +376,7 @@ def _create_cartesian_effector(timestep, arm, collision_params,
           control_timestep_seconds=timestep, nullspace_gain=0.0),
       collision_params,
       use_adaptive_qp_step_size=use_adaptive_qp_step_size)
-  cartesian_effector.after_compile(arm.mjcf_model)
+  cartesian_effector.after_compile(arm.mjcf_model, physics)
   return cartesian_effector
 
 

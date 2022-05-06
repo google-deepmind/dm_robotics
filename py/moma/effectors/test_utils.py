@@ -36,9 +36,6 @@ class SpyEffector(effector.Effector):
   def __init__(self, dofs: int):
     self._previous_action = np.zeros(dofs)
 
-  def after_compile(self, mjcf_model) -> None:
-    pass
-
   def initialize_episode(self, physics, random_state) -> None:
     pass
 

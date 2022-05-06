@@ -56,9 +56,6 @@ class FakeEffector(effector.Effector):
 
     self.received_commands = []
 
-  def after_compile(self, mjcf_model: mjcf.RootElement):
-    pass
-
   def initialize_episode(self, physics, random_state):
     pass
 

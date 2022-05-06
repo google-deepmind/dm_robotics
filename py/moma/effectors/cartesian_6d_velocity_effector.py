@@ -363,7 +363,9 @@ class Cartesian6dVelocityEffector(effector.Effector):
     self._qp_frame = None
     self._joints_argsort = None
 
-  def after_compile(self, mjcf_model: mjcf.RootElement) -> None:
+  def after_compile(self, mjcf_model: mjcf.RootElement,
+                    physics: mjcf.Physics) -> None:
+    self._joint_velocity_effector.after_compile(mjcf_model, physics)
     # Construct the QP-based mapper.
     qp_params = _CartesianVelocityMapperParams()
 

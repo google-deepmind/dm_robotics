@@ -52,9 +52,6 @@ class MujocoEffector(effector.Effector):
   def prefix(self) -> str:
     return self._prefix
 
-  def after_compile(self, mjcf_model: mjcf.RootElement) -> None:
-    pass
-
   def initialize_episode(self, physics: mjcf.Physics,
                          random_state: np.random.RandomState) -> None:
     pass

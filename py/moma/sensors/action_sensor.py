@@ -32,8 +32,9 @@ class SpyEffector(moma_effector.Effector):
     self._previous_action: Optional[np.ndarray] = None
     self._delegate_effector = effector
 
-  def after_compile(self, mjcf_model) -> None:
-    self._delegate_effector.after_compile(mjcf_model)
+  def after_compile(self, mjcf_model: mjcf.RootElement,
+                    physics: mjcf.Physics) -> None:
+    self._delegate_effector.after_compile(mjcf_model, physics)
 
   def initialize_episode(self, physics, random_state) -> None:
     self._previous_action = self.action_spec(physics).minimum
@@ -128,6 +129,3 @@ def create_sensed_effector(
   new_effector = SpyEffector(effector)
   action_sensor = ActionSensor(new_effector, name=effector.prefix)
   return new_effector, action_sensor
-
-
-

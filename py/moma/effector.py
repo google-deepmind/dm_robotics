@@ -36,16 +36,15 @@ class Effector(abc.ABC):
     mainly used for real effectors that might need to close all the connections
     to the robot.
     """
-    pass
 
-  @abc.abstractmethod
-  def after_compile(self, mjcf_model: mjcf.RootElement) -> None:
+  def after_compile(self, mjcf_model: mjcf.RootElement,
+                    physics: mjcf.Physics) -> None:
     """Method called after the MJCF model has been compiled and finalized.
 
     Args:
       mjcf_model: The root element of the scene MJCF model.
+      physics: Compiled physics.
     """
-    pass
 
   @abc.abstractmethod
   def initialize_episode(self, physics: mjcf.Physics,
