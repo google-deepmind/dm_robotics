@@ -147,6 +147,7 @@ class Cartesian6DToJointVelocityMapperParameterizedTest(absltest.TestCase):
     params.object_name = "right_hand"
     params.integration_timestep = 1.0
     params.solution_tolerance = 1.0e-15
+    params.max_cartesian_velocity_control_iterations = 10000
     params.regularization_weight = 0.0
     params.use_adaptive_step_size = use_adaptive_step_size
     mapper = cartesian_6d_to_joint_velocity_mapper.Mapper(params)
@@ -196,6 +197,7 @@ class Cartesian6DToJointVelocityMapperParameterizedTest(absltest.TestCase):
     params.object_name = "right_foot"
     params.integration_timestep = 1.0
     params.solution_tolerance = 1.0e-6
+    params.max_cartesian_velocity_control_iterations = 10000
     params.regularization_weight = 1.0e-3
     params.use_adaptive_step_size = use_adaptive_step_size
 
@@ -288,6 +290,7 @@ class Cartesian6DToJointVelocityMapperParameterizedTest(absltest.TestCase):
 
     params.check_solution_validity = True
     params.solution_tolerance = 1e-6
+    params.max_cartesian_velocity_control_iterations = 10000
     params.regularization_weight = 1e-3
     params.enable_nullspace_control = True
     params.return_error_on_nullspace_failure = False
