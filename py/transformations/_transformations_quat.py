@@ -20,6 +20,7 @@ import numpy as np
 import quaternion
 
 _TOL = 1e-10
+_IDENTITY = quaternion.from_float_array([1, 0, 0, 0])
 
 
 # Any functions in this file should always be drop-in replacements for functions
@@ -146,6 +147,40 @@ def quat_exp(quat: types.QuatArray, tol: float = _TOL) -> types.QuatArray:
   a_new = np.exp(a) * np.cos(v_norm)
   return np.stack([a_new[..., 0], v_new[..., 0], v_new[..., 1], v_new[..., 2]],
                   axis=-1)
+
+
+def quat_dist(source: types.QuatArray, target: types.QuatArray) -> np.ndarray:
+  """Computes distance between source and target quaternions.
+
+  This function supports inputs with or without leading batch dimensions.
+
+  Note: operates on unit quaternions
+
+  Args:
+    source: An array [...,4] of unit quaternions [w, i, j, k].
+    target: An array [...,4] of unit quaternions [w, i, j, k].
+
+  Returns:
+    The rotational distance from source to target in radians.
+  """
+  source = quaternion.from_float_array(source)
+  target = quaternion.from_float_array(target)
+  return quaternion.rotation_intrinsic_distance(source, target)
+
+
+def quat_angle(quat: types.QuatArray) -> np.ndarray:
+  """Computes the angle of the rotation encoded by the unit quaternion.
+
+  This function supports inputs with or without leading batch dimensions.
+
+  Args:
+    quat: A unit quaternion [w, i, j, k]. The norm of this vector should be 1.
+
+  Returns:
+    The angle in radians of the rotation encoded by the quaternion.
+  """
+  quat = quaternion.from_float_array(quat)
+  return quaternion.rotation_intrinsic_distance(_IDENTITY, quat)
 
 
 def quat_rotate(quat: types.QuatArray,

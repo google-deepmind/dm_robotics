@@ -77,7 +77,9 @@ try:
   from dm_robotics.transformations._transformations_quat import integrate_quat
   from dm_robotics.transformations._transformations_quat import mat_to_quat
   from dm_robotics.transformations._transformations_quat import pos_quat_to_hmat
+  from dm_robotics.transformations._transformations_quat import quat_angle
   from dm_robotics.transformations._transformations_quat import quat_conj
+  from dm_robotics.transformations._transformations_quat import quat_dist
   from dm_robotics.transformations._transformations_quat import quat_exp
   from dm_robotics.transformations._transformations_quat import quat_inv
   from dm_robotics.transformations._transformations_quat import quat_log
@@ -86,15 +88,14 @@ try:
   from dm_robotics.transformations._transformations_quat import quat_slerp
   from dm_robotics.transformations._transformations_quat import quat_to_mat
 
-# TODO(benmoran) Consider quaternion implementations of other functions:
-# from dm_robotics.transformations._transformations import quat_angle
-# from dm_robotics.transformations._transformations import quat_axis
-# from dm_robotics.transformations._transformations import quat_between_vectors
-# from dm_robotics.transformations._transformations import quat_diff_active
-# from dm_robotics.transformations._transformations import quat_diff_passive
-# from dm_robotics.transformations._transformations import quat_dist
-# from dm_robotics.transformations._transformations import quat_to_axisangle
-# from dm_robotics.transformations._transformations import quat_to_euler
+  # TODO(benmoran) Consider quaternion implementations of other functions:
+  # from dm_robotics.transformations._transformations import quat_axis
+  # from dm_robotics.transformations._transformations \
+  #  import quat_between_vectors
+  # from dm_robotics.transformations._transformations import quat_diff_active
+  # from dm_robotics.transformations._transformations import quat_diff_passive
+  # from dm_robotics.transformations._transformations import quat_to_axisangle
+  # from dm_robotics.transformations._transformations import quat_to_euler
   HAVE_NUMPY_QUATERNION = True
 except ImportError:
   HAVE_NUMPY_QUATERNION = False

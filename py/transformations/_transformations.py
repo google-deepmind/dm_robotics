@@ -769,6 +769,7 @@ def quat_exp(quat: types.QuatArray, tol: float = _TOL) -> types.QuatArray:
 # LINT.ThenChange(_transformations_quat.py)
 
 
+# LINT.IfChange
 def quat_dist(source: types.QuatArray, target: types.QuatArray) -> np.ndarray:
   """Computes distance between source and target quaternions.
 
@@ -788,8 +789,10 @@ def quat_dist(source: types.QuatArray, target: types.QuatArray) -> np.ndarray:
   quat_err = quat_mul(source, quat_inv(target))
   quat_err /= np.linalg.norm(quat_err, axis=-1, keepdims=True)
   return quat_angle(quat_err)
+# LINT.ThenChange(_transformations_quat.py)
 
 
+# LINT.IfChange
 def quat_angle(quat: types.QuatArray) -> np.ndarray:
   """Computes the angle of the rotation encoded by the unit quaternion.
 
@@ -816,6 +819,8 @@ def quat_angle(quat: types.QuatArray) -> np.ndarray:
                    2 * np.arccos(quat[..., 0]),
                    2 * np.arcsin(np.linalg.norm(quat[..., 1:], axis=-1)))
   return angle
+
+# LINT.ThenChange(_transformations_quat.py)
 
 
 # LINT.IfChange
