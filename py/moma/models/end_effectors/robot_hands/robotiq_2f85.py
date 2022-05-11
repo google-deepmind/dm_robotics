@@ -215,8 +215,11 @@ class Robotiq2F85(robot_hand.RobotHand):
       padbox_class.geom.friction = _DEFAULT_GRIPPER_FRICTION
     else:
       padbox_class.geom.friction = _LEGACY_GRIPPER_FRICTION
-    padbox_class.geom.solimp = (0.9, 0.95, 0.001)
-    padbox_class.geom.solref = (-100000, -200)
+    # These values of solimp and solref have been tested at different physics
+    # timesteps [5e-4, 5e-3]. They make the gripper less stiff and allow a
+    # proper object-gripper interaction at larger physics timestep.
+    padbox_class.geom.solimp = (0.9, 0.95, 0.001, 0.01, 2)
+    padbox_class.geom.solref = (-30000, -200)
 
     # Adapt spring link stiffness to allow proper initialisation and more
     # realistic behaviour. The original value will cause one of the links
