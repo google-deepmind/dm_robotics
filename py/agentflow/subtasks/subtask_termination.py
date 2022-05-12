@@ -175,26 +175,29 @@ class RewardThresholdTermination(preprocessors.TimestepPreprocessor):
 
 
 class LeavingWorkspaceTermination(preprocessors.TimestepPreprocessor):
-  """Terminate if the robot's tool center point leaves the workspace."""
+  """Terminate if the object(s) leave the workspace."""
 
   def __init__(self,
-               tcp_pos_obs: str,
+               pose_obs_keys: Union[str, Sequence[str]],
                workspace_center: Sequence[float],
                workspace_radius: float,
                terminal_discount: float = 0.):
     """Initialize LeavingWorkspaceTermination.
 
     Args:
-      tcp_pos_obs: A string key into the observation from the timestep in which
-        to find a 3-dim array representing the tool center-point position in
-        world-coords.
+      pose_obs_keys: A (or Sequence of) string key(s) into the observation from
+        the timestep in which to find a 3-dim array representing position(s) in
+        world-coords of the prop(s) to track (this can also be the tool
+        center-point of the robot).
       workspace_center: A 3-dim array representing the position of the center of
         the workspace in world coords.
       workspace_radius: A float representing the radius of the workspace sphere.
       terminal_discount: A scalar discount to set when the workspace is violated
     """
     super().__init__()
-    self._tcp_pos_obs = tcp_pos_obs
+    # Convert the input to a list if it isn't already.
+    self._pose_obs_keys = [pose_obs_keys] if isinstance(pose_obs_keys,
+                                                        str) else pose_obs_keys
     self._workspace_centre = np.array(workspace_center, dtype=np.float32)
     self._workspace_radius = workspace_radius
     self._terminal_discount = terminal_discount
@@ -202,28 +205,31 @@ class LeavingWorkspaceTermination(preprocessors.TimestepPreprocessor):
   def _process_impl(
       self, timestep: preprocessors.PreprocessorTimestep
   ) -> preprocessors.PreprocessorTimestep:
-    try:
-      tcp_site_pos = timestep.observation[self._tcp_pos_obs]
-    except KeyError as key_error:
-      raise KeyError(
-          ('{} not a valid observation name. Valid names are '
-           '{}').format(self._tcp_pos_obs,
-                        list(timestep.observation.keys()))) from key_error
+    # Check poses one by one and terminate when find one that is outside the
+    # workspace.
+    for pose_key in self._pose_obs_keys:
+      try:
+        pose = timestep.observation[pose_key]
+      except KeyError as key_error:
+        raise KeyError(
+            ('{} not a valid observation name. Valid names are '
+             '{}').format(pose_key,
+                          list(timestep.observation.keys()))) from key_error
 
-    dist = np.linalg.norm(tcp_site_pos[:3] - self._workspace_centre)
-    if dist > self._workspace_radius:
-      ts = timestep._replace(pterm=1.0, discount=self._terminal_discount,
-                             result=core.OptionResult.failure_result())
-      logging.info(
-          'Terminating with discount %s because out of bounds. \n'
-          'tcp_site_pos (xyz): %s\n'
-          'workspace_centre: %s\n'
-          'dist: %s,'
-          'workspace_radius: %s\n', ts.discount, tcp_site_pos,
-          self._workspace_centre, dist, self._workspace_radius)
-      return ts
-    else:
-      return timestep
+      dist = np.linalg.norm(pose[:3] - self._workspace_centre)
+      if dist > self._workspace_radius:
+        ts = timestep._replace(pterm=1.0, discount=self._terminal_discount,
+                               result=core.OptionResult.failure_result())
+        logging.info(
+            'Terminating with discount %s because out of bounds. \n'
+            'obs_key: %s\n'
+            'pose (xyz): %s\n'
+            'workspace_centre: %s\n'
+            'dist: %s,'
+            'workspace_radius: %s\n', ts.discount, pose_key, pose,
+            self._workspace_centre, dist, self._workspace_radius)
+        return ts
+    return timestep
 
   @overrides(preprocessors.TimestepPreprocessor)
   def _output_spec(
