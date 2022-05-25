@@ -289,11 +289,12 @@ class StagedWithSuccessThreshold(RewardCombinationStrategy):
     else:
       num_tasks_solved = np.argmin(tasks_above_threshold)  # first "False"
 
-    current_task_idx = num_tasks_solved + 1
-    if current_task_idx > len(rewards):
-      current_task_reward = 0
-    else:
-      current_task_reward = rewards[num_tasks_solved]
+    # The last task should never be considered "solved" because we add
+    # current_task_reward. If you want to apply a reward threshold to the last
+    # stage to make it sparse, do that before or after passing it to this
+    # function.
+    num_tasks_solved = min(num_tasks_solved, num_stages - 1)
+    current_task_reward = rewards[num_tasks_solved]
 
     return (num_tasks_solved + current_task_reward) / float(num_stages)
 

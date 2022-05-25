@@ -365,9 +365,9 @@ class CombineRewardsTest(parameterized.TestCase):
     self.assertAlmostEqual(expected_reward, output_timestep.reward)
 
   @parameterized.named_parameters(
-      # Should work even on a single stage, and round up if above thresh.
-      ('_singleton_above_thresh', (0.92,), 0.9, 1., True),
-      # Should work even on a single stage, and give shaped val if below thresh.
+      # Should not affect the last stage, even if above thresh.
+      ('_singleton_above_thresh', (0.92,), 0.9, 0.92, True),
+      # Should not affect the last stage, even if below thresh.
       ('_singleton_below_thresh', (0.82,), 0.9, 0.82, True),
       # First two tasks are solved so we work on third. `assume` flag irrelevant
       ('_monotonic_cumululative', (0.92, 0.91, 0.1), 0.9, 0.7, True),
