@@ -15,6 +15,9 @@
 #include "pybind_utils.h"  // controller
 
 #include <dlfcn.h>
+#include <errno.h>
+#include <string.h>
+#include <sys/stat.h>
 
 #include <string>
 
@@ -84,11 +87,26 @@ void RaiseRuntimeErrorWithMessage(absl::string_view message) {
 
 const MjLib* LoadMjLibFromDmControl() {
   py::gil_scoped_acquire gil;
-  // Get the path to the DSO.
-  const py::module mjbindings(
-      py::module::import("dm_control.mujoco.wrapper.mjbindings"));
-  const std::string dso_path =
-      mjbindings.attr("mjlib").attr("_name").cast<std::string>();
+  // Get the path to the mujoco library.
+  const py::module mujoco(py::module::import("mujoco"));
+  const auto path = mujoco.attr("__path__").cast<std::vector<std::string>>();
+  const std::string version = mujoco.attr("__version__").cast<std::string>();
+  if (path.empty()) {
+    RaiseRuntimeErrorWithMessage("mujoco.__path__ is empty");
+    return nullptr;
+  }
+  const std::string dso_path = path[0] + "/libmujoco.so." + version;
+
+  struct stat buffer;
+  if (stat(dso_path.c_str(), &buffer) != 0) {
+    RaiseRuntimeErrorWithMessage(absl::Substitute(
+        "LoadMjLibFromDmComtrol: Cannot access mujoco library file "
+        "$0, error: $1",
+        dso_path, strerror(errno)));
+    return nullptr;
+  }
+  py::print("Loading mujoco from " + dso_path);
+
   // Create the MjLib object by dlopen'ing the DSO.
   return new MjLib(dso_path, RTLD_NOW);
 }
