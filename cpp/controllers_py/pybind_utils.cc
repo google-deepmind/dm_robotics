@@ -89,13 +89,16 @@ const MjLib* LoadMjLibFromDmControl() {
   py::gil_scoped_acquire gil;
   // Get the path to the mujoco library.
   const py::module mujoco(py::module::import("mujoco"));
-  const auto path = mujoco.attr("__path__").cast<std::vector<std::string>>();
-  const std::string version = mujoco.attr("__version__").cast<std::string>();
-  if (path.empty()) {
+
+  const py::list mujoco_path = mujoco.attr("__path__");
+  if (mujoco_path.empty()) {
     RaiseRuntimeErrorWithMessage("mujoco.__path__ is empty");
     return nullptr;
   }
-  const std::string dso_path = path[0] + "/libmujoco.so." + version;
+  const auto path = py::str(mujoco_path[0]).cast<std::string>();
+  // Not all MuJoCo releases have __version__, they do have mj_versionString.
+  const auto version = mujoco.attr("mj_versionString")().cast<std::string>();
+  const std::string dso_path = path + "/libmujoco.so." + version;
 
   struct stat buffer;
   if (stat(dso_path.c_str(), &buffer) != 0) {
