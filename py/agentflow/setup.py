@@ -52,7 +52,7 @@ setuptools.setup(
         "dm_robotics.agentflow.rendering",
         "dm_robotics.agentflow.subtasks",
     ],
-    version="0.3.0",
+    version="0.4.0",
     license="Apache 2.0",
     author="DeepMind",
     description="Tools for single-embodiment, multiple-task, Reinforcement Learning",

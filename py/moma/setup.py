@@ -56,7 +56,7 @@ setuptools.setup(
         "dm_robotics.moma.models.end_effectors.wrist_sensors",
         "dm_robotics.moma.models.robots.robot_arms",
     ],
-    version="0.3.0",
+    version="0.4.0",
     license="Apache 2.0",
     author="DeepMind",
     description="Tools for authoring robotic manipulation tasks.",
@@ -77,5 +77,4 @@ setuptools.setup(
         "Topic :: Scientific/Engineering :: Mathematics",
     ],
     zip_safe=True,
-    include_package_data=True
-)
+    include_package_data=True)
