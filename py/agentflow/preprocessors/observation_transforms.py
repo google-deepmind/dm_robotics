@@ -26,7 +26,6 @@ from dm_robotics.agentflow.decorators import overrides
 from dm_robotics.agentflow.preprocessors import timestep_preprocessor as tsp
 from dm_robotics.geometry import geometry
 import numpy as np
-import six
 
 # Internal profiling
 
@@ -53,7 +52,7 @@ class CastPreprocessor(tsp.TimestepPreprocessor):
       self, timestep: tsp.PreprocessorTimestep) -> tsp.PreprocessorTimestep:
     cast_obs = {
         k: np.asarray(v).astype(self._dtype)
-        for k, v in six.iteritems(timestep.observation)
+        for k, v in timestep.observation.items()
     }
 
     return tsp.PreprocessorTimestep(
@@ -70,7 +69,7 @@ class CastPreprocessor(tsp.TimestepPreprocessor):
       self, input_spec: spec_utils.TimeStepSpec) -> spec_utils.TimeStepSpec:
     obs_spec = {
         k: v.replace(dtype=self._dtype)
-        for k, v in six.iteritems(input_spec.observation_spec)
+        for k, v in input_spec.observation_spec.items()
     }
     return spec_utils.TimeStepSpec(
         observation_spec=obs_spec,
@@ -174,13 +173,13 @@ class ObsRelativeToEpisodeStartPreprocessor(tsp.TimestepPreprocessor):
       self, timestep: tsp.PreprocessorTimestep) -> tsp.PreprocessorTimestep:
     if timestep.first():
       self._initial_values = {}
-      for k, v in six.iteritems(timestep.observation):
+      for k, v in timestep.observation.items():
         if k in self._target_obs:
           self._initial_values[k] = np.array(v)
 
     corrected_obs = {}
 
-    for k, v in six.iteritems(timestep.observation):
+    for k, v in timestep.observation.items():
       if k in self._initial_values:
         corrected_obs[k] = v - self._initial_values[k]
       else:
@@ -262,7 +261,7 @@ class ObsOffsetAndScalingPreprocessor(tsp.TimestepPreprocessor):
       self, timestep: tsp.PreprocessorTimestep) -> tsp.PreprocessorTimestep:
     corrected_obs = {}
 
-    for k, obs in six.iteritems(timestep.observation):
+    for k, obs in timestep.observation.items():
       apply_offset = k in self._obs_offsets
       apply_scaling = k in self._obs_scales
 
@@ -300,7 +299,7 @@ class RemoveObservations(tsp.TimestepPreprocessor):
       self, timestep: tsp.PreprocessorTimestep) -> tsp.PreprocessorTimestep:
     retained_obs = {
         k: v
-        for k, v in six.iteritems(timestep.observation)
+        for k, v in timestep.observation.items()
         if k not in self._obs_to_strip
     }
 
@@ -311,7 +310,7 @@ class RemoveObservations(tsp.TimestepPreprocessor):
       self, input_spec: spec_utils.TimeStepSpec) -> spec_utils.TimeStepSpec:
     obs_spec = {
         k: v
-        for k, v in six.iteritems(input_spec.observation_spec)
+        for k, v in input_spec.observation_spec.items()
         if k not in self._obs_to_strip
     }
     return input_spec.replace(observation_spec=obs_spec)
@@ -338,9 +337,7 @@ class RetainObservations(tsp.TimestepPreprocessor):
   def _process_impl(
       self, timestep: tsp.PreprocessorTimestep) -> tsp.PreprocessorTimestep:
     retained_obs = {
-        k: v
-        for k, v in six.iteritems(timestep.observation)
-        if k in self._obs_to_leave
+        k: v for k, v in timestep.observation.items() if k in self._obs_to_leave
     }
     return timestep._replace(observation=retained_obs)
 
@@ -349,7 +346,7 @@ class RetainObservations(tsp.TimestepPreprocessor):
       self, input_spec: spec_utils.TimeStepSpec) -> spec_utils.TimeStepSpec:
     obs_spec = {
         k: v
-        for k, v in six.iteritems(input_spec.observation_spec)
+        for k, v in input_spec.observation_spec.items()
         if k in self._obs_to_leave
     }
     not_in_spec = self._obs_to_leave - set(obs_spec)
@@ -592,7 +589,7 @@ class StackObservations(tsp.TimestepPreprocessor):
     if self._override_obs:
       processed_obs = {
           k: self._maybe_process(timestep, k, v)
-          for k, v in six.iteritems(timestep.observation)
+          for k, v in timestep.observation.items()
       }
     else:
       stacked_obs = {
@@ -636,7 +633,7 @@ class StackObservations(tsp.TimestepPreprocessor):
     if self._override_obs:
       processed_obs_spec = {
           k: self._maybe_process_spec(k, v)
-          for k, v in six.iteritems(input_spec.observation_spec)
+          for k, v in input_spec.observation_spec.items()
       }
     else:
       stacked_obs_spec = {
@@ -676,7 +673,7 @@ class FoldObservations(tsp.TimestepPreprocessor):
     step_val = timestep.observation[self._obs_to_fold]
     self._cur_val = self._fold_fn(self._cur_val, step_val)
 
-    processed_obs = {k: v for k, v in six.iteritems(timestep.observation)}
+    processed_obs = {k: v for k, v in timestep.observation.items()}
 
     output_val = self._output_fn(self._cur_val).astype(self._init_val.dtype)
     processed_obs[self._output_obs_name] = output_val
@@ -686,9 +683,7 @@ class FoldObservations(tsp.TimestepPreprocessor):
   @overrides(tsp.TimestepPreprocessor)
   def _output_spec(
       self, input_spec: spec_utils.TimeStepSpec) -> spec_utils.TimeStepSpec:
-    observation_spec = {
-        k: v for k, v in six.iteritems(input_spec.observation_spec)
-    }
+    observation_spec = {k: v for k, v in input_spec.observation_spec.items()}
     observation_spec[self._output_obs_name] = specs.Array(
         shape=self._init_val.shape,
         dtype=self._init_val.dtype,

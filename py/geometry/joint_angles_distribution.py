@@ -16,10 +16,9 @@
 import abc
 from dm_robotics.geometry import geometry
 import numpy as np
-import six
 
 
-class JointAnglesDistribution(six.with_metaclass(abc.ABCMeta, object)):
+class JointAnglesDistribution(abc.ABC):
   """An interface for joint angles distributions."""
 
   @abc.abstractmethod

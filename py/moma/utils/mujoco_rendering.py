@@ -18,7 +18,6 @@ from dm_control import _render
 from dm_control.viewer import gui
 from dm_control.viewer import renderer
 from dm_control.viewer import viewer
-import six
 
 _DEFAULT_WIDTH = 640
 _DEFAULT_HEIGHT = 480
@@ -75,7 +74,7 @@ class Observer:
     return cls(env, width, height, name)
 
   def _apply_camera_config(self):
-    for key, value in six.iteritems(self._camera_config):
+    for key, value in self._camera_config.items():
       if value is not None:
         if key == 'lookat':  # special case since we can't just set this attr.
           self._viewer.camera.settings.lookat[:] = self._camera_config['lookat']
@@ -88,14 +87,14 @@ class Observer:
   def camera_config(self):
     """Retrieves the current camera configuration."""
     if self._viewer:
-      for key, value in six.iteritems(self._camera_config):
+      for key, value in self._camera_config.items():
         self._camera_config[key] = getattr(self._viewer.camera.settings, key,
                                            value)
     return self._camera_config
 
   @camera_config.setter
   def camera_config(self, camera_config):
-    for key, value in six.iteritems(camera_config):
+    for key, value in camera_config.items():
       if key not in self._camera_config:
         raise ValueError(('Key {} is not a valid key in camera_config. '
                           'Valid keys are: {}').format(

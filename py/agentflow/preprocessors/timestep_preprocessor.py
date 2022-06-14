@@ -28,7 +28,6 @@ from dm_robotics.agentflow import core
 from dm_robotics.agentflow import spec_utils
 from dm_robotics.agentflow.decorators import overrides
 import numpy as np
-import six
 
 # Internal profiling
 
@@ -98,8 +97,7 @@ class ValidationFrequency(enum.Enum):
   ALWAYS = 3
 
 
-@six.add_metaclass(abc.ABCMeta)
-class TimestepPreprocessor(object):
+class TimestepPreprocessor(abc.ABC):
   """Instances of this class update values in time steps.
 
   They can change observations (add, remove or modify), discount, reward and

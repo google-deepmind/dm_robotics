@@ -26,7 +26,7 @@ import dm_robotics.agentflow as af
 from dm_robotics.agentflow import spec_utils
 from dm_robotics.agentflow import testing_functions
 import numpy as np
-from six.moves import zip
+
 
 valid_value = testing_functions.valid_value
 random_timestep = testing_functions.random_timestep

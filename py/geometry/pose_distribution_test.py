@@ -20,7 +20,6 @@ from absl.testing import parameterized
 from dm_robotics.geometry import pose_distribution
 from dm_robotics.transformations import transformations as tr
 import numpy as np
-from six.moves import range
 
 
 class PoseDistributionTest(parameterized.TestCase):

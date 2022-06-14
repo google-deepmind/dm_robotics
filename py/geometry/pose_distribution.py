@@ -18,14 +18,13 @@ from typing import Callable, Optional, Sequence, Tuple, Union
 from dm_robotics.geometry import geometry
 from dm_robotics.transformations import transformations as tr
 import numpy as np
-import six
 
 
 SamplePoseFn = Callable[[np.random.RandomState, Optional[geometry.Physics]],
                         Tuple[np.ndarray, np.ndarray]]
 
 
-class Distribution(six.with_metaclass(abc.ABCMeta, object)):
+class Distribution(abc.ABC):
   """A basic interface for probability distributions."""
 
   @abc.abstractmethod
@@ -39,7 +38,7 @@ class Distribution(six.with_metaclass(abc.ABCMeta, object)):
     pass
 
 
-class PoseDistribution(six.with_metaclass(abc.ABCMeta, object)):
+class PoseDistribution(abc.ABC):
   """An interface for pose distributions."""
 
   @abc.abstractmethod
