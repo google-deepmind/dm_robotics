@@ -105,6 +105,7 @@ class FakeSubtask(subtask.SubTask):
         maximum=action_spec_maximum)
     self._reward_spec = base_env.reward_spec()
     self._discount_spec = base_env.discount_spec()
+    self._last_parent_timestep = None
 
   @overrides(subtask.SubTask)
   def observation_spec(self):
@@ -142,6 +143,8 @@ class FakeSubtask(subtask.SubTask):
       parent_timestep: dm_env.TimeStep,
       own_arg_key: Optional[Text] = None) -> Tuple[dm_env.TimeStep, float]:
     self._steps_taken += 1
+    self._last_parent_timestep = parent_timestep
+
     child_observation = dict(parent_timestep.observation)
     child_observation['fake'] = np.asarray([self._steps_taken],
                                            dtype=np.float32)
@@ -156,6 +159,10 @@ class FakeSubtask(subtask.SubTask):
       if 'fake' not in timestep.observation:
         return False
     return True
+
+  @property
+  def last_parent_timestep(self) -> Optional[dm_env.TimeStep]:
+    return self._last_parent_timestep
 
 
 class FakeSubTaskObserver(subtask.SubTaskObserver):
@@ -209,17 +216,32 @@ class SubTaskEnvironmentTest(absltest.TestCase):
     with subtask_env.SubTaskEnvironment(base_env, effectors, sub_task,
                                         reset) as env:
       timestep1 = env.reset()
+      subtask_timestep1 = sub_task.last_parent_timestep
+
       # Step the env 3 times (that's the limit of the subtask)
       # Check the corresponding actions sent to the base environment.
       timestep2 = env.step(agent_action)
+      subtask_timestep2 = sub_task.last_parent_timestep
+
       timestep3 = env.step(agent_action)
+      subtask_timestep3 = sub_task.last_parent_timestep
+
       timestep4 = env.step(agent_action)
+      subtask_timestep4 = sub_task.last_parent_timestep
 
       # Check the timesteps are as expected:
       self.assertEqual(timestep1.step_type, dm_env.StepType.FIRST)
+      self.assertEqual(subtask_timestep1.step_type, dm_env.StepType.FIRST)
+
       self.assertEqual(timestep2.step_type, dm_env.StepType.MID)
+      self.assertEqual(subtask_timestep2.step_type, dm_env.StepType.MID)
+
       self.assertEqual(timestep3.step_type, dm_env.StepType.MID)
+      self.assertEqual(subtask_timestep3.step_type, dm_env.StepType.MID)
+
       self.assertEqual(timestep4.step_type, dm_env.StepType.LAST)
+      self.assertEqual(subtask_timestep4.step_type, dm_env.StepType.LAST)
+
       sub_task.assert_timesteps_from_subtask(timestep1, timestep2, timestep3,
                                              timestep4)
 

@@ -169,14 +169,14 @@ class SubTaskEnvironment(dm_env.Environment):
     self._actuate_effectors(internal_action)
     internal_timestep = self._env.step(self._stub_env_action)
 
+    # If subtask wanted to stop, this is the last timestep.
+    if pterm > np.random.random():
+      internal_timestep = internal_timestep._replace(
+          step_type=dm_env.StepType.LAST)
+
     self._last_internal_timestep = internal_timestep
     external_timestep = self._subtask.parent_to_agent_timestep(
         internal_timestep, dummy_arg_key)
-
-    # If subtask wants to stop, this is the last timestep.
-    if pterm > np.random.random():
-      external_timestep = external_timestep._replace(
-          step_type=dm_env.StepType.LAST)
 
     # If subtask or base env emit a LAST timestep, we need to reset next.
     if external_timestep.last():
