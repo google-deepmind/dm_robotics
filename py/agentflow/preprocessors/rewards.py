@@ -15,13 +15,13 @@
 # python3
 """A collection of timestep preprocessors that define rewards."""
 
-from typing import Callable, Sequence, Text, Union
+from typing import Callable, Sequence, Text, Union, Optional
 
 from dm_env import specs
-import dm_robotics.agentflow as af
 from dm_robotics.agentflow import core
 from dm_robotics.agentflow import spec_utils
 from dm_robotics.agentflow.decorators import overrides
+from dm_robotics.agentflow.preprocessors import timestep_preprocessor
 import numpy as np
 import tree
 
@@ -37,17 +37,23 @@ RewardVal = Union[float, np.floating, np.ndarray]
 RewardCombinationStrategy = Callable[[Sequence[RewardVal]], RewardVal]
 
 
-class L2Reward(af.TimestepPreprocessor):
+class L2Reward(timestep_preprocessor.TimestepPreprocessor):
   """Returns a continuous reward based on the L2-distance between two keypoints.
 
   The keypoint position are sourced from the observations.
   """
 
-  def __init__(self,
-               obs0: Text,
-               obs1: Text,
-               reward_scale: float = 1.0,
-               reward_offset: float = 1.0):
+  def __init__(
+      self,
+      obs0: Text,
+      obs1: Text,
+      *,
+      reward_scale: float = 1.0,
+      reward_offset: float = 1.0,
+      validation_frequency: timestep_preprocessor.ValidationFrequency = (
+          timestep_preprocessor.ValidationFrequency.ONCE_PER_EPISODE),
+      name: Optional[str] = None,
+  ):
     """Initializes L2Reward.
 
     Args:
@@ -55,17 +61,20 @@ class L2Reward(af.TimestepPreprocessor):
       obs1: The observation key for the second keypoint.
       reward_scale: Scalar multiplier.
       reward_offset: Scalar offset.
+      validation_frequency: How often should we validate the obs specs.
+      name: A name for this preprocessor.
     """
-    super().__init__()
+    super().__init__(validation_frequency=validation_frequency, name=name)
     self._obs0 = obs0
     self._obs1 = obs1
     self._reward_scale = reward_scale
     self._reward_offset = reward_offset
     self._output_type = None  # type: np.dtype
 
-  @overrides(af.TimestepPreprocessor)
+  @overrides(timestep_preprocessor.TimestepPreprocessor)
   def _process_impl(
-      self, timestep: af.PreprocessorTimestep) -> af.PreprocessorTimestep:
+      self, timestep: timestep_preprocessor.PreprocessorTimestep
+  ) -> timestep_preprocessor.PreprocessorTimestep:
     try:
       obs0_val = timestep.observation[self._obs0]
       obs1_val = timestep.observation[self._obs1]
@@ -79,7 +88,7 @@ class L2Reward(af.TimestepPreprocessor):
                                     self._reward_offset)
     return timestep._replace(reward=reward)
 
-  @overrides(af.TimestepPreprocessor)
+  @overrides(timestep_preprocessor.TimestepPreprocessor)
   def _output_spec(
       self, input_spec: spec_utils.TimeStepSpec) -> spec_utils.TimeStepSpec:
     # Reward computed from observation, so dtype can change; Set accordingly.
@@ -91,23 +100,34 @@ class L2Reward(af.TimestepPreprocessor):
             dtype=self._output_type.type))
 
 
-class ThresholdedL2Reward(af.TimestepPreprocessor):
+class ThresholdedL2Reward(timestep_preprocessor.TimestepPreprocessor):
   """Returns a sparse reward if two keypoints are within a threshold distance.
 
   The keypoint position are sourced from the observations.
   """
 
-  def __init__(self, obs0, obs1, threshold, reward=1.0):
-    super().__init__()
+  def __init__(
+      self,
+      obs0,
+      obs1,
+      *,
+      threshold,
+      reward: float = 1.0,
+      validation_frequency: timestep_preprocessor.ValidationFrequency = (
+          timestep_preprocessor.ValidationFrequency.ONCE_PER_EPISODE),
+      name: Optional[str] = None,
+  ):
+    super().__init__(validation_frequency=validation_frequency, name=name)
     self._obs0 = obs0
     self._obs1 = obs1
     self._threshold = threshold
     self._reward = reward
     self._zero_reward = 0.0
 
-  @overrides(af.TimestepPreprocessor)
+  @overrides(timestep_preprocessor.TimestepPreprocessor)
   def _process_impl(
-      self, timestep: af.PreprocessorTimestep) -> af.PreprocessorTimestep:
+      self, timestep: timestep_preprocessor.PreprocessorTimestep
+  ) -> timestep_preprocessor.PreprocessorTimestep:
     try:
       obs0_val = timestep.observation[self._obs0]
       obs1_val = timestep.observation[self._obs1]
@@ -120,7 +140,7 @@ class ThresholdedL2Reward(af.TimestepPreprocessor):
     reward = self._reward if dist < self._threshold else self._zero_reward
     return timestep._replace(reward=reward)
 
-  @overrides(af.TimestepPreprocessor)
+  @overrides(timestep_preprocessor.TimestepPreprocessor)
   def _output_spec(
       self, input_spec: spec_utils.TimeStepSpec) -> spec_utils.TimeStepSpec:
     # Verify required keys are in the spec.
@@ -142,13 +162,18 @@ def _cast_reward_to_type(reward: RewardVal, dtype: np.dtype) -> RewardVal:
   return reward.astype(dtype)  # pytype: disable=attribute-error
 
 
-class ComputeReward(af.TimestepPreprocessor):
+class ComputeReward(timestep_preprocessor.TimestepPreprocessor):
   """Computes a reward from the observations and adds it to the timestep."""
 
   def __init__(
       self,
       reward_function: Callable[[spec_utils.ObservationValue], RewardVal],
-      output_spec_shape: Sequence[int] = ()):
+      *,
+      output_spec_shape: Sequence[int] = (),
+      validation_frequency: timestep_preprocessor.ValidationFrequency = (
+          timestep_preprocessor.ValidationFrequency.ONCE_PER_EPISODE),
+      name: Optional[str] = None,
+  ):
     """ComputeReward constructor.
 
     Args:
@@ -156,15 +181,18 @@ class ComputeReward(af.TimestepPreprocessor):
         and returns a reward.
       output_spec_shape: Shape of the output reward. Defaults to an empty shape
         denoting a scalar reward.
+      validation_frequency: How often should we validate the obs specs.
+      name: A name for this preprocessor.
     """
-    super().__init__()
+    super().__init__(validation_frequency=validation_frequency, name=name)
     self._reward_function = reward_function
     self._output_shape = output_spec_shape
 
-  @overrides(af.TimestepPreprocessor)
+  @overrides(timestep_preprocessor.TimestepPreprocessor)
   # Profiling for .wrap_scope('ComputeReward._process_impl')
   def _process_impl(
-      self, timestep: af.PreprocessorTimestep) -> af.PreprocessorTimestep:
+      self, timestep: timestep_preprocessor.PreprocessorTimestep
+  ) -> timestep_preprocessor.PreprocessorTimestep:
     reward = self._reward_function(timestep.observation)
     # Cast (possibly nested) reward to expected dtype.
     reward = tree.map_structure(
@@ -208,7 +236,10 @@ class StagedWithActiveThreshold(RewardCombinationStrategy):
   Rewards must be in [0;1], otherwise they will be clipped.
   """
 
-  def __init__(self, threshold: float = 0.1):
+  def __init__(
+      self,
+      threshold: float = 0.1,
+  ):
     """Initialize Staged.
 
     Args:
@@ -257,9 +288,12 @@ class StagedWithSuccessThreshold(RewardCombinationStrategy):
   Rewards must be in [0;1], otherwise they will be clipped.
   """
 
-  def __init__(self,
-               threshold: float = 0.9,
-               assume_cumulative_success: bool = True):
+  def __init__(
+      self,
+      threshold: float = 0.9,
+      *,
+      assume_cumulative_success: bool = True,
+  ):
     """Initialize Staged.
 
     Args:
@@ -299,14 +333,22 @@ class StagedWithSuccessThreshold(RewardCombinationStrategy):
     return (num_tasks_solved + current_task_reward) / float(num_stages)
 
 
-class CombineRewards(af.TimestepPreprocessor, core.Renderable):
+class CombineRewards(timestep_preprocessor.TimestepPreprocessor,
+                     core.Renderable):
   """Preprocessor which steps multiple rewards in sequence and combines them."""
 
-  def __init__(self,
-               reward_preprocessors: Sequence[af.TimestepPreprocessor],
-               combination_strategy: RewardCombinationStrategy = np.max,
-               output_spec_shape: Sequence[int] = (),
-               flatten_rewards: bool = True):
+  def __init__(
+      self,
+      reward_preprocessors: Sequence[
+          timestep_preprocessor.TimestepPreprocessor],
+      combination_strategy: RewardCombinationStrategy = np.max,
+      *,
+      output_spec_shape: Sequence[int] = (),
+      flatten_rewards: bool = True,
+      validation_frequency: timestep_preprocessor.ValidationFrequency = (
+          timestep_preprocessor.ValidationFrequency.ONCE_PER_EPISODE),
+      name: Optional[str] = None,
+  ):
     """CombineRewards constructor.
 
     Args:
@@ -320,11 +362,13 @@ class CombineRewards(af.TimestepPreprocessor, core.Renderable):
       flatten_rewards: If True, flattens any reward arrays coming from the
         `reward_preprocessors` before feeding them to the
         `combination_strategy`.
+      validation_frequency: How often should we validate the obs specs.
+      name: A name for this preprocessor.
 
     Raises:
       ValueError: If no reward_preprocessors are given.
     """
-    super().__init__()
+    super().__init__(validation_frequency=validation_frequency, name=name)
     if not reward_preprocessors:
       raise ValueError('reward_preprocessors should have non-zero length')
     self._reward_preprocessors = reward_preprocessors
@@ -333,10 +377,17 @@ class CombineRewards(af.TimestepPreprocessor, core.Renderable):
     self._output_shape = output_spec_shape
     self._output_type = None  # type: np.dtype
 
-  @overrides(af.TimestepPreprocessor)
+  @overrides(timestep_preprocessor.TimestepPreprocessor)
   # Profiling for .wrap_scope('CombineRewards._process_impl')
   def _process_impl(
-      self, timestep: af.PreprocessorTimestep) -> af.PreprocessorTimestep:
+      self, timestep: timestep_preprocessor.PreprocessorTimestep
+  ) -> timestep_preprocessor.PreprocessorTimestep:
+    # If this processor hasn't been setup yet, infer the type from the input
+    # timestep, as opposed to the input_spec (should be equivalent). This
+    # typically shouldn't happen, but allows stand-alone use-cases in which the
+    # processor isn't run by a subtask or environment.
+    output_type = self._output_type or np.asarray(timestep.reward).dtype
+
     rewards = []
     for reward_preprocessor in self._reward_preprocessors:
       timestep = reward_preprocessor.process(timestep)
@@ -349,10 +400,10 @@ class CombineRewards(af.TimestepPreprocessor, core.Renderable):
 
     # Cast (possibly nested) reward to expected dtype.
     reward = tree.map_structure(
-        lambda r: _cast_reward_to_type(r, self._output_type), reward)
+        lambda r: _cast_reward_to_type(r, output_type), reward)
     return timestep.replace(reward=reward)
 
-  @overrides(af.TimestepPreprocessor)
+  @overrides(timestep_preprocessor.TimestepPreprocessor)
   def _output_spec(
       self, input_spec: spec_utils.TimeStepSpec) -> spec_utils.TimeStepSpec:
     for reward_preprocessor in self._reward_preprocessors:
@@ -366,3 +417,7 @@ class CombineRewards(af.TimestepPreprocessor, core.Renderable):
     for preprocessor in self._reward_preprocessors:
       if isinstance(preprocessor, core.Renderable):
         preprocessor.render_frame(canvas)
+
+  def as_list(self) -> timestep_preprocessor.TimestepPreprocessorTree:
+    """Recursively lists processor and any child processor lists."""
+    return [self, [proc.as_list() for proc in self._reward_preprocessors]]

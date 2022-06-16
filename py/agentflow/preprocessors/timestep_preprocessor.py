@@ -21,7 +21,7 @@ and define reward functions.
 
 import abc
 import enum
-from typing import NamedTuple, Optional, Text, Union
+from typing import NamedTuple, Optional, Text, Union, Sequence
 
 import dm_env
 from dm_robotics.agentflow import core
@@ -30,6 +30,9 @@ from dm_robotics.agentflow.decorators import overrides
 import numpy as np
 
 # Internal profiling
+
+TimestepPreprocessorTree = Sequence[Union['TimestepPreprocessor',
+                                          Sequence['TimestepPreprocessorTree']]]
 
 
 class PreprocessorTimestep(NamedTuple):
@@ -50,7 +53,7 @@ class PreprocessorTimestep(NamedTuple):
   def from_environment_timestep(
       cls,
       environment_timestep: dm_env.TimeStep,
-      pterm: float,
+      pterm: float = 0.,
       result: Optional[core.OptionResult] = None) -> 'PreprocessorTimestep':
     return cls(
         step_type=environment_timestep.step_type,
@@ -110,10 +113,12 @@ class TimestepPreprocessor(abc.ABC):
   def __init__(
       self,
       validation_frequency: ValidationFrequency = (
-          ValidationFrequency.ONCE_PER_EPISODE)):
+          ValidationFrequency.ONCE_PER_EPISODE),
+      name: Optional[str] = None):
     self._in_spec = None  # type: spec_utils.TimeStepSpec
     self._out_spec = None  # type: spec_utils.TimeStepSpec
     self._validation_freq = validation_frequency
+    self._name = name or self.__class__.__name__
     self._validated_specs = False
 
   def process(self, input_ts: PreprocessorTimestep) -> PreprocessorTimestep:
@@ -203,6 +208,28 @@ class TimestepPreprocessor(abc.ABC):
       self, input_spec: spec_utils.TimeStepSpec) -> spec_utils.TimeStepSpec:
     raise NotImplementedError('This should be overridden.')
 
+  @property
+  def validation_frequency(self) -> ValidationFrequency:
+    return self._validation_freq
+
+  @property
+  def name(self) -> str:
+    return self._name
+
+  def set_validation_frequency(
+      self, validation_frequency: ValidationFrequency) -> None:
+    """Sets the validation frequency of the preprocessor."""
+    self._validation_freq = validation_frequency
+
+  def as_list(self) -> TimestepPreprocessorTree:
+    """Returns a list containing the processor and any child processors.
+
+    Child-classes implementing TimestepPreprocessor containers should implement
+    their own `as_list` method which includes the processor itself and all
+    children.
+    """
+    return [self]
+
 
 class CompositeTimestepPreprocessor(TimestepPreprocessor, core.Renderable):
   """Apply an ordered list of timestep preprocessors."""
@@ -211,8 +238,9 @@ class CompositeTimestepPreprocessor(TimestepPreprocessor, core.Renderable):
       self,
       *preprocessors: TimestepPreprocessor,
       validation_frequency: ValidationFrequency = (
-          ValidationFrequency.ONCE_PER_EPISODE)):
-    super().__init__(validation_frequency=validation_frequency)
+          ValidationFrequency.ONCE_PER_EPISODE),
+      name: Optional[str] = None):
+    super().__init__(validation_frequency=validation_frequency, name=name)
     self._timestep_preprocessors = list(preprocessors)
 
   @overrides(TimestepPreprocessor)
@@ -244,3 +272,16 @@ class CompositeTimestepPreprocessor(TimestepPreprocessor, core.Renderable):
     for preprocessor in self._timestep_preprocessors:
       if isinstance(preprocessor, core.Renderable):
         preprocessor.render_frame(canvas)
+
+  def as_list(self) -> TimestepPreprocessorTree:
+    """Recursively lists processor and any child processor lists.
+
+    This method allows traversal of complex nested processors using `tree`:
+    >>> tree.map_structure(
+    ...   lambda p: p.validation_frequency, processor.as_list())
+
+    Returns:
+      A list containing the processor and the result of `as_list` on any
+      child-processors.
+    """
+    return [self, [proc.as_list() for proc in self._timestep_preprocessors]]
