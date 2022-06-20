@@ -73,7 +73,7 @@ FindOrFetch(
   GIT_REPO
     https://github.com/abseil/abseil-cpp.git
   GIT_TAG
-    origin/master
+    lts_2021_11_02
   TARGETS
     absl::span
     absl::hash
@@ -95,7 +95,7 @@ FindOrFetch(
   GIT_REPO
     https://github.com/pybind/pybind11.git
   GIT_TAG
-    origin/master
+    v2.9.2
   TARGETS
     pybind11::headers
 )

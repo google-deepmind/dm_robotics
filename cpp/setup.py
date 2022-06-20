@@ -23,6 +23,15 @@ from setuptools import setup
 from setuptools.command.build_ext import build_ext
 
 
+PRE_DOWNLOADED_SOURCE_DIRS = {
+    "abseil-cpp": "/deps/abseil-cpp_215105818dfde3174fe799600bb0f3cae233d0bf",
+    "osqp-cpp": "/deps/osqp-cpp_8cd904e2b49c24dd41d11f8c6e0adb113dd5e26c",
+    "osqp": "/deps/osqp_f9fc23d3436e4b17dd2cb95f70cfa1f37d122c24",
+    "pybind11": "/deps/pybind11_914c06fb252b6cc3727d0eedab6736e88a3fcb01",
+    "googletest": "/deps/googletest_e2239ee6043f73722e7aa812a459f54a28552929"
+}
+
+
 class CMakeExtension(Extension):
   """Extension to record the directory to run cmake on."""
 
@@ -36,6 +45,10 @@ class CMakeBuild(build_ext):
   """Runs cmake."""
 
   def build_extension(self, ext):
+    use_preinstalled_libs = (
+        os.environ.get("DM_ROBOTICS_USE_PREINSTALLED_LIBRARIES", None)
+        is not None)
+
     output_directory = os.path.abspath(
         os.path.dirname(self.get_ext_fullpath(ext.name)))
 
@@ -56,13 +69,20 @@ class CMakeBuild(build_ext):
         "--log-level=VERBOSE",
     ]
 
-    version_script = os.environ.get("DM_ROBOTICS_VERSION_SCRIPT", None)
-    if version_script:
-      cmake_args.append(f"-DDM_ROBOTICS_VERSION_SCRIPT={version_script}",)
+    if use_preinstalled_libs:
+      cmake_args.append("-DFETCHCONTENT_FULLY_DISCONNECTED:BOOL=TRUE")
+      cmake_args.append("-DDM_ROBOTICS_USE_SYSTEM_Eigen3:BOOL=TRUE")
+
+      for libname, dirname in PRE_DOWNLOADED_SOURCE_DIRS.items():
+        if os.path.isdir(dirname):
+          cmake_args.append(
+              f"-DFETCHCONTENT_SOURCE_DIR_{libname.upper()}:STRING={dirname}")
 
     build_args = []
     if "CMAKE_BUILD_PARALLEL_LEVEL" not in os.environ:
       build_args += ["-j4"]
+
+    print(f"Cmake build args: {cmake_args}")
 
     if not os.path.exists(self.build_temp):
       os.makedirs(self.build_temp)

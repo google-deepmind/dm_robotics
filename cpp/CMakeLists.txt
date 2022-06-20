@@ -137,7 +137,7 @@ if (DM_ROBOTICS_BUILD_dmr_support
     GIT_REPO
       https://github.com/abseil/abseil-cpp.git
     GIT_TAG
-      origin/master
+      lts_2021_11_02
     TARGETS
       absl::span
       absl::hash
@@ -169,7 +169,7 @@ if (DM_ROBOTICS_BUILD_dmr_lsqp
     GIT_REPO
       https://gitlab.com/libeigen/eigen
     GIT_TAG
-      origin/master
+      3.4.0
     TARGETS
       Eigen3::Eigen
   )
@@ -190,7 +190,7 @@ if (DM_ROBOTICS_BUILD_dmr_lsqp)
     GIT_REPO
       https://github.com/google/osqp-cpp.git
     GIT_TAG
-      origin/master
+      8cd904e2b49c24dd41d11f8c6e0adb113dd5e26c
     TARGETS
       osqp-cpp
   )
@@ -209,7 +209,7 @@ if (DM_ROBOTICS_BUILD_TESTS)
     GIT_REPO
       https://github.com/google/googletest.git
     GIT_TAG
-      origin/main
+      release-1.11.0
     TARGETS
       gtest
       gmock
