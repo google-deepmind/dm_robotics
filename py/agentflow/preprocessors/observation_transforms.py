@@ -37,13 +37,19 @@ class MisconfigurationError(Exception):
 class CastPreprocessor(tsp.TimestepPreprocessor):
   """Preprocessor to cast observations, reward and discount."""
 
-  def __init__(self, dtype: type = np.float32):  # pylint: disable=g-bare-generic
+  def __init__(
+      self,
+      dtype: type = np.float32,  # pylint: disable=g-bare-generic
+      validation_frequency: tsp.ValidationFrequency = (
+          tsp.ValidationFrequency.ONCE_PER_EPISODE),
+  ):
     """Initialize CastPreprocessor.
 
     Args:
       dtype: The target dtype to cast to.
+      validation_frequency: How often should we validate the obs specs.
     """
-    super().__init__()
+    super().__init__(validation_frequency)
     self._dtype = dtype
 
   @overrides(tsp.TimestepPreprocessor)
@@ -87,18 +93,23 @@ class DowncastFloatPreprocessor(tsp.TimestepPreprocessor):
   uint8 in images).
   """
 
-  def __init__(self, max_float_dtype: type):  # pylint: disable=g-bare-generic
+  def __init__(
+      self,
+      max_float_dtype: type,  # pylint: disable=g-bare-generic
+      validation_frequency: tsp.ValidationFrequency = (
+          tsp.ValidationFrequency.ONCE_PER_EPISODE),
+  ):
     """Initialize DowncastFloatPreprocessor.
 
     Args:
-      max_float_dtype: The target dtype to cast floating point types
-                       with more bits to, e.g. np.float32.
+      max_float_dtype: The target dtype to cast floating point types with more
+        bits to, e.g. np.float32.
+      validation_frequency: How often should we validate the obs specs.
     """
-    super().__init__()
+    super().__init__(validation_frequency)
     if not np.issubdtype(max_float_dtype, np.floating):
-      raise ValueError(
-          'DowncastFloatPreprocessor only supports floating point '
-          f'dtypes, not {max_float_dtype}')
+      raise ValueError('DowncastFloatPreprocessor only supports floating point '
+                       f'dtypes, not {max_float_dtype}')
     self._dtype = max_float_dtype
     self._max_bits = np.finfo(self._dtype).bits
 
@@ -107,9 +118,8 @@ class DowncastFloatPreprocessor(tsp.TimestepPreprocessor):
             np.finfo(dtype).bits > self._max_bits)
 
   def _downcast_if_necessary(self, value):
-    if ((hasattr(value, 'dtype')
-         and self._dtype_needs_downcast(value.dtype))
-        or self._dtype_needs_downcast(type(value))):
+    if ((hasattr(value, 'dtype') and self._dtype_needs_downcast(value.dtype)) or
+        self._dtype_needs_downcast(type(value))):
       return np.asarray(value).astype(self._dtype)
     else:
       return value
@@ -153,8 +163,7 @@ class DowncastFloatPreprocessor(tsp.TimestepPreprocessor):
 
     return spec_utils.TimeStepSpec(
         observation_spec=obs_spec,
-        reward_spec=input_spec.reward_spec.replace(
-            dtype=reward_spec_dtype),
+        reward_spec=input_spec.reward_spec.replace(dtype=reward_spec_dtype),
         discount_spec=input_spec.discount_spec.replace(
             dtype=discount_spec_dtype))
 
@@ -162,8 +171,13 @@ class DowncastFloatPreprocessor(tsp.TimestepPreprocessor):
 class ObsRelativeToEpisodeStartPreprocessor(tsp.TimestepPreprocessor):
   """Offset specified observations to be relative to initial values."""
 
-  def __init__(self, target_obs):
-    super().__init__()
+  def __init__(
+      self,
+      target_obs: str,
+      validation_frequency: tsp.ValidationFrequency = (
+          tsp.ValidationFrequency.ONCE_PER_EPISODE),
+  ):
+    super().__init__(validation_frequency)
     self._target_obs = target_obs
     self._initial_values = {}
 
@@ -196,14 +210,21 @@ class ObsRelativeToEpisodeStartPreprocessor(tsp.TimestepPreprocessor):
 class PoseRelativeToEpisodeStart(tsp.TimestepPreprocessor):
   """Change pose observations to be relative to episode start."""
 
-  def __init__(self, pos_obs_name: str, quat_obs_name: str):
+  def __init__(
+      self,
+      pos_obs_name: str,
+      quat_obs_name: str,
+      validation_frequency: tsp.ValidationFrequency = (
+          tsp.ValidationFrequency.ONCE_PER_EPISODE),
+  ):
     """PoseRelativeToEpisodeStart constructor.
 
     Args:
       pos_obs_name: Observation key of the pos observation.
       quat_obs_name: Observation key of the quaternion observation.
+      validation_frequency: How often should we validate the obs specs.
     """
-    super().__init__()
+    super().__init__(validation_frequency)
     self._pos_obs_name = pos_obs_name
     self._quat_obs_name = quat_obs_name
     self._initial_pose = None  # type: Optional[geometry.PoseStamped]
@@ -250,9 +271,14 @@ class PoseRelativeToEpisodeStart(tsp.TimestepPreprocessor):
 class ObsOffsetAndScalingPreprocessor(tsp.TimestepPreprocessor):
   """Preprocessor to offset and scale specified observations."""
 
-  def __init__(self, obs_offsets: Mapping[str, np.floating],
-               obs_scales: Mapping[str, np.floating]):
-    super().__init__()
+  def __init__(
+      self,
+      obs_offsets: Mapping[str, np.floating],
+      obs_scales: Mapping[str, np.floating],
+      validation_frequency: tsp.ValidationFrequency = (
+          tsp.ValidationFrequency.ONCE_PER_EPISODE),
+  ):
+    super().__init__(validation_frequency)
     self._obs_offsets = obs_offsets
     self._obs_scales = obs_scales
 
@@ -283,14 +309,20 @@ class ObsOffsetAndScalingPreprocessor(tsp.TimestepPreprocessor):
 class RemoveObservations(tsp.TimestepPreprocessor):
   """Removes the specified fields from observations."""
 
-  def __init__(self, obs_to_strip: Sequence[str]):
+  def __init__(
+      self,
+      obs_to_strip: Sequence[str],
+      validation_frequency: tsp.ValidationFrequency = (
+          tsp.ValidationFrequency.ONCE_PER_EPISODE),
+  ):
     """Initialize RemoveObs.
 
     Args:
       obs_to_strip: A list of strings corresponding to keys to remove from
         timestep.observation.
+      validation_frequency: How often should we validate the obs specs.
     """
-    super().__init__()
+    super().__init__(validation_frequency)
     self._obs_to_strip = obs_to_strip
 
   @overrides(tsp.TimestepPreprocessor)
@@ -319,7 +351,13 @@ class RemoveObservations(tsp.TimestepPreprocessor):
 class RetainObservations(tsp.TimestepPreprocessor):
   """Leaves only the specified observations."""
 
-  def __init__(self, obs_to_leave: Sequence[str], raise_on_missing=True):
+  def __init__(
+      self,
+      obs_to_leave: Sequence[str],
+      raise_on_missing=True,
+      validation_frequency: tsp.ValidationFrequency = (
+          tsp.ValidationFrequency.ONCE_PER_EPISODE),
+  ):
     """Initialize RetainObservations.
 
     Args:
@@ -327,8 +365,9 @@ class RetainObservations(tsp.TimestepPreprocessor):
         timestep.observation.
       raise_on_missing: Whether to raise a MisconfigurationError if we are asked
         to keep a non-existent observation.
+      validation_frequency: How often should we validate the obs specs.
     """
-    super().__init__()
+    super().__init__(validation_frequency)
     self._obs_to_leave: FrozenSet[str] = frozenset(obs_to_leave)
     self._raise_on_missing = raise_on_missing
 
@@ -364,9 +403,14 @@ class RetainObservations(tsp.TimestepPreprocessor):
 class RenameObservations(tsp.TimestepPreprocessor):
   """Renames a set of observations."""
 
-  def __init__(self, obs_mapping: Mapping[str, str],
-               raise_on_missing: bool = True,
-               raise_on_overwrite: bool = True):
+  def __init__(
+      self,
+      obs_mapping: Mapping[str, str],
+      raise_on_missing: bool = True,
+      raise_on_overwrite: bool = True,
+      validation_frequency: tsp.ValidationFrequency = (
+          tsp.ValidationFrequency.ONCE_PER_EPISODE),
+  ):
     """Initialize RenameObservations.
 
     Args:
@@ -375,11 +419,12 @@ class RenameObservations(tsp.TimestepPreprocessor):
         to rename a non-existent observation.
       raise_on_overwrite: Whether to raise a MisconfigurationError we are asked
         to rename an observation by overwriting an existing observation.
+        validation_frequency: How often should we validate the obs specs.
 
     Raises:
       MisconfigurationError: If the mapping has duplicate names.
     """
-    super().__init__()
+    super().__init__(validation_frequency)
 
     self._raise_on_missing = raise_on_missing
     self._raise_on_overwrite = raise_on_overwrite
@@ -446,9 +491,15 @@ class RenameObservations(tsp.TimestepPreprocessor):
 class MergeObservations(tsp.TimestepPreprocessor):
   """Creates a single observation by merging several observations together."""
 
-  def __init__(self, obs_to_merge: Sequence[str], new_obs: str,
-               raise_on_missing: bool = True,
-               raise_on_overwrite: bool = True):
+  def __init__(
+      self,
+      obs_to_merge: Sequence[str],
+      new_obs: str,
+      raise_on_missing: bool = True,
+      raise_on_overwrite: bool = True,
+      validation_frequency: tsp.ValidationFrequency = (
+          tsp.ValidationFrequency.ONCE_PER_EPISODE),
+  ):
     """Initialize MergeObservations.
 
     Args:
@@ -458,9 +509,10 @@ class MergeObservations(tsp.TimestepPreprocessor):
         to merge a non-existent observation.
       raise_on_overwrite: Whether to raise a MisconfigurationError if the
         new_obs name overwrites an existing observation.
+      validation_frequency: How often should we validate the obs specs.
     """
 
-    super().__init__()
+    super().__init__(validation_frequency)
     self._obs_to_merge = tuple(obs_to_merge)
     self._new_obs = new_obs
     self._raise_on_missing = raise_on_missing
@@ -472,9 +524,11 @@ class MergeObservations(tsp.TimestepPreprocessor):
       self, timestep: tsp.PreprocessorTimestep) -> tsp.PreprocessorTimestep:
     obs = dict(timestep.observation)
     # Create the merged observation.
-    merged_obs = np.concatenate(
-        [timestep.observation[obs_key] for obs_key in self._obs_to_merge
-         if obs_key in obs])
+    merged_obs = np.concatenate([
+        timestep.observation[obs_key]
+        for obs_key in self._obs_to_merge
+        if obs_key in obs
+    ])
 
     # Remove the observations that have been merged.
     for obs_key in self._obs_to_merge:
@@ -491,18 +545,18 @@ class MergeObservations(tsp.TimestepPreprocessor):
     self._check_valid_merge(obs_spec)
 
     # Create the merged observation.
-    model_array = np.concatenate(
-        [input_spec.observation_spec[obs_key].generate_value()
-         for obs_key in self._obs_to_merge if obs_key in obs_spec])
+    model_array = np.concatenate([
+        input_spec.observation_spec[obs_key].generate_value()
+        for obs_key in self._obs_to_merge
+        if obs_key in obs_spec
+    ])
 
     # Remove the observations that have been merged.
     for obs_key in self._obs_to_merge:
       obs_spec.pop(obs_key)
 
     obs_spec[self._new_obs] = specs.Array(
-        shape=model_array.shape,
-        dtype=model_array.dtype,
-        name=self._new_obs)
+        shape=model_array.shape, dtype=model_array.dtype, name=self._new_obs)
     return input_spec.replace(observation_spec=obs_spec)
 
   def _check_valid_merge(self, obs_spec):
@@ -539,39 +593,39 @@ class StackObservations(tsp.TimestepPreprocessor):
   first observation.
   """
 
-  def __init__(self,
-               obs_to_stack: Sequence[str],
-               stack_depth: np.integer,
-               *,
-               add_leading_dim: bool = False,
-               override_obs: bool = True,
-               added_obs_prefix: str = 'stacked_',):
+  def __init__(
+      self,
+      obs_to_stack: Sequence[str],
+      stack_depth: np.integer,
+      *,
+      add_leading_dim: bool = False,
+      override_obs: bool = True,
+      added_obs_prefix: str = 'stacked_',
+      validation_frequency: tsp.ValidationFrequency = (
+          tsp.ValidationFrequency.ONCE_PER_EPISODE),
+  ):
     """StackObservations preprocessor constructor.
 
     Args:
       obs_to_stack: A list of observation to stack.
       stack_depth: How deep to stack them. The stacked observations will be
-        concatenated and replace the original observation if
-        `override_obs` is set to True. Otherwise, extra observations with
-        prefix `added_obs_prefix` will be added.
+        concatenated and replace the original observation if `override_obs` is
+        set to True. Otherwise, extra observations with prefix
+        `added_obs_prefix` will be added.
       add_leading_dim: If False, stacks the observations along the first
         dimension. If True, stacks the observations along an extra leading
-        dimension.
-        E.g.:
-          (7,) stacked 3 times becomes:
-          - (21,) if add_leading_dim=True
-          - (3,7) if add_leading_dim=True
-          (4,5) stacked 3 times becomes:
-          - (12, 5) if add_leading_dim=False
-          - (3, 4, 5) if add_leading_dim=True
+        dimension. E.g.: (7,) stacked 3 times becomes: - (21,) if
+        add_leading_dim=True - (3,7) if add_leading_dim=True (4,5) stacked 3
+        times becomes: - (12, 5) if add_leading_dim=False - (3, 4, 5) if
+        add_leading_dim=True
       override_obs: If True, add the stacked observations and replace the
-        existing ones. Otherwise, the stacked observations will be
-        added to the existing ones. The name of the stacked observation is given
-        by `added_obs_prefix` added to their original name.
+        existing ones. Otherwise, the stacked observations will be added to the
+        existing ones. The name of the stacked observation is given by
+        `added_obs_prefix` added to their original name.
       added_obs_prefix: The prefix to be added to the original observation name.
-
+      validation_frequency: How often should we validate the obs specs.
     """
-    super().__init__()
+    super().__init__(validation_frequency)
     self._obs_to_stack: FrozenSet[str] = frozenset(obs_to_stack)
     self._stack_depth = stack_depth  # type: np.integer
     self._add_leading_dim = add_leading_dim
@@ -623,9 +677,7 @@ class StackObservations(tsp.TimestepPreprocessor):
     else:
       model_array = np.concatenate([spec.generate_value()] * self._stack_depth)
     return specs.Array(
-        shape=model_array.shape,
-        dtype=model_array.dtype,
-        name=spec.name)
+        shape=model_array.shape, dtype=model_array.dtype, name=spec.name)
 
   @overrides(tsp.TimestepPreprocessor)
   def _output_spec(
@@ -637,8 +689,8 @@ class StackObservations(tsp.TimestepPreprocessor):
       }
     else:
       stacked_obs_spec = {
-          self._added_obs_prefix + str(k): self._maybe_process_spec(
-              k, input_spec.observation_spec[k])
+          self._added_obs_prefix + str(k):
+          self._maybe_process_spec(k, input_spec.observation_spec[k])
           for k in self._obs_to_stack
       }
       processed_obs_spec = {**input_spec.observation_spec, **stacked_obs_spec}
@@ -649,11 +701,17 @@ class StackObservations(tsp.TimestepPreprocessor):
 class FoldObservations(tsp.TimestepPreprocessor):
   """Performs a fold operation and transormation some observation."""
 
-  def __init__(self, output_obs_name: str, obs_to_fold: str,
-               fold_fn: Callable[[np.ndarray, np.ndarray], np.ndarray],
-               output_fn: Callable[[np.ndarray],
-                                   np.ndarray], init_val: np.ndarray):
-    super().__init__()
+  def __init__(
+      self,
+      output_obs_name: str,
+      obs_to_fold: str,
+      fold_fn: Callable[[np.ndarray, np.ndarray], np.ndarray],
+      output_fn: Callable[[np.ndarray], np.ndarray],
+      init_val: np.ndarray,
+      validation_frequency: tsp.ValidationFrequency = (
+          tsp.ValidationFrequency.ONCE_PER_EPISODE),
+  ):
+    super().__init__(validation_frequency)
 
     self._output_obs_name = output_obs_name
     self._obs_to_fold = obs_to_fold
@@ -695,11 +753,13 @@ class FoldObservations(tsp.TimestepPreprocessor):
 class ImageCropper(object):
   """Helper class that crops an image."""
 
-  def __init__(self,
-               crop_width_relative: float,
-               crop_height_relative: Optional[float] = None,
-               x_offset_relative: float = 0.0,
-               y_offset_relative: float = 0.0):
+  def __init__(
+      self,
+      crop_width_relative: float,
+      crop_height_relative: Optional[float] = None,
+      x_offset_relative: float = 0.0,
+      y_offset_relative: float = 0.0,
+  ):
     """This initializes internal variables that are reused for every crop operation.
 
     Args:
@@ -715,6 +775,7 @@ class ImageCropper(object):
         *right* edge of the crop is aligned with the right edge of the source.
       y_offset_relative: Behaves like x_offset_relative, but for the y axis.
     """
+
     # Check parameters for limit violations (all the limits are [0,1])
     def check_limit(value: float, name: str):
       if value < 0.0 or value > 1.0:
@@ -811,12 +872,11 @@ class ImageCropper(object):
           total_pixels))
     return int(round(float(total_pixels) * fraction))
 
-  def crop(self, image: np.ndarray) ->np.ndarray:
+  def crop(self, image: np.ndarray) -> np.ndarray:
     """Crop the given image."""
     if len(image.shape) < 2:
-      raise ValueError(
-          'Cropper requires at least 2 dimensions, got '
-          'shape {}'.format(image.shape))
+      raise ValueError('Cropper requires at least 2 dimensions, got '
+                       'shape {}'.format(image.shape))
     width = image.shape[1]
     height = image.shape[0]
     # This bails out early if we already know the parameters for this width and
@@ -829,13 +889,17 @@ class ImageCropper(object):
 class CropImageObservation(tsp.TimestepPreprocessor):
   """Crops an image observation to the desired shape."""
 
-  def __init__(self,
-               input_obs_name: str,
-               output_obs_name: str,
-               crop_width_relative: float,
-               crop_height_relative: Optional[float] = None,
-               x_offset_relative: float = 0.0,
-               y_offset_relative: float = 0.0):
+  def __init__(
+      self,
+      input_obs_name: str,
+      output_obs_name: str,
+      crop_width_relative: float,
+      crop_height_relative: Optional[float] = None,
+      x_offset_relative: float = 0.0,
+      y_offset_relative: float = 0.0,
+      validation_frequency: tsp.ValidationFrequency = (
+          tsp.ValidationFrequency.ONCE_PER_EPISODE),
+  ):
     """Build a CropImageObservation preprocessor.
 
     Args:
@@ -852,8 +916,9 @@ class CropImageObservation(tsp.TimestepPreprocessor):
         of the crop is aligned with the center of the source. 1.0 means the
         *right* edge of the crop is aligned with the right edge of the source.
       y_offset_relative: Behaves like x_offset_relative, but for the y axis.
+      validation_frequency: How often should we validate the obs specs.
     """
-    super().__init__()
+    super().__init__(validation_frequency)
 
     # Will raise a ValueError if any of the parameters are not OK.
     self._cropper = ImageCropper(
@@ -907,14 +972,18 @@ class CropImageObservation(tsp.TimestepPreprocessor):
 class CropSquareAndResize(CropImageObservation):
   """Crop a square from an image observation and resample it to the desired size in pixels."""
 
-  def __init__(self,
-               input_obs_name: str,
-               output_obs_name: str,
-               crop_width_relative: float,
-               side_length_pixels: int,
-               x_offset_relative: float = 0.0,
-               y_offset_relative: float = 0.0,
-               interpolation=cv2.INTER_LINEAR):
+  def __init__(
+      self,
+      input_obs_name: str,
+      output_obs_name: str,
+      crop_width_relative: float,
+      side_length_pixels: int,
+      x_offset_relative: float = 0.0,
+      y_offset_relative: float = 0.0,
+      interpolation=cv2.INTER_LINEAR,
+      validation_frequency: tsp.ValidationFrequency = (
+          tsp.ValidationFrequency.ONCE_PER_EPISODE),
+  ):
     """Build a CropImageObservation preprocessor.
 
     Args:
@@ -934,6 +1003,7 @@ class CropSquareAndResize(CropImageObservation):
       interpolation: The interpolation method to use. Supported values are
         cv2.INTER_LINEAR, cv2.INTER_NEAREST, cv2.INTER_AREA, cv2.INTER_CUBIC,
         cv2.INTER_LANCZOS4
+      validation_frequency: How often should we validate the obs specs.
     """
     super().__init__(
         input_obs_name=input_obs_name,
@@ -941,7 +1011,9 @@ class CropSquareAndResize(CropImageObservation):
         crop_width_relative=crop_width_relative,
         crop_height_relative=None,
         x_offset_relative=x_offset_relative,
-        y_offset_relative=y_offset_relative)
+        y_offset_relative=y_offset_relative,
+        validation_frequency=validation_frequency,
+    )
 
     if side_length_pixels <= 0:
       raise ValueError(
@@ -978,11 +1050,15 @@ class ResizeImage(tsp.TimestepPreprocessor):
   Resulting image is reshaped into a square if it is not already.
   """
 
-  def __init__(self,
-               input_obs_name: str,
-               output_obs_name: str,
-               side_length_pixels: int,
-               interpolation=cv2.INTER_LINEAR):
+  def __init__(
+      self,
+      input_obs_name: str,
+      output_obs_name: str,
+      side_length_pixels: int,
+      interpolation=cv2.INTER_LINEAR,
+      validation_frequency: tsp.ValidationFrequency = (
+          tsp.ValidationFrequency.ONCE_PER_EPISODE),
+  ):
     """Build a ResizeImage preprocessor.
 
     Args:
@@ -994,8 +1070,9 @@ class ResizeImage(tsp.TimestepPreprocessor):
       interpolation: The interpolation method to use. Supported values are
         cv2.INTER_LINEAR, cv2.INTER_NEAREST, cv2.INTER_AREA, cv2.INTER_CUBIC,
         cv2.INTER_LANCZOS4
+      validation_frequency: How often should we validate the obs specs.
     """
-    super().__init__()
+    super().__init__(validation_frequency)
 
     if side_length_pixels <= 0:
       raise ValueError(
@@ -1024,8 +1101,7 @@ class ResizeImage(tsp.TimestepPreprocessor):
   @overrides(tsp.TimestepPreprocessor)
   def _output_spec(
       self, input_spec: spec_utils.TimeStepSpec) -> spec_utils.TimeStepSpec:
-    input_observation_spec = input_spec.observation_spec[
-        self._input_obs_name]
+    input_observation_spec = input_spec.observation_spec[self._input_obs_name]
     shape = input_observation_spec.shape
     observation_spec = dict(input_spec.observation_spec)
     observation_spec[self._output_obs_name] = specs.Array(
@@ -1042,9 +1118,11 @@ class AddObservation(tsp.TimestepPreprocessor):
   def __init__(
       self,
       obs_name: str,
-      obs_callable: Callable[
-          [tsp.PreprocessorTimestep], np.ndarray],
-      obs_spec: Optional[specs.Array] = None):
+      obs_callable: Callable[[tsp.PreprocessorTimestep], np.ndarray],
+      obs_spec: Optional[specs.Array] = None,
+      validation_frequency: tsp.ValidationFrequency = (
+          tsp.ValidationFrequency.ONCE_PER_EPISODE),
+  ):
     """AddObservation constructor.
 
     Args:
@@ -1054,8 +1132,9 @@ class AddObservation(tsp.TimestepPreprocessor):
       obs_spec: Specs for the output of `obs_callable`. If `None` is provided
         the specs are inferred as a `dm_env.specs.Array` with shape and dtype
         matching the output of `obs_callable` and name  set to `obs_name`.
+      validation_frequency: How often should we validate the obs specs.
     """
-    super().__init__()
+    super().__init__(validation_frequency)
 
     self._obs_name = obs_name
     self._obs_callable = obs_callable
@@ -1077,17 +1156,15 @@ class AddObservation(tsp.TimestepPreprocessor):
 
     observation_spec = dict(input_spec.observation_spec)
     if self._obs_name in observation_spec.keys():
-      raise ValueError(
-          f'Observation {self._obs_name} already exists.')
+      raise ValueError(f'Observation {self._obs_name} already exists.')
 
     dummy_input = tsp.PreprocessorTimestep.from_environment_timestep(
         input_spec.minimum(), pterm=0.0)
     try:
       dummy_obs = np.asarray(self._obs_callable(dummy_input))
     except Exception:
-      logging.exception(
-          'Failed to run the obs_callable to add observation %s.',
-          self._obs_name)
+      logging.exception('Failed to run the obs_callable to add observation %s.',
+                        self._obs_name)
       raise
 
     if self._obs_spec is None:
