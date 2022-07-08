@@ -18,7 +18,7 @@ A "prop" is any object within an environment which the robot can manipulate. A
 simulations.
 """
 import os
-from typing import List, Optional, Sequence, Union
+from typing import Optional, Sequence, Union
 
 from absl import logging
 from dm_control import mjcf
@@ -42,7 +42,7 @@ class MeshProp(prop.Prop):
   """Represents an object originated in XML and meshes."""
 
   def _build_meshes_from_list(self,
-                              mesh_list: Union[List[str],
+                              mesh_list: Union[Sequence[str],
                                                Sequence[Sequence[float]]],
                               mesh_prefix: str = 'visual') -> int:
     """Creates mesh assets from mesh files.
@@ -88,14 +88,14 @@ class MeshProp(prop.Prop):
     return mesh_idx
 
   def _build(self,
-             visual_meshes: List[str],
-             collision_meshes: Optional[List[str]] = None,
+             visual_meshes: Sequence[str],
+             collision_meshes: Optional[Sequence[str]] = None,
              texture_file: Optional[str] = None,
              name: Optional[str] = 'mesh_object',
-             size: Optional[List[float]] = None,
+             size: Optional[Sequence[float]] = None,
              color: Optional[str] = None,
-             pos: Optional[List[float]] = None,
-             masses: Optional[List[float]] = None,
+             pos: Optional[Sequence[float]] = None,
+             masses: Optional[Sequence[float]] = None,
              mjcf_model_export_dir: Optional[str] = None) -> None:
     """Creates mesh assets from mesh files.
 
