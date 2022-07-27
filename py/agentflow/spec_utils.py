@@ -120,22 +120,22 @@ def minimum(spec: specs.Array):
   if hasattr(spec, 'minimum'):
     return clip(np.asarray(spec.minimum, dtype=spec.dtype), spec)
   elif np.issubdtype(spec.dtype, np.integer):
-    return np.full(spec.shape, np.iinfo(spec.dtype).min)
+    return np.full(spec.shape, np.iinfo(spec.dtype).min, dtype=spec.dtype)
   elif isinstance(spec, specs.StringArray):
     return np.full(spec.shape, spec.string_type(''), dtype=object)
   else:
-    return np.full(spec.shape, np.finfo(spec.dtype).min)
+    return np.full(spec.shape, np.finfo(spec.dtype).min, dtype=spec.dtype)
 
 
 def maximum(spec: specs.Array):
   if hasattr(spec, 'maximum'):
     return clip(np.asarray(spec.maximum, dtype=spec.dtype), spec)
   elif np.issubdtype(spec.dtype, np.integer):
-    return np.full(spec.shape, np.iinfo(spec.dtype).max)
+    return np.full(spec.shape, np.iinfo(spec.dtype).max, dtype=spec.dtype)
   elif isinstance(spec, specs.StringArray):
     return np.full(spec.shape, spec.string_type(''), dtype=object)
   else:
-    return np.full(spec.shape, np.finfo(spec.dtype).max)
+    return np.full(spec.shape, np.finfo(spec.dtype).max, dtype=spec.dtype)
 
 
 def zeros(action_spec: specs.Array) -> np.ndarray:
@@ -489,9 +489,11 @@ def validate(spec: specs.Array,
     spec.validate(value)
   else:
     if spec.shape != value.shape:
-      raise ValueError('shape mismatch {}. {} vs. {}'.format(msg, spec, value))
+      raise ValueError('shape mismatch {}. {} vs. {}'.format(
+          msg, spec, value.shape))
     if spec.dtype != value.dtype:
-      raise ValueError('dtype mismatch {}. {} vs. {}'.format(msg, spec, value))
+      raise ValueError('dtype mismatch {}. {} vs. {}'.format(
+          msg, spec, value.dtype))
 
 
 def assert_not_dtype(spec: specs.Array, dtype: Type[Any]):
