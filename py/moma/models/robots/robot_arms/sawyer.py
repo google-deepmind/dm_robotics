@@ -323,8 +323,12 @@ class Sawyer(robot_arm.RobotArm):
     physics_actuators = models_utils.binding(physics, self._actuators)
 
     physics_joints.qpos[:] = joint_angles
+    physics_joints.qvel[:] = np.zeros_like(joint_angles)
     if self._actuation == consts.Actuation.INTEGRATED_VELOCITY:
       physics_actuators.act[:] = physics_joints.qpos[:]
+
+    # After setting the joints we need to synchronize the physics state.
+    physics.forward()
 
   def after_substep(self, physics: mjcf.Physics,
                     random_state: np.random.RandomState) -> None:
