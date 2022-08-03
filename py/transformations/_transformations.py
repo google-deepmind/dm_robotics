@@ -815,9 +815,11 @@ def quat_angle(quat: types.QuatArray) -> np.ndarray:
   # ||Im(q)|| = sin(angle/2) with Im(q) the imaginary part of the quaternion.
   # We choose the method that is less sensitive to a noisy evaluation of the
   # difference.
-  angle = np.where(quat[..., 0] < _TOL_ARCCOS,
-                   2 * np.arccos(quat[..., 0]),
-                   2 * np.arcsin(np.linalg.norm(quat[..., 1:], axis=-1)))
+  condition = quat[..., 0] < _TOL_ARCCOS
+  angle = np.where(
+      condition,
+      2 * np.arccos(quat[..., 0], where=condition),
+      2 * np.arcsin(np.linalg.norm(quat[..., 1:], axis=-1), where=~condition))
   return angle
 
 # LINT.ThenChange(_transformations_quat.py)
