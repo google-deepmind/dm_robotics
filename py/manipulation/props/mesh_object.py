@@ -20,7 +20,6 @@ simulations.
 import os
 from typing import Optional, Sequence, Union
 
-from absl import logging
 from dm_control import mjcf
 from dm_robotics.manipulation.props.utils import mesh_formats_utils
 from dm_robotics.moma import prop
@@ -58,7 +57,6 @@ class MeshProp(prop.Prop):
     for mesh_source in mesh_list:
       name = 'mesh_%s_%s_%02d' % (mesh_prefix, self.name, mesh_idx)
       if isinstance(mesh_source, str):
-        logging.debug('Loading mesh file %s', mesh_source)
         _, extension = os.path.splitext(mesh_source)
         if extension in _MUJOCO_SUPPORTED_MESH_TYPES:
           with open(mesh_source, 'rb') as f:
