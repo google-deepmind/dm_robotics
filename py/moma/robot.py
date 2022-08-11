@@ -19,6 +19,7 @@ from typing import List, Optional, Sequence, Generic, TypeVar
 
 from dm_control import composer
 from dm_control import mjcf
+from dm_control.composer.initializers import utils
 from dm_control.mjcf import traversal_utils
 from dm_robotics.geometry import geometry
 from dm_robotics.moma import effector
@@ -31,6 +32,13 @@ import numpy as np
 
 Arm = TypeVar('Arm', bound=robot_arm.RobotArm)
 Gripper = TypeVar('Gripper', bound=robot_hand.AnyRobotHand)
+
+# Absolute velocity threshold for a arm joint to be considered settled.
+_SETTLE_QVEL_TOL = 1e-4
+# Absolute acceleration threshold for an arm joint to be considered settled.
+_SETTLE_QACC_TOL = 1e-1
+# Maximum simulation time to allow the robot to settle when positioning it.
+_MAX_SETTLE_PHYSICS_TIME = 2.0
 
 
 class Robot(abc.ABC, Generic[Arm, Gripper]):
@@ -193,8 +201,11 @@ class StandardRobot(Generic[Arm, Gripper], Robot[Arm, Gripper]):
   def arm_frame(self):
     return traversal_utils.get_attachment_frame(self._arm.mjcf_model)
 
-  def position_gripper(self, physics: mjcf.Physics, position: np.ndarray,
-                       quaternion: np.ndarray):
+  def position_gripper(self,
+                       physics: mjcf.Physics,
+                       position: np.ndarray,
+                       quaternion: np.ndarray,
+                       settle_physics: bool = False):
     """Moves the gripper ik point position to the (pos, quat) pose tuple.
 
     Args:
@@ -203,6 +214,8 @@ class StandardRobot(Generic[Arm, Gripper], Robot[Arm, Gripper]):
         frame.
       quaternion: The quaternion (wxyz) giving the desired orientation of the
         gripper in the world frame.
+      settle_physics: If True, will step the physics simulation until the arm
+        joints has velocity and acceleration below a certain threshold.
 
     Raises:
       ValueError: If the gripper cannot be placed at the desired pose.
@@ -225,11 +238,54 @@ class StandardRobot(Generic[Arm, Gripper], Robot[Arm, Gripper]):
       raise ValueError('IK Failed to converge to the desired target pose'
                        f'{geometry.Pose(position, quaternion)} '
                        f'for {gripper_prefix} of {self._arm.name}')
+    self.position_arm_joints(physics, qpos, settle_physics=settle_physics)
 
-    self.position_arm_joints(physics, qpos)
+  def position_arm_joints(
+      self,
+      physics: mjcf.Physics,
+      joint_angles: np.ndarray,
+      settle_physics: bool = False,
+      max_settle_physics_time: float = _MAX_SETTLE_PHYSICS_TIME,
+      max_qvel_tol=_SETTLE_QVEL_TOL,
+      max_qacc_tol=_SETTLE_QACC_TOL,
+  ):
+    """Move the arm to the desired joint configuration.
 
-  def position_arm_joints(self, physics, joint_angles):
+    Args:
+      physics: Instancoe of an mjcf physics.
+      joint_angles: Desired joint angle configuration.
+      settle_physics: If true will step the simulation until the joints have
+        velocity and accelerations lower than `max_qvel_tol` and `max_qacc_tol`.
+        This is desired when the simulation is altered and the robot is not
+        stable in the desired joint configuration. This is for example the case
+        when applying domain randomization to the gears in the simulation. This
+        affects the different forces applied by the actuators and results in
+        movements at the beginning of the episode. Settling the physics prevents
+        this.
+      max_settle_physics_time: Maximum simulation time that we want the physics
+        to settle for.
+      max_qvel_tol: Maximum velocity any joint should have to consider the
+        physics 'settled'.
+      max_qacc_tol: Maximum acceleration any joint should have to consider the
+        physics 'settled'.
+    """
     self.arm.set_joint_angles(physics, joint_angles)
+    if settle_physics:
+      # We let the simulation settle once the robot joints have been set. This
+      # is to ensure that the robot is not moving at the beginning of the
+      # episode.
+      original_time = physics.data.time
+      joint_isolator = utils.JointStaticIsolator(physics, self.arm.joints)
+      joints_mj = physics.bind(self.arm.joints)
+      assert joints_mj is not None
+      while physics.data.time - original_time < max_settle_physics_time:
+        with joint_isolator:
+          physics.step()
+        max_qvel = np.max(np.abs(joints_mj.qvel))
+        max_qacc = np.max(np.abs(joints_mj.qacc))
+        if (max_qvel < max_qvel_tol) and (max_qacc < max_qacc_tol):
+          break
+      physics.data.time = original_time
 
 
 def standard_compose(
