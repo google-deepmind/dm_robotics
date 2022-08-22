@@ -119,14 +119,15 @@ class WrapperProp(Prop):
 class Camera(Prop):
   """Base class for Moma camera props."""
 
-  def _build(self,
-             name: str,
-             mjcf_root: mjcf.RootElement,
-             camera_element: str,
-             prop_root: str = 'prop_root',
-             width: int = 480,
-             height: int = 640,
-             fovy: float = 90.0):
+  def _build(  # pylint:disable=arguments-renamed
+      self,
+      name: str,
+      mjcf_root: mjcf.RootElement,
+      camera_element: str,
+      prop_root: str = 'prop_root',
+      width: int = 480,
+      height: int = 640,
+      fovy: float = 90.0):
     """Camera  constructor.
 
     Args:
@@ -185,7 +186,12 @@ class Camera(Prop):
 class Block(Prop):
   """A block prop."""
 
-  def _build(self, name: str = 'box', width=0.04, height=0.04, depth=0.04):
+  def _build(  # pylint:disable=arguments-renamed
+      self,
+      name: str = 'box',
+      width=0.04,
+      height=0.04,
+      depth=0.04) -> None:
     mjcf_root, site = _make_block_model(name, width, height, depth)
     super()._build(name, mjcf_root, 'prop_root')
     del site
@@ -224,3 +230,11 @@ def _make_block_model(name,
   del box
 
   return mjcf_root, site
+
+
+def is_rgba(prop: composer.Entity, rgba: np.ndarray) -> bool:
+  """Returns True if all the prop's geoms are of color `rgba`."""
+  for geom in prop.mjcf_model.find_all('geom'):
+    if geom.rgba is not None and not np.array_equal(geom.rgba, rgba):
+      return False
+  return True

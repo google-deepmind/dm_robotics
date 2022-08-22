@@ -29,21 +29,6 @@ from dm_robotics.moma import subtask_env
 # Internal profiling
 
 
-class ComposerEnvironmentForRealMoMaSetup(composer.Environment):
-  """Sublclass of composer environment used when building a real MoMa setup.
-
-  When we use a real environment, we want to make sure the environment loop is
-  as fast as possible. To do this, we set the number of physics substeps to 0.
-  This removes the unessary physics simulation. However, when doing this we
-  need to override the control timestep property of the class to ensure it
-  still returns the correct value.
-  """
-
-  def control_timestep(self) -> float:
-    """Returns the interval between agent actions in seconds."""
-    return self.task.control_timestep
-
-
 class SubtaskEnvBuilder(object):
   """Builder for a SubTaskEnvironment."""
 
@@ -99,14 +84,15 @@ class SubtaskEnvBuilder(object):
 
     if self._base_env is None:
       if real_env:
-        self._base_env = ComposerEnvironmentForRealMoMaSetup(
-            self._task,
-            strip_singleton_obs_buffer_dim=True,
-            n_sub_steps=0,
-            raise_exception_on_physics_error=False)
-      else:
-        self._base_env = composer.Environment(
-            self._task, strip_singleton_obs_buffer_dim=True)
+        # We disable all collisions on the environment to speed up the
+        # simulation stepping.
+        disable_collisions(self._task)
+
+        # We then set the physics timestep to a large value to ensure that we
+        # step the simulation on a small number of times.
+        base_task.physics_timestep = 0.05
+      self._base_env = composer.Environment(
+          self._task, strip_singleton_obs_buffer_dim=True)
 
     return self._base_env
 
@@ -165,3 +151,11 @@ class SubtaskEnvBuilder(object):
         physics_getter=lambda: env.physics,
         effectors=effectors,
         delegate=delegate)
+
+
+def disable_collisions(task: composer.Task) -> None:
+  """Disables all collisions by setting all geom contype/conaffinity to 0."""
+
+  for geom in task.root_entity.mjcf_model.find_all('geom'):
+    geom.contype = 0
+    geom.conaffinity = 0
