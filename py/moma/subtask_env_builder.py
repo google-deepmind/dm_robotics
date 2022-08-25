@@ -28,6 +28,11 @@ from dm_robotics.moma import subtask_env
 
 # Internal profiling
 
+# In our real environments, we set the physics timestep to a large value to
+# ensure that we step the simulation only a small number of times to avoid.
+# losing time when stepping the composer environments.
+REAL_PHYSICS_TIMESTEP = 0.01
+
 
 class SubtaskEnvBuilder(object):
   """Builder for a SubTaskEnvironment."""
@@ -84,13 +89,13 @@ class SubtaskEnvBuilder(object):
 
     if self._base_env is None:
       if real_env:
-        # We disable all collisions on the environment to speed up the
+        # We disable all constraints on the environment to speed up the
         # simulation stepping.
-        disable_collisions(self._task)
+        disable_contact_computation(self._task)
 
         # We then set the physics timestep to a large value to ensure that we
         # step the simulation on a small number of times.
-        base_task.physics_timestep = 0.05
+        base_task.physics_timestep = REAL_PHYSICS_TIMESTEP
       self._base_env = composer.Environment(
           self._task, strip_singleton_obs_buffer_dim=True)
 
@@ -153,9 +158,8 @@ class SubtaskEnvBuilder(object):
         delegate=delegate)
 
 
-def disable_collisions(task: composer.Task) -> None:
-  """Disables all collisions by setting all geom contype/conaffinity to 0."""
+def disable_contact_computation(task: composer.Task) -> None:
+  """Disables all constraints in the MuJoCo simulation."""
 
-  for geom in task.root_entity.mjcf_model.find_all('geom'):
-    geom.contype = 0
-    geom.conaffinity = 0
+  task.root_entity.mjcf_model.option.flag.contact = 'disable'
+
