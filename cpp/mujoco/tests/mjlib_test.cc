@@ -18,8 +18,6 @@
 
 #include <string>
 
-#include "dm_robotics/support/status-matchers.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "dm_robotics/mujoco/defs.h"
 
