@@ -98,8 +98,9 @@ class SubTaskLogger(subtask.SubTaskObserver):
     self._logger = logger
     self._aggregator = aggregator
 
-  def step(self, parent_timestep: dm_env.TimeStep, parent_action: np.ndarray,
-           agent_timestep: dm_env.TimeStep, agent_action: np.ndarray) -> None:
+  def step(  # pytype: disable=signature-mismatch  # overriding-parameter-type-checks
+      self, parent_timestep: dm_env.TimeStep, parent_action: np.ndarray,
+      agent_timestep: dm_env.TimeStep, agent_action: np.ndarray) -> None:
     # Fetch current data to log.
     data = self._aggregator.accumulate(parent_timestep, agent_action,
                                        agent_timestep, agent_action)

@@ -81,7 +81,8 @@ class GenericPoseSensor(moma_sensor.Sensor):
   def name(self) -> str:
     return self._name
 
-  def get_obs_key(self, obs: Observations) -> str:
+  def get_obs_key(  # pytype: disable=signature-mismatch  # overriding-parameter-type-checks
+      self, obs: Observations) -> str:
     return obs.get_obs_key(self._name)
 
   def _pose(self, physics: mjcf.Physics) -> np.ndarray:

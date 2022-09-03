@@ -134,7 +134,8 @@ class CameraPoseSensor(moma_sensor.Sensor):
   def name(self) -> str:
     return self._name
 
-  def get_obs_key(self, obs: PoseObservations) -> str:
+  def get_obs_key(  # pytype: disable=signature-mismatch  # overriding-parameter-type-checks
+      self, obs: PoseObservations) -> str:
     return obs.get_obs_key(self._name)
 
   def _camera_pos(self, physics: mjcf.Physics) -> np.ndarray:
@@ -209,7 +210,8 @@ class CameraImageSensor(moma_sensor.Sensor):
   def name(self) -> str:
     return self._name
 
-  def get_obs_key(self, obs: ImageObservations) -> str:
+  def get_obs_key(  # pytype: disable=signature-mismatch  # overriding-parameter-type-checks
+      self, obs: ImageObservations) -> str:
     return obs.get_obs_key(self._name)
 
   def _camera_intrinsics(self, physics: mjcf.Physics) -> np.ndarray:
