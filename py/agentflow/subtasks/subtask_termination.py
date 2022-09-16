@@ -398,3 +398,61 @@ class ObservationThresholdTermination(preprocessors.TimestepPreprocessor):
     self._terminal_discount = input_spec.discount_spec.dtype.type(
         self._terminal_discount)
     return input_spec
+
+
+class JointLimitsTermination(preprocessors.TimestepPreprocessor):
+  """Terminate if an arm goes beyond the specified limits.
+
+  Note that this mainly works with arms that have rotational joints which allow
+  less than one full rotation. Arms with joints that can rotate more than 2pi
+  radians, like the UR series, may not not work with this, depending on how the
+  arm is initialized at the start of an episode.
+  """
+
+  def __init__(self,
+               joint_pos_obs_key: str,
+               joint_pos_min_limits: Sequence[float],
+               joint_pos_max_limits: Sequence[float],
+               terminal_discount: float = 0.):
+    """Initialize JointLimitsTermination.
+
+    Args:
+      joint_pos_obs_key: A string key into the observation from the timestep
+        which returns the joint positions of the robot arm.
+      joint_pos_min_limits: Sequence of the lower limits of the joint positions.
+        If the arm drops below any of these limits, the episode will terminate.
+      joint_pos_max_limits: Sequence of the upper limits of the joint positions.
+        If the arm goes above any of these limits, the episode will terminate.
+      terminal_discount: A scalar discount to set when the limits are violated.
+    """
+    super().__init__()
+    self._joint_pos_obs_key = joint_pos_obs_key
+    self._joint_pos_min_limits = list(joint_pos_min_limits)
+    self._joint_pos_max_limits = list(joint_pos_max_limits)
+    self._terminal_discount = terminal_discount
+
+  def _process_impl(
+      self, timestep: preprocessors.PreprocessorTimestep
+  ) -> preprocessors.PreprocessorTimestep:
+    joint_pos = timestep.observation[self._joint_pos_obs_key]
+    if (np.any(joint_pos < self._joint_pos_min_limits) or
+        np.any(joint_pos > self._joint_pos_max_limits)):
+      ts = timestep._replace(pterm=1.0, discount=self._terminal_discount,
+                             result=core.OptionResult.failure_result())
+      logging.info(
+          'Terminating with discount %s because out of bounds. \n'
+          'obs_key: %s\n'
+          'joint pos: %s\n'
+          'min limits: %s\n'
+          'max limits: %s\n',
+          ts.discount, self._joint_pos_obs_key, joint_pos,
+          self._joint_pos_min_limits, self._joint_pos_max_limits)
+      return ts
+    return timestep
+
+  @overrides(preprocessors.TimestepPreprocessor)
+  def _output_spec(
+      self, input_spec: spec_utils.TimeStepSpec) -> spec_utils.TimeStepSpec:
+    self._terminal_discount = input_spec.discount_spec.dtype.type(
+        self._terminal_discount)
+    return input_spec

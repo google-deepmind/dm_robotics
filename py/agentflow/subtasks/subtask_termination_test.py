@@ -364,6 +364,56 @@ class SubtaskTerminationTest(parameterized.TestCase):
                        random_outside_threshold_timestep.discount)
       self.assertIsNone(result.result)
 
+  def test_joint_limits_termination(self):
+    joint_pos_obs = 'joint_pos'
+    joint_min_limits = [-0.1, -0.2, -0.3, -0.4]
+    joint_max_limits = [0.1, 0.2, 0.3, 0.4]
+    terminal_discount = 0.1
+    observation_spec = {
+        joint_pos_obs:
+            specs.Array(
+                shape=(4,),
+                name=joint_pos_obs,
+                dtype=np.float64)
+    }
+    discount_spec = specs.BoundedArray(
+        shape=(), dtype=np.float64, minimum=0., maximum=1., name='discount')
+
+    for _ in range(_NUM_RUNS):
+      random_timestep_spec = testing_functions.random_timestep_spec(
+          observation_spec=observation_spec,
+          discount_spec=discount_spec)
+      tsp = subtask_termination.JointLimitsTermination(
+          joint_pos_obs, joint_min_limits, joint_max_limits, terminal_discount)
+      tsp.setup_io_spec(random_timestep_spec)
+
+      within_bounds_obs = np.random.uniform(
+          low=joint_min_limits, high=joint_max_limits)
+      below_bounds_obs = np.random.uniform(low=-1., high=-0.5, size=(4,))
+      above_bounds_obs = np.random.uniform(low=0.5, high=1., size=(4,))
+
+      # If observation is within bounds the timestep should be unchanged.
+      random_in_bounds_timestep = testing_functions.random_timestep(
+          random_timestep_spec, observation={joint_pos_obs: within_bounds_obs})
+      preprocessor_timestep = to_preprocessor_timestep(
+          random_in_bounds_timestep, pterm=0., result=None)
+      result = tsp.process(preprocessor_timestep)
+      self.assertEqual(result.pterm, 0.)
+      self.assertEqual(result.discount, random_in_bounds_timestep.discount)
+      self.assertIsNone(result.result)
+
+      # If observation is out of bounds the timestep should be terminal.
+      for out_of_bounds_obs in [below_bounds_obs, above_bounds_obs]:
+        random_out_of_bounds_timestep = testing_functions.random_timestep(
+            random_timestep_spec,
+            observation={joint_pos_obs: out_of_bounds_obs})
+        preprocessor_timestep = to_preprocessor_timestep(
+            random_out_of_bounds_timestep, pterm=0., result=None)
+        result = tsp.process(preprocessor_timestep)
+        self.assertEqual(result.pterm, 1.)
+        self.assertEqual(result.discount, terminal_discount)
+        self.assertEqual(result.result, core.OptionResult.failure_result())
+
 
 if __name__ == '__main__':
   absltest.main()
