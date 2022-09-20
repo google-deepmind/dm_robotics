@@ -504,7 +504,7 @@ def assert_not_dtype(spec: specs.Array, dtype: Type[Any]):
     dtype: The dtype to check for.
   """
   dtype = np.dtype(dtype)
-  maybe_spec_name = find_dtype(spec, dtype)
+  maybe_spec_name = find_dtype(spec, dtype)  # pytype: disable=wrong-arg-types  # typed-numpy
   if maybe_spec_name:
     spec, name = maybe_spec_name
     raise AssertionError('type {} found in {} ({})'.format(dtype, spec, name))
