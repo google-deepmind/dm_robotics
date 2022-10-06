@@ -55,6 +55,8 @@ constexpr char kLeftFootGeomName[] = "left_left_foot";
 constexpr char kUWaistGeomName[] = "upper_waist";
 constexpr char kLWaistGeomName[] = "lower_waist";
 
+constexpr int kDefaultNconmax = 100;
+
 // Returns a pair with the parameters as elements sorted in ascending order.
 std::pair<int, int> MakeSortedPair(int a, int b) {
   return std::make_pair(std::min(a, b), std::max(a, b));
@@ -320,7 +322,8 @@ TEST_F(UtilsTest, ComputeContactsForGeomPairsDetectsSameContactsAsMujoco) {
   absl::btree_set<std::pair<int, int>> geom_pairs = CollisionPairsToGeomIdPairs(
       *mjlib_, *model_, collision_pairs, false, true);
 
-  std::vector<mjContact> contacts(model_->nconmax);
+  std::vector<mjContact> contacts(
+      model_->nconmax > 0 ? model_->nconmax : kDefaultNconmax);
   ASSERT_OK_AND_ASSIGN(int ncon, ComputeContactsForGeomPairs(
                                      *mjlib_, *model_, *data_, geom_pairs, 0.0,
                                      absl::MakeSpan(contacts)));
@@ -402,7 +405,8 @@ TEST_F(UtilsTest, ComputeMinimumContactDistanceReturnValueIsCorrect) {
   absl::btree_set<std::pair<int, int>> geom_pairs = CollisionPairsToGeomIdPairs(
       *mjlib_, *model_, collision_pairs, false, true);
 
-  std::vector<mjContact> contacts(model_->nconmax);
+  std::vector<mjContact> contacts(
+      model_->nconmax > 0 ? model_->nconmax : kDefaultNconmax);
   ASSERT_OK_AND_ASSIGN(int ncon, ComputeContactsForGeomPairs(
                                      *mjlib_, *model_, *data_, geom_pairs, 0.0,
                                      absl::MakeSpan(contacts)));
