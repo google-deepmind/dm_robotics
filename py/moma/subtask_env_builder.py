@@ -31,7 +31,7 @@ from dm_robotics.moma import subtask_env
 # In our real environments, we set the physics timestep to a large value to
 # ensure that we step the simulation only a small number of times to avoid.
 # losing time when stepping the composer environments.
-REAL_PHYSICS_TIMESTEP = 0.01
+REAL_PHYSICS_TIMESTEP = 0.005
 
 
 class SubtaskEnvBuilder(object):
@@ -160,6 +160,8 @@ class SubtaskEnvBuilder(object):
 
 def disable_contact_computation(task: composer.Task) -> None:
   """Disables all constraints in the MuJoCo simulation."""
-
+  task.root_entity.mjcf_model.option.flag.equality = 'disable'
+  task.root_entity.mjcf_model.option.flag.frictionloss = 'disable'
   task.root_entity.mjcf_model.option.flag.contact = 'disable'
+  task.root_entity.mjcf_model.option.flag.actuation = 'disable'
 
