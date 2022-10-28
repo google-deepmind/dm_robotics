@@ -31,15 +31,21 @@ import tree
 class MaxStepsTermination(preprocessors.TimestepPreprocessor):
   """Terminate when the maximum number of steps is reached."""
 
-  def __init__(self, max_steps: int, terminal_discount: float = 1.):
+  def __init__(
+      self,
+      max_steps: int,
+      terminal_discount: float = 1.,
+      validation_frequency: preprocessors.ValidationFrequency = (
+          preprocessors.ValidationFrequency.ONCE_PER_EPISODE)):
     """Initialize MaxStepsTermination.
 
     Args:
       max_steps: The maximum number of steps in the episode.
       terminal_discount: A scalar discount to set when the step threshold is
         exceeded.
+      validation_frequency: The validation frequency of the preprocessor.
     """
-    super().__init__()
+    super().__init__(validation_frequency=validation_frequency)
     self._max_steps = max_steps
     self._terminal_discount = terminal_discount
     self._steps = 0
@@ -88,8 +94,13 @@ class MaxStepsTermination(preprocessors.TimestepPreprocessor):
 class RewardThresholdTermination(preprocessors.TimestepPreprocessor):
   """Terminate when the agent receives more than threshold reward on a step."""
 
-  def __init__(self, reward_threshold: Union[float, np.ndarray],
-               terminal_discount: float = 0., sparse_mode: bool = False):
+  def __init__(
+      self,
+      reward_threshold: Union[float, np.ndarray],
+      terminal_discount: float = 0.,
+      sparse_mode: bool = False,
+      validation_frequency: preprocessors.ValidationFrequency = (
+          preprocessors.ValidationFrequency.ONCE_PER_EPISODE)):
     """Initialize RewardThresholdTermination.
 
     Args:
@@ -104,8 +115,9 @@ class RewardThresholdTermination(preprocessors.TimestepPreprocessor):
         True, the first post-threshold step only sets `pterm=1` and a SUCCESS
         result, but uses the last (cached) sub-threshold reward until a LAST
         timestep is received.
+      validation_frequency: The validation frequency of the preprocessor.
     """
-    super().__init__()
+    super().__init__(validation_frequency=validation_frequency)
     self._reward_threshold = reward_threshold
     self._terminal_discount = terminal_discount
     self._sparse_mode = sparse_mode
@@ -181,7 +193,9 @@ class LeavingWorkspaceTermination(preprocessors.TimestepPreprocessor):
                pose_obs_keys: Union[str, Sequence[str]],
                workspace_center: Sequence[float],
                workspace_radius: float,
-               terminal_discount: float = 0.):
+               terminal_discount: float = 0.,
+               validation_frequency: preprocessors.ValidationFrequency = (
+                   preprocessors.ValidationFrequency.ONCE_PER_EPISODE)):
     """Initialize LeavingWorkspaceTermination.
 
     Args:
@@ -193,8 +207,9 @@ class LeavingWorkspaceTermination(preprocessors.TimestepPreprocessor):
         the workspace in world coords.
       workspace_radius: A float representing the radius of the workspace sphere.
       terminal_discount: A scalar discount to set when the workspace is violated
+      validation_frequency: The validation frequency of the preprocessor.
     """
-    super().__init__()
+    super().__init__(validation_frequency=validation_frequency)
     # Convert the input to a list if it isn't already.
     self._pose_obs_keys = [pose_obs_keys] if isinstance(pose_obs_keys,
                                                         str) else pose_obs_keys
@@ -248,7 +263,9 @@ class LeavingWorkspaceBoxTermination(preprocessors.TimestepPreprocessor):
                workspace_centre: geometry.PoseStamped,
                workspace_limits: np.ndarray,
                tcp_offset: Optional[geometry.Pose] = None,
-               terminal_discount: float = 0.):
+               terminal_discount: float = 0.,
+               validation_frequency: preprocessors.ValidationFrequency = (
+                   preprocessors.ValidationFrequency.ONCE_PER_EPISODE)):
     """Initialize LeavingWorkspaceBoxTermination.
 
     Args:
@@ -267,9 +284,10 @@ class LeavingWorkspaceBoxTermination(preprocessors.TimestepPreprocessor):
       tcp_offset: An optional offset from the TCP pose of the point on the arm
         that is checked against the workspace bounds.
       terminal_discount: A scalar discount to set when the workspace is violated
+      validation_frequency: The validation frequency of the preprocessor.
     """
 
-    super().__init__()
+    super().__init__(validation_frequency=validation_frequency)
     self._tcp_pos_obs = tcp_pos_obs
     self._tcp_quat_obs = tcp_quat_obs
     self._workspace_centre = workspace_centre
@@ -342,6 +360,8 @@ class ObservationThresholdTermination(preprocessors.TimestepPreprocessor):
       desired_obs_values: Sequence[float],
       norm_threshold: float,
       terminal_discount: float = 0.,
+      validation_frequency: preprocessors.ValidationFrequency = (
+          preprocessors.ValidationFrequency.ONCE_PER_EPISODE)
   ):
     """Initialize ObservationThresholdTermination.
 
@@ -354,11 +374,12 @@ class ObservationThresholdTermination(preprocessors.TimestepPreprocessor):
       norm_threshold: A float representing the error norm below which it should
         terminate.
       terminal_discount: A scalar discount to set when terminating.
+      validation_frequency: The validation frequency of the preprocessor.
 
     Raises:
       KeyError: if `observation` is not a valid observation name.
     """
-    super().__init__()
+    super().__init__(validation_frequency=validation_frequency)
     self._obs = observation
     self._desired_obs_values = np.array(desired_obs_values, dtype=np.float32)
     self._norm_threshold = norm_threshold
@@ -413,7 +434,9 @@ class JointLimitsTermination(preprocessors.TimestepPreprocessor):
                joint_pos_obs_key: str,
                joint_pos_min_limits: Sequence[float],
                joint_pos_max_limits: Sequence[float],
-               terminal_discount: float = 0.):
+               terminal_discount: float = 0.,
+               validation_frequency: preprocessors.ValidationFrequency = (
+                   preprocessors.ValidationFrequency.ONCE_PER_EPISODE)):
     """Initialize JointLimitsTermination.
 
     Args:
@@ -424,8 +447,9 @@ class JointLimitsTermination(preprocessors.TimestepPreprocessor):
       joint_pos_max_limits: Sequence of the upper limits of the joint positions.
         If the arm goes above any of these limits, the episode will terminate.
       terminal_discount: A scalar discount to set when the limits are violated.
+      validation_frequency: The validation frequency of the preprocessor.
     """
-    super().__init__()
+    super().__init__(validation_frequency=validation_frequency)
     self._joint_pos_obs_key = joint_pos_obs_key
     self._joint_pos_min_limits = list(joint_pos_min_limits)
     self._joint_pos_max_limits = list(joint_pos_max_limits)
