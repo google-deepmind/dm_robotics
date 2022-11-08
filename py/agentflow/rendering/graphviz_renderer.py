@@ -56,7 +56,7 @@ def render(graph: subgraph.Graph) -> Union[pydot.Graph]:
 
 def to_png(graph: Union[pydot.Dot, pydot.Subgraph]) -> Union[Text, bytes]:
   """Render a graphviz to a PNG."""
-  return graph.create_png(prog='dot')
+  return graph.create_png(prog='dot')  # pytype: disable=attribute-error
 
 
 def open_viewer(option: af.Policy) -> None:
@@ -78,8 +78,8 @@ def open_viewer(option: af.Policy) -> None:
   raw_filename = os.path.join(temp_dir, 'graph.dot')
   png_filename = os.path.join(temp_dir, 'graph.png')
 
-  graphviz_graph.write_raw(raw_filename, prog='dot')
-  graphviz_graph.write_png(png_filename, prog='dot')
+  graphviz_graph.write_raw(raw_filename, prog='dot')  # pytype: disable=attribute-error
+  graphviz_graph.write_png(png_filename, prog='dot')  # pytype: disable=attribute-error
 
   print('Rendered option {} to {} and {}'.format(option.name, raw_filename,
                                                  png_filename))
