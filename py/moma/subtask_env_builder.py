@@ -25,13 +25,21 @@ from dm_robotics.moma import base_task
 from dm_robotics.moma import effector
 from dm_robotics.moma import moma_option
 from dm_robotics.moma import subtask_env
+import numpy as np
 
 # Internal profiling
 
-# In our real environments, we set the physics timestep to a large value to
-# ensure that we step the simulation only a small number of times to avoid.
-# losing time when stepping the composer environments.
-REAL_PHYSICS_TIMESTEP = 0.005
+
+class ComposerEnvironmentForRealMoMaSetup(composer.Environment):
+  """Sublclass of composer environment used when building a real MoMa setup.
+
+  When we use a real environment, we want to make sure the environment loop is
+  as fast as possible. To do this, we remove the unessary physics simulation
+  stepping. This is done by overriding the relevant class
+  """
+
+  def _substep(self, action: np.ndarray):
+    """In case of real environment we don't want to step the phyics."""
 
 
 class SubtaskEnvBuilder(object):
@@ -89,15 +97,18 @@ class SubtaskEnvBuilder(object):
 
     if self._base_env is None:
       if real_env:
-        # We disable all constraints on the environment to speed up the
-        # simulation stepping.
-        disable_contact_computation(self._task)
-
-        # We then set the physics timestep to a large value to ensure that we
-        # step the simulation on a small number of times.
-        base_task.physics_timestep = REAL_PHYSICS_TIMESTEP
-      self._base_env = composer.Environment(
-          self._task, strip_singleton_obs_buffer_dim=True)
+        # We set the physics timestep to the control timestep, this ensures that
+        # we are making only a single substep of the composer environment.
+        self._task.physics_timestep = self._task.control_timestep
+        # We then use our custom compoer environment to ensure that we are not
+        # stepping the phyiscs and therefore running the environment faster.
+        self._base_env = ComposerEnvironmentForRealMoMaSetup(
+            self._task,
+            strip_singleton_obs_buffer_dim=True,
+            raise_exception_on_physics_error=True)
+      else:
+        self._base_env = composer.Environment(
+            self._task, strip_singleton_obs_buffer_dim=True)
 
     return self._base_env
 
@@ -156,12 +167,4 @@ class SubtaskEnvBuilder(object):
         physics_getter=lambda: env.physics,
         effectors=effectors,
         delegate=delegate)
-
-
-def disable_contact_computation(task: composer.Task) -> None:
-  """Disables all constraints in the MuJoCo simulation."""
-  task.root_entity.mjcf_model.option.flag.equality = 'disable'
-  task.root_entity.mjcf_model.option.flag.frictionloss = 'disable'
-  task.root_entity.mjcf_model.option.flag.contact = 'disable'
-  task.root_entity.mjcf_model.option.flag.actuation = 'disable'
 
