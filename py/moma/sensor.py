@@ -15,14 +15,16 @@
 
 import abc
 import enum
-from typing import Dict
+from typing import Dict, TypeVar, Generic
 
 from dm_control import mjcf
 from dm_control.composer.observation import observable
 import numpy as np
 
+EnumBound = TypeVar('EnumBound', bound=enum.Enum)
 
-class Sensor(abc.ABC):
+
+class Sensor(abc.ABC, Generic[EnumBound]):
   """Abstract sensor interface, sensors generate observations.
 
   `Sensor`s. have `observables`, it is these objects that supply sensed values.
@@ -105,5 +107,5 @@ class Sensor(abc.ABC):
     pass
 
   @abc.abstractmethod
-  def get_obs_key(self, obs: enum.Enum) -> str:
+  def get_obs_key(self, obs: EnumBound) -> str:
     """Returns the key to an observable provided by this sensor."""

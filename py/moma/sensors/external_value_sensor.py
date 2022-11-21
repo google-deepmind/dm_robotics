@@ -53,6 +53,7 @@ class ExternalValueSensor(moma_sensor.Sensor):
     return self._name
 
   def get_obs_key(self, obs) -> str:
+    del obs
     return self._name
 
   def set_value(self, value: np.ndarray) -> None:

@@ -48,7 +48,7 @@ class Observations(enum.Enum):
     return self.value.format(name)
 
 
-class SiteSensor(moma_sensor.Sensor):
+class SiteSensor(moma_sensor.Sensor[Observations]):
   """Sensor to measure position and velocity of a mujoco site."""
 
   def __init__(self, site: _MjcfElement, name: str):
@@ -90,8 +90,7 @@ class SiteSensor(moma_sensor.Sensor):
   def name(self) -> str:
     return self._name
 
-  def get_obs_key(  # pytype: disable=signature-mismatch  # overriding-parameter-type-checks
-      self, obs: Observations) -> str:
+  def get_obs_key(self, obs: Observations) -> str:
     return obs.get_obs_key(self._name)
 
   def _site_pos(self, physics: mjcf.Physics) -> np.ndarray:

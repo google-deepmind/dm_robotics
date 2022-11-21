@@ -54,7 +54,8 @@ class HealthStatus(enum.Enum):
   STALE = 4
 
 
-class RobotiqGripperSensor(moma_sensor.Sensor, metaclass=abc.ABCMeta):
+class RobotiqGripperSensor(
+    moma_sensor.Sensor[Observations], metaclass=abc.ABCMeta):
 
   @abc.abstractmethod
   def health_status(self, physics: Optional[mjcf.Physics] = None) -> np.ndarray:

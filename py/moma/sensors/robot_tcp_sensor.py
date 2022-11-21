@@ -27,7 +27,7 @@ import numpy as np
 Observations = site_sensor.Observations
 
 
-class RobotTCPSensor(moma_sensor.Sensor):
+class RobotTCPSensor(moma_sensor.Sensor[Observations]):
   """Robot tcp sensor providing measurements of the Tool Center Point."""
 
   def __init__(self, gripper: robot_hand.AnyRobotHand, name: str):
@@ -49,6 +49,5 @@ class RobotTCPSensor(moma_sensor.Sensor):
   def name(self) -> str:
     return self._name
 
-  def get_obs_key(  # pytype: disable=signature-mismatch  # overriding-parameter-type-checks
-      self, obs: Observations) -> str:
+  def get_obs_key(self, obs: Observations) -> str:
     return obs.get_obs_key(self._name)

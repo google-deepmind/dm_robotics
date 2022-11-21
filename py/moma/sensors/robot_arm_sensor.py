@@ -24,7 +24,7 @@ from dm_robotics.moma.sensors import joint_observations
 import numpy as np
 
 
-class RobotArmSensor(moma_sensor.Sensor):
+class RobotArmSensor(moma_sensor.Sensor[joint_observations.Observations]):
   """Robot arm sensor providing joint-related observations for sim arms."""
 
   def __init__(self, arm: robot_arm.RobotArm, name: str,
@@ -58,8 +58,7 @@ class RobotArmSensor(moma_sensor.Sensor):
   def name(self) -> str:
     return self._name
 
-  def get_obs_key(  # pytype: disable=signature-mismatch  # overriding-parameter-type-checks
-      self, obs: joint_observations.Observations) -> str:
+  def get_obs_key(self, obs: joint_observations.Observations) -> str:
     return obs.get_obs_key(self._name)
 
   def _joint_pos(self, physics: mjcf.Physics) -> np.ndarray:

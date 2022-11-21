@@ -97,7 +97,7 @@ class CameraConfig:
   render_shadows: bool = False
 
 
-class CameraPoseSensor(moma_sensor.Sensor):
+class CameraPoseSensor(moma_sensor.Sensor[PoseObservations]):
   """Sensor providing the camera pos observations."""
 
   def __init__(self, camera_element: mjcf.Element, name: str):
@@ -134,8 +134,7 @@ class CameraPoseSensor(moma_sensor.Sensor):
   def name(self) -> str:
     return self._name
 
-  def get_obs_key(  # pytype: disable=signature-mismatch  # overriding-parameter-type-checks
-      self, obs: PoseObservations) -> str:
+  def get_obs_key(self, obs: PoseObservations) -> str:
     return obs.get_obs_key(self._name)
 
   def _camera_pos(self, physics: mjcf.Physics) -> np.ndarray:
@@ -154,7 +153,7 @@ class CameraPoseSensor(moma_sensor.Sensor):
         (self._camera_pos(physics), self._camera_quat(physics)), axis=-1)
 
 
-class CameraImageSensor(moma_sensor.Sensor):
+class CameraImageSensor(moma_sensor.Sensor[ImageObservations]):
   """Camera sensor providing the image observations."""
 
   def __init__(self, camera_element: mjcf.Element, config: CameraConfig,
@@ -210,8 +209,7 @@ class CameraImageSensor(moma_sensor.Sensor):
   def name(self) -> str:
     return self._name
 
-  def get_obs_key(  # pytype: disable=signature-mismatch  # overriding-parameter-type-checks
-      self, obs: ImageObservations) -> str:
+  def get_obs_key(self, obs: ImageObservations) -> str:
     return obs.get_obs_key(self._name)
 
   def _camera_intrinsics(self, physics: mjcf.Physics) -> np.ndarray:

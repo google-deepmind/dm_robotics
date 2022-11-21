@@ -23,7 +23,7 @@ from dm_robotics.moma.sensors import wrench_observations
 import numpy as np
 
 
-class RobotWristFTSensor(moma_sensor.Sensor):
+class RobotWristFTSensor(moma_sensor.Sensor[wrench_observations.Observations]):
   """Sensor providing force and torque observations of a mujoco ft sensor."""
 
   def __init__(self, wrist_ft_sensor, name: str):
@@ -65,8 +65,7 @@ class RobotWristFTSensor(moma_sensor.Sensor):
   def name(self) -> str:
     return self._name
 
-  def get_obs_key(  # pytype: disable=signature-mismatch  # overriding-parameter-type-checks
-      self, obs: wrench_observations.Observations) -> str:
+  def get_obs_key(self, obs: wrench_observations.Observations) -> str:
     return obs.get_obs_key(self._name)
 
   def _wrist_force(self, physics: mjcf.Physics) -> np.ndarray:

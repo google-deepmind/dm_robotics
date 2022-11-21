@@ -36,7 +36,7 @@ class Observations(enum.Enum):
     return self.value.format(name)
 
 
-class GenericPoseSensor(moma_sensor.Sensor):
+class GenericPoseSensor(moma_sensor.Sensor[Observations]):
   """Pose sensor to expose a geometry pose.
 
   This sensor is used to expose an arbitrary pose as an observable of the
@@ -81,8 +81,7 @@ class GenericPoseSensor(moma_sensor.Sensor):
   def name(self) -> str:
     return self._name
 
-  def get_obs_key(  # pytype: disable=signature-mismatch  # overriding-parameter-type-checks
-      self, obs: Observations) -> str:
+  def get_obs_key(self, obs: Observations) -> str:
     return obs.get_obs_key(self._name)
 
   def _pose(self, physics: mjcf.Physics) -> np.ndarray:
