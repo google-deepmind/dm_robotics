@@ -42,8 +42,10 @@ def create_timestep_spec(observation_spec):
 
 
 def create_timestep(
-    input_spec: spec_utils.TimeStepSpec, name: Text,
-    value: Sequence[float]) -> timestep_preprocessor.PreprocessorTimestep:
+    input_spec: spec_utils.TimeStepSpec,
+    name: Text,
+    value: Sequence[float],
+) -> timestep_preprocessor.PreprocessorTimestep:
   dtype = input_spec.observation_spec[name].dtype
   observation = testing_functions.valid_value(input_spec.observation_spec)
   observation[name] = np.asarray(value, dtype=dtype)
@@ -54,6 +56,42 @@ def create_timestep(
 
 
 class RewardsTest(absltest.TestCase):
+
+  def test_threshold_reward(self):
+    input_spec = create_timestep_spec({})
+
+    threshold = 0.5
+    hi = 1.
+    lo = 0.
+    reward_preprocessor = rewards.ThresholdReward(
+        threshold=threshold, hi=hi, lo=lo)
+
+    output_spec = reward_preprocessor.setup_io_spec(input_spec)
+
+    # Assert discount specs are unchanged.
+    self.assertEqual(input_spec.reward_spec,
+                     output_spec.reward_spec)
+    self.assertEqual(input_spec.discount_spec,
+                     output_spec.discount_spec)
+
+    # Test logic.
+    to_target_dtype = input_spec.reward_spec.dtype.type
+    random_input = testing_functions.random_timestep(spec=input_spec)
+
+    # Greater than threshold -> hi.
+    random_input = random_input._replace(reward=to_target_dtype(0.8))
+    output = reward_preprocessor.process(random_input)
+    np.testing.assert_allclose(output.reward, to_target_dtype(hi))
+
+    # Equal to threshold -> hi.
+    random_input = random_input._replace(reward=to_target_dtype(0.5))
+    output = reward_preprocessor.process(random_input)
+    np.testing.assert_allclose(output.reward, to_target_dtype(hi))
+
+    # Less than threshold -> lo.
+    random_input = random_input._replace(reward=to_target_dtype(0.4))
+    output = reward_preprocessor.process(random_input)
+    np.testing.assert_allclose(output.reward, to_target_dtype(lo))
 
   def test_l2_spec_updated_properly(self):
     observation_spec = {

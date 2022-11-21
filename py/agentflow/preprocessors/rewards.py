@@ -37,6 +37,51 @@ RewardVal = Union[float, np.floating, np.ndarray]
 RewardCombinationStrategy = Callable[[Sequence[RewardVal]], RewardVal]
 
 
+class ThresholdReward(timestep_preprocessor.TimestepPreprocessor):
+  """Returns a sparse reward if reward is above a threshold.
+  """
+
+  def __init__(
+      self,
+      *,
+      threshold: float = 0.5,
+      hi: float = 1.0,
+      lo: float = 0.0,
+      validation_frequency: timestep_preprocessor.ValidationFrequency = (
+          timestep_preprocessor.ValidationFrequency.ONCE_PER_EPISODE),
+      name: Optional[str] = None,
+  ):
+    """Initializes ThresholdReward.
+
+    Args:
+      threshold: Reward threshold.
+      hi: Value to emit in reward field if incoming reward is greater than or
+        equal to `threshold`.
+      lo: Value to emit in reward field if incoming reward is below `threshold`.
+      validation_frequency: How often should we validate the obs specs.
+      name: A name for this preprocessor.
+    """
+    super().__init__(validation_frequency=validation_frequency, name=name)
+    self._threshold = threshold
+    self._hi = hi
+    self._lo = lo
+
+  @overrides(timestep_preprocessor.TimestepPreprocessor)
+  def _process_impl(
+      self, timestep: timestep_preprocessor.PreprocessorTimestep
+  ) -> timestep_preprocessor.PreprocessorTimestep:
+    reward = self._hi if timestep.reward >= self._threshold else self._lo
+    return timestep._replace(reward=reward)
+
+  @overrides(timestep_preprocessor.TimestepPreprocessor)
+  def _output_spec(
+      self, input_spec: spec_utils.TimeStepSpec) -> spec_utils.TimeStepSpec:
+    # Reward not computed from observation, so dtype should match input_spec.
+    self._hi = input_spec.reward_spec.dtype.type(self._hi)
+    self._lo = input_spec.reward_spec.dtype.type(self._lo)
+    return input_spec
+
+
 class L2Reward(timestep_preprocessor.TimestepPreprocessor):
   """Returns a continuous reward based on the L2-distance between two keypoints.
 
