@@ -113,7 +113,7 @@ INSTANTIATE_TEST_SUITE_P(
               TestParams{.min_distance_from_limits = 0.1,
                          .gain = 0.5,
                          .joint_ids = {1, 2, 3, 4, 5, 6, 7, 8, 9},
-                         .qpos_curr = std::vector<double>(8, 0.0)}}));
+                         .qpos_curr = std::vector<double>(9, 0.0)}}));
 
 TEST_P(ParameterizedJointPositionLimitConstraintTest,
        CoefficientMatrixAndBoundsHaveValidDimensionsAndValues) {
