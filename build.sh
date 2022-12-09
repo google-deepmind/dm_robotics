@@ -40,16 +40,16 @@ echo "Using tox command '$tox_binary'"
 python_version="$($python_binary --version | grep --only-matching '[0-9.]*' 2>&1)" && exit_status=$? || exit_status=$?
 
 # Allow the python version to be overridden.
-python_version=${PYTHON_VERION:-$python_version}
+python_version=${PYTHON_VERSION:-$python_version}
 
 # Finally default python_version, but this should not be needed.
-python_version=${pytagentflowhon_version:-3.8}
+python_version=${python_version:-3.8}
 echo "Using python version '$python_version'"
 
 # Install tox, which we use to build the packages.
 # The packages themselves do not depend on tox.
 if ! [[ -x $tox_binary ]]; then
-  $PYTHON_EXE -m pip install tox
+  $python_binary -m pip install tox
 fi
 
 echo "Recreating $root/cpp/build directory"
