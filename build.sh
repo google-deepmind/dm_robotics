@@ -43,13 +43,13 @@ python_version="$($python_binary --version | grep --only-matching '[0-9.]*' 2>&1
 python_version=${PYTHON_VERSION:-$python_version}
 
 # Finally default python_version, but this should not be needed.
-python_version=${python_version:-3.8}
+python_version=${python_version:-3.10}
 echo "Using python version '$python_version'"
 
 # Install tox, which we use to build the packages.
 # The packages themselves do not depend on tox.
 if ! [[ -x $tox_binary ]]; then
-  $python_binary -m pip install tox
+  $python_binary -m pip install tox==3.27.1
 fi
 
 echo "Recreating $root/cpp/build directory"

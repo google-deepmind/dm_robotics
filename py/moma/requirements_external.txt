@@ -1,6 +1,6 @@
 numpy >= 1.16.0
-dm_control == 1.0.1
-mujoco >= 2.1.3, < 2.2.0
+dm_control == 1.0.8
+mujoco == 2.3.0
 opencv-python >= 3.4.0
 attrs >= 20.3.0
 pydot >= 1.2.4
