@@ -22,7 +22,7 @@ project(dmr_mujoco
 # with an appropriate default if unset.
 set(MUJOCO_VERSION $ENV{MUJOCO_VERSION} CACHE STRING "Mujoco library version")
 if(NOT MUJOCO_VERSION)
-    set(MUJOCO_VERSION "2.3.0")
+    set(MUJOCO_VERSION "2.3.1")
 endif()
 message ("MUJOCO_VERSION: ${MUJOCO_VERSION}")
 
