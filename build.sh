@@ -49,7 +49,9 @@ echo "Using python version '$python_version'"
 # Install tox, which we use to build the packages.
 # The packages themselves do not depend on tox.
 if ! [[ -x $tox_binary ]]; then
-  $PYTHON_EXE -m pip install tox
+  # tox 4 deprecates the distshare configuration parameter in tox.ini.
+  # TODO(b/261983169): support tox 4.
+  $PYTHON_EXE -m pip install "tox < 4"
 fi
 
 echo "Recreating $root/cpp/build directory"
