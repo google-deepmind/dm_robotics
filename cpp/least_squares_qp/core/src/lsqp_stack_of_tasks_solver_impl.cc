@@ -389,6 +389,13 @@ std::vector<OsqpProblem> CreateOsqpProblems(
         buffer.constraint_rows[i], -std::numeric_limits<double>::infinity());
     osqp_problems[i].instance.upper_bounds = Eigen::VectorXd::Constant(
         buffer.constraint_rows[i], std::numeric_limits<double>::infinity());
+
+    osqp_problems[i].objective_matrix_sparse_buffer =
+        osqp_problems[i].instance.objective_matrix;
+    osqp_problems[i].constraint_matrix_sparse_buffer =
+        osqp_problems[i].instance.constraint_matrix;
+    osqp_problems[i].constraint_matrix_dense_buffer =
+        Eigen::MatrixXd(buffer.constraint_rows[i], buffer.num_dof);
   }
   return osqp_problems;
 }
@@ -418,19 +425,23 @@ absl::Status UpdateOsqpProblems(const LsqpStackOfTasksProblemBuffer& buffer,
 
     // As per this function's documentation, we can avoid dynamic allocation if
     // `Q` and `A` have the same sparsity pattern.
-    const Eigen::SparseMatrix<double, Eigen::ColMajor, osqp::c_int>&
-        sparse_objective_matrix = Q.sparseView();
-    const Eigen::SparseMatrix<double, Eigen::ColMajor, osqp::c_int>&
-        sparse_constraint_matrix = A.topRows(constraint_rows).sparseView();
-    bool is_objective_sparsity_equal = IsSparsityEqual(
-        sparse_objective_matrix, osqp_problem.instance.objective_matrix);
-    bool is_constraint_sparsity_equal = IsSparsityEqual(
-        sparse_constraint_matrix, osqp_problem.instance.constraint_matrix);
+    osqp_problem.objective_matrix_sparse_buffer = Q.sparseView();
+    osqp_problem.constraint_matrix_dense_buffer = A.topRows(constraint_rows);
+    osqp_problem.constraint_matrix_sparse_buffer =
+        osqp_problem.constraint_matrix_dense_buffer.sparseView();
+    bool is_objective_sparsity_equal =
+        IsSparsityEqual(osqp_problem.objective_matrix_sparse_buffer,
+                        osqp_problem.instance.objective_matrix);
+    bool is_constraint_sparsity_equal =
+        IsSparsityEqual(osqp_problem.constraint_matrix_sparse_buffer,
+                        osqp_problem.instance.constraint_matrix);
 
     // Update the OSQP problem instance/setting.
-    osqp_problem.instance.objective_matrix = sparse_objective_matrix;
+    osqp_problem.instance.objective_matrix =
+        osqp_problem.objective_matrix_sparse_buffer;
     osqp_problem.instance.objective_vector = c;
-    osqp_problem.instance.constraint_matrix = sparse_constraint_matrix;
+    osqp_problem.instance.constraint_matrix =
+        osqp_problem.constraint_matrix_sparse_buffer;
     osqp_settings->max_iter = buffer.max_iterations[i];
 
     // Avoid calling Init, if possible.

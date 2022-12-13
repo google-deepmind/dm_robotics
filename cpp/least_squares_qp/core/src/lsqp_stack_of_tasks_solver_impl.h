@@ -90,6 +90,13 @@ struct LsqpStackOfTasksProblemBuffer {
 struct OsqpProblem {
   osqp::OsqpInstance instance;
   osqp::OsqpSolver solver;
+
+  // Buffers for preventing internal re-allocations.
+  Eigen::SparseMatrix<double, Eigen::ColMajor, osqp::c_int>
+      objective_matrix_sparse_buffer;
+  Eigen::SparseMatrix<double, Eigen::ColMajor, osqp::c_int>
+      constraint_matrix_sparse_buffer;
+  Eigen::MatrixXd constraint_matrix_dense_buffer;
 };
 
 // Helper functions ----------------------------------
