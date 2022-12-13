@@ -44,6 +44,7 @@ namespace {
 
 using UtilsTest = ::dm_robotics::testing::TestWithMujocoModel;
 using ::testing::_;
+using ::testing::DoubleEq;
 using ::testing::DoubleNear;
 using ::testing::Pointwise;
 
@@ -322,8 +323,8 @@ TEST_F(UtilsTest, ComputeContactsForGeomPairsDetectsSameContactsAsMujoco) {
   absl::btree_set<std::pair<int, int>> geom_pairs = CollisionPairsToGeomIdPairs(
       *mjlib_, *model_, collision_pairs, false, true);
 
-  std::vector<mjContact> contacts(
-      model_->nconmax > 0 ? model_->nconmax : kDefaultNconmax);
+  std::vector<mjContact> contacts(model_->nconmax > 0 ? model_->nconmax
+                                                      : kDefaultNconmax);
   ASSERT_OK_AND_ASSIGN(int ncon, ComputeContactsForGeomPairs(
                                      *mjlib_, *model_, *data_, geom_pairs, 0.0,
                                      absl::MakeSpan(contacts)));
@@ -390,6 +391,56 @@ TEST_F(UtilsTest, ComputeContactNormalJacobianIsSameAsMujoco) {
   }
 }
 
+TEST_F(UtilsTest, ComputeContactWithMinimumDistanceFieldsMatchMujoco) {
+  LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
+  SetQposInCollision(*mjlib_, *model_, data_.get());
+
+  // Create a CollisionPair with all geoms.
+  GeomGroup all_geoms;
+  for (int i = 0; i < model_->ngeom; ++i) {
+    all_geoms.insert(mjlib_->mj_id2name(model_.get(), mjOBJ_GEOM, i));
+  }
+  absl::btree_set<CollisionPair> collision_pairs{
+      std::make_pair(all_geoms, all_geoms)};
+
+  absl::btree_set<std::pair<int, int>> geom_pairs = CollisionPairsToGeomIdPairs(
+      *mjlib_, *model_, collision_pairs, false, true);
+
+  std::vector<mjContact> contacts(model_->nconmax > 0 ? model_->nconmax
+                                                      : kDefaultNconmax);
+  ASSERT_OK_AND_ASSIGN(int ncon, ComputeContactsForGeomPairs(
+                                     *mjlib_, *model_, *data_, geom_pairs, 0.0,
+                                     absl::MakeSpan(contacts)));
+
+  // Ensure that the computed contact matches the MuJoCo contact fields.
+  for (const auto& pair : geom_pairs) {
+    absl::optional<mjContact> maybe_contact = ComputeContactWithMinimumDistance(
+        *mjlib_, *model_, *data_, pair.first, pair.second, 0.0);
+    const mjContact* min_dist_contact = GetMinimumDistanceContact(
+        pair.first, pair.second, absl::MakeSpan(contacts.data(), ncon));
+
+    if (min_dist_contact == nullptr) {
+      EXPECT_FALSE(maybe_contact.has_value());
+    } else {
+      // Distance
+      EXPECT_EQ(maybe_contact->dist, min_dist_contact->dist);
+
+      // Contact position (midpoint between geoms)
+      absl::Span<const double> computed_contact_pos(maybe_contact->pos, 3);
+      absl::Span<const double> mujoco_contact_pos(min_dist_contact->pos, 3);
+      EXPECT_THAT(computed_contact_pos,
+                  Pointwise(DoubleEq(), mujoco_contact_pos));
+
+      // Normal
+      absl::Span<const double> computed_contact_normal(maybe_contact->frame, 3);
+      absl::Span<const double> mujoco_contact_normal(min_dist_contact->frame,
+                                                     3);
+      EXPECT_THAT(computed_contact_normal,
+                  Pointwise(DoubleEq(), mujoco_contact_normal));
+    }
+  }
+}
+
 TEST_F(UtilsTest, ComputeMinimumContactDistanceReturnValueIsCorrect) {
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
   SetQposInCollision(*mjlib_, *model_, data_.get());
@@ -405,8 +456,8 @@ TEST_F(UtilsTest, ComputeMinimumContactDistanceReturnValueIsCorrect) {
   absl::btree_set<std::pair<int, int>> geom_pairs = CollisionPairsToGeomIdPairs(
       *mjlib_, *model_, collision_pairs, false, true);
 
-  std::vector<mjContact> contacts(
-      model_->nconmax > 0 ? model_->nconmax : kDefaultNconmax);
+  std::vector<mjContact> contacts(model_->nconmax > 0 ? model_->nconmax
+                                                      : kDefaultNconmax);
   ASSERT_OK_AND_ASSIGN(int ncon, ComputeContactsForGeomPairs(
                                      *mjlib_, *model_, *data_, geom_pairs, 0.0,
                                      absl::MakeSpan(contacts)));

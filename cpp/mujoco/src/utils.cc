@@ -516,7 +516,7 @@ void ComputeContactNormalJacobian(const MjLib& lib, const mjModel& model,
   jacobian_map.noalias() -= normal_map.transpose() * jacobian_buffer_map;
 }
 
-absl::optional<double> ComputeMinimumContactDistance(
+absl::optional<mjContact> ComputeContactWithMinimumDistance(
     const MjLib& lib, const mjModel& model, const mjData& data, int geom1_id,
     int geom2_id, double collision_detection_distance) {
   std::array<mjContact, mjMAXCONPAIR> contact_buffer;
@@ -529,13 +529,31 @@ absl::optional<double> ComputeMinimumContactDistance(
     return absl::nullopt;
   }
 
-  // Return the minimum distance of all the contacts detected.
+  // Return the contact with the minimum distance of all the contacts detected.
   double minimum_contact_distance = std::numeric_limits<double>::infinity();
+  absl::optional<int> minimum_contact_idx;
   for (int i = 0; i < num_collisions; ++i) {
-    minimum_contact_distance =
-        std::min(minimum_contact_distance, contact_buffer[i].dist);
+    if (minimum_contact_distance > contact_buffer[i].dist) {
+      minimum_contact_distance = contact_buffer[i].dist;
+      minimum_contact_idx = i;
+    }
   }
-  return minimum_contact_distance;
+  CHECK(minimum_contact_idx.has_value())
+      << "ComputeContactWithMinimumDistance: Internal error. Please contact "
+         "the developers for more information.";
+  return contact_buffer[*minimum_contact_idx];
+}
+
+absl::optional<double> ComputeMinimumContactDistance(
+    const MjLib& lib, const mjModel& model, const mjData& data, int geom1_id,
+    int geom2_id, double collision_detection_distance) {
+  absl::optional<mjContact> min_contact = ComputeContactWithMinimumDistance(
+      lib, model, data, geom1_id, geom2_id, collision_detection_distance);
+  if (!min_contact.has_value()) {
+    return absl::nullopt;
+  }
+
+  return min_contact->dist;
 }
 
 void ComputeObject6dJacobian(const MjLib& lib, const mjModel& model,

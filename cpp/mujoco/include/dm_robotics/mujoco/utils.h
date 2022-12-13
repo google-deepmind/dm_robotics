@@ -153,6 +153,26 @@ void ComputeContactNormalJacobian(const MjLib& lib, const mjModel& model,
                                   absl::Span<double> jacobian_buffer,
                                   absl::Span<double> jacobian);
 
+// Returns the contact with the minimum of the contact distances between two
+// geoms detected by MuJoCo. If no collision is detected, this function will
+// return a disengaged value.
+//
+// The computed contact is guaranteed to contain accurate values for the `dist`,
+// `pos`, `frame` ([0]-[2] only), `geom1`, and `geom2` fields.
+//
+// The provided `data` object must have updated kinematic information, i.e. it
+// must have called the following MuJoCo routine (either directly or through
+// other MuJoCo computations):
+// - mj_kinematics
+//
+// CHECK-fails if:
+// - the ID of any geom is invalid for the provided model;
+// - both geom IDs are equal;
+// - MuJoCo failed to compute contacts for the provided geoms.
+absl::optional<mjContact> ComputeContactWithMinimumDistance(
+    const MjLib& lib, const mjModel& model, const mjData& data, int geom1_id,
+    int geom2_id, double collision_detection_distance);
+
 // Returns the minimum of the contact distances between two geoms detected by
 // MuJoCo. If no collision is detected, this function will return a disengaged
 // value.

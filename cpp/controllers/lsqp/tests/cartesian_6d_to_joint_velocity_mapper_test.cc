@@ -281,6 +281,7 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
 
 TEST_P(Cartesian6dToJointVelocityMapperTest,
        SolutionWithAllConstraintsAndNullspaceIsOkAndNotInCollision) {
+  bool use_adaptive_step_size = GetParam();
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
 
   // Place the humanoid in a position where the left hand can collide with the
@@ -294,9 +295,9 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
   const std::array<double, 6> kTargetVelocity = {0.0, 0.0, -1.0, 0, 0.0, 0.0};
   const absl::btree_set<int> kJointIds{19, 20, 21};
   const std::array<double, 3> nullspace_bias = {-1.0, 0.0, 1.0};
-  constexpr double kSolutionTolerance = 1.0e-6;
   constexpr double kRegularizationWeight = 1.0e-3;
-  constexpr double kNullspaceProjectionSlack = 1.0e-7;
+  const double kSolutionTolerance = use_adaptive_step_size ? 1.0e-3 : 1.0e-6;
+  const double kNullspaceProjectionSlack = 0.1 * kSolutionTolerance;
 
   Cartesian6dToJointVelocityMapper::Parameters params;
   params.lib = mjlib_;
@@ -331,7 +332,111 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
   params.enable_nullspace_control = true;
   params.return_error_on_nullspace_failure = false;
   params.nullspace_projection_slack = kNullspaceProjectionSlack;
-  params.use_adaptive_step_size = GetParam();
+  params.use_adaptive_step_size = use_adaptive_step_size;
+  params.log_nullspace_failure_warnings = false;
+
+  ASSERT_OK(Cartesian6dToJointVelocityMapper::ValidateParameters(params));
+  Cartesian6dToJointVelocityMapper mapper(params);
+
+  // Convert to geom pairs and get geom IDs to query MuJoCo for collision
+  // information.
+  auto geom_pairs = CollisionPairsToGeomIdPairs(
+      *mjlib_, *model_, params.collision_pairs, false, false);
+  int left_hand_id =
+      mjlib_->mj_name2id(model_.get(), mjtObj::mjOBJ_GEOM, "left_hand");
+  int floor_id = mjlib_->mj_name2id(model_.get(), mjtObj::mjOBJ_GEOM, "floor");
+  auto maybe_dist = ComputeMinimumContactDistance(*mjlib_, *model_, *data_,
+                                                  left_hand_id, floor_id, 10.0);
+  ASSERT_TRUE(maybe_dist.has_value());
+  double left_hand_to_floor_dist = *maybe_dist;
+
+  // Compute velocities and integrate, for 5000 steps.
+  // We expect that the distance from the hand to the floor will decrease from
+  // iteration to iteration, and eventually settle at <0.006. None of the geoms
+  // in the collision pair should ever penetrate.
+  for (int i = 0; i < 5000; ++i) {
+    ASSERT_OK_AND_ASSIGN(
+        absl::Span<const double> solution,
+        mapper.ComputeJointVelocities(*data_, kTargetVelocity, nullspace_bias));
+    SetSubsetOfJointVelocities(*model_, kJointIds, solution, data_.get());
+    mjlib_->mj_integratePos(model_.get(), data_->qpos, data_->qvel,
+                            absl::ToDoubleSeconds(params.integration_timestep));
+    mjlib_->mj_fwdPosition(model_.get(), data_.get());
+
+    // Ensure the new distance always decreases from iteration to iteration,
+    // until it settles.
+    auto maybe_new_dist = ComputeMinimumContactDistance(
+        *mjlib_, *model_, *data_, left_hand_id, floor_id, 10.0);
+    ASSERT_TRUE(maybe_new_dist.has_value());
+    EXPECT_LE(*maybe_new_dist, std::max(0.006, left_hand_to_floor_dist));
+    left_hand_to_floor_dist = *maybe_new_dist;
+
+    // Ensure no contacts are detected on the collision pairs.
+    ASSERT_OK_AND_ASSIGN(
+        int num_contacts,
+        ComputeContactsForGeomPairs(*mjlib_, *model_, *data_, geom_pairs,
+                                    params.minimum_distance_from_collisions,
+                                    absl::Span<mjContact>()));
+    EXPECT_EQ(num_contacts, 0);
+  }
+}
+
+TEST_P(
+    Cartesian6dToJointVelocityMapperTest,
+    SolutionWithAllConstraintsAndNullspaceIsOkAndNotInCollisionSingleContacts) {
+  bool use_adaptive_step_size = GetParam();
+  LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
+
+  // Place the humanoid in a position where the left hand can collide with the
+  // floor if it moves down.
+  data_->qpos[2] = 0.3;
+  mjlib_->mj_fwdPosition(model_.get(), data_.get());
+
+  // We make the left hand move down towards the plane.
+  const std::string kObjectName = "left_hand";
+  const mjtObj kObjectType = mjtObj::mjOBJ_SITE;
+  const std::array<double, 6> kTargetVelocity = {0.0, 0.0, -1.0, 0, 0.0, 0.0};
+  const absl::btree_set<int> kJointIds{19, 20, 21};
+  const std::array<double, 3> nullspace_bias = {-1.0, 0.0, 1.0};
+  constexpr double kRegularizationWeight = 1.0e-3;
+  const double kSolutionTolerance = use_adaptive_step_size ? 1.0e-3 : 1.0e-6;
+  const double kNullspaceProjectionSlack = 0.1 * kSolutionTolerance;
+
+  Cartesian6dToJointVelocityMapper::Parameters params;
+  params.lib = mjlib_;
+  params.model = model_.get();
+  params.joint_ids = kJointIds;
+  params.object_type = kObjectType;
+  params.object_name = kObjectName;
+  params.integration_timestep = absl::Milliseconds(5);
+
+  params.enable_joint_position_limits = true;
+  params.joint_position_limit_velocity_scale = 0.95;
+  params.minimum_distance_from_joint_position_limit = 0.01;  // ~0.5deg.
+
+  params.enable_joint_velocity_limits = true;
+  params.joint_velocity_magnitude_limits = {0.5, 0.5, 0.5};
+
+  params.enable_joint_acceleration_limits = true;
+  params.remove_joint_acceleration_limits_if_in_conflict = true;
+  params.joint_acceleration_magnitude_limits = {1.0, 1.0, 1.0};
+
+  params.enable_collision_avoidance = true;
+  params.use_minimum_distance_contacts_only = true;
+  params.collision_avoidance_normal_velocity_scale = 0.01;
+  params.minimum_distance_from_collisions = 0.005;
+  params.collision_detection_distance = 10.0;
+  params.collision_pairs = {
+      CollisionPair(GeomGroup{"left_upper_arm", "left_lower_arm", "left_hand"},
+                    GeomGroup{"floor"})};
+
+  params.check_solution_validity = true;
+  params.solution_tolerance = kSolutionTolerance;
+  params.regularization_weight = kRegularizationWeight;
+  params.enable_nullspace_control = true;
+  params.return_error_on_nullspace_failure = false;
+  params.nullspace_projection_slack = kNullspaceProjectionSlack;
+  params.use_adaptive_step_size = use_adaptive_step_size;
   params.log_nullspace_failure_warnings = false;
 
   ASSERT_OK(Cartesian6dToJointVelocityMapper::ValidateParameters(params));

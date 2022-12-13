@@ -38,6 +38,8 @@ using ::testing::DoubleNear;
 using ::testing::Each;
 using ::testing::Ge;
 using ::testing::Pointwise;
+using ::testing::ValuesIn;
+using ::testing::WithParamInterface;
 
 absl::btree_set<std::pair<int, int>> GetAllGeomPairs(const mjModel& model) {
   absl::btree_set<std::pair<int, int>> geom_pairs;
@@ -73,14 +75,27 @@ Eigen::MatrixXd ComputeContactNormalJacobianForJoints(
   return -1.0 * jacobian(Eigen::indexing::all, dof_ids_vector);
 }
 
-TEST_F(CollisionAvoidanceConstraintTest,
+class CollisionAvoidanceConstraintWithParamsTest
+    : public CollisionAvoidanceConstraintTest,
+      public WithParamInterface<bool> {};
+
+constexpr bool CollisionAvoidanceConstraintParameterSet[] = {true, false};
+
+INSTANTIATE_TEST_SUITE_P(CollisionAvoidanceConstraintWithParamsTests,
+                         CollisionAvoidanceConstraintWithParamsTest,
+                         ValuesIn(CollisionAvoidanceConstraintParameterSet));
+
+TEST_P(CollisionAvoidanceConstraintWithParamsTest,
        CoefficientMatrixAndBoundsDimensionsAndValuesAreValid) {
+  bool use_minimum_distance_contacts_only = GetParam();
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
 
   // Initialize constraint.
   CollisionAvoidanceConstraint::Parameters params;
   params.lib = mjlib_;
   params.model = model_.get();
+  params.use_minimum_distance_contacts_only =
+      use_minimum_distance_contacts_only;
   params.collision_detection_distance = 1.0;
   params.minimum_normal_distance = 0.05;
   params.gain = 0.85;
@@ -92,8 +107,13 @@ TEST_F(CollisionAvoidanceConstraintTest,
   CollisionAvoidanceConstraint constraint(params, *data_);
 
   // Ensure dimensions are valid.
-  int max_num_contacts =
-      ComputeMaximumNumberOfContacts(*model_, params.geom_pairs);
+  int max_num_contacts;
+  if (use_minimum_distance_contacts_only) {
+    max_num_contacts = params.geom_pairs.size();
+  } else {
+    max_num_contacts =
+        ComputeMaximumNumberOfContacts(*model_, params.geom_pairs);
+  }
   EXPECT_THAT(constraint, LsqpConstraintDimensionsAreValid());
   EXPECT_EQ(constraint.GetNumberOfDof(), params.joint_ids.size());
   EXPECT_EQ(constraint.GetBoundsLength(), max_num_contacts);
@@ -112,14 +132,17 @@ TEST_F(CollisionAvoidanceConstraintTest,
 
 // Tests that the coefficient matrix and bounds have the expected values in
 // the rows that do not have contacts.
-TEST_F(CollisionAvoidanceConstraintTest,
+TEST_P(CollisionAvoidanceConstraintWithParamsTest,
        CoefficientMatrixAndBoundsValuesAsExpectedInRowsWithNoContacts) {
+  bool use_minimum_distance_contacts_only = GetParam();
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
 
   // Initialize constraint.
   CollisionAvoidanceConstraint::Parameters params;
   params.lib = mjlib_;
   params.model = model_.get();
+  params.use_minimum_distance_contacts_only =
+      use_minimum_distance_contacts_only;
   params.collision_detection_distance = 0.3;
   params.minimum_normal_distance = 0.05;
   params.gain = 0.85;
@@ -131,14 +154,30 @@ TEST_F(CollisionAvoidanceConstraintTest,
 
   // Ensure that the number of detected contacts in the current configuration
   // is not zero, for this test to be valid.
-  int max_num_contacts =
-      ComputeMaximumNumberOfContacts(*model_, params.geom_pairs);
-  std::vector<mjContact> contacts(max_num_contacts);
-  ASSERT_OK_AND_ASSIGN(
-      int num_contacts,
-      ComputeContactsForGeomPairs(*mjlib_, *model_, *data_, params.geom_pairs,
-                                  params.collision_detection_distance,
-                                  absl::MakeSpan(contacts)));
+  int max_num_contacts;
+  int num_contacts;
+  if (use_minimum_distance_contacts_only) {
+    max_num_contacts = params.geom_pairs.size();
+    num_contacts = 0;
+    for (const auto& pair : params.geom_pairs) {
+      absl::optional<mjContact> maybe_contact =
+          ComputeContactWithMinimumDistance(
+              *mjlib_, *model_, *data_, pair.first, pair.second,
+              params.collision_detection_distance);
+      if (maybe_contact.has_value()) {
+        ++num_contacts;
+      }
+    }
+  } else {
+    max_num_contacts =
+        ComputeMaximumNumberOfContacts(*model_, params.geom_pairs);
+    std::vector<mjContact> contacts(max_num_contacts);
+    ASSERT_OK_AND_ASSIGN(
+        num_contacts,
+        ComputeContactsForGeomPairs(*mjlib_, *model_, *data_, params.geom_pairs,
+                                    params.collision_detection_distance,
+                                    absl::MakeSpan(contacts)));
+  }
   ASSERT_NE(num_contacts, 0);
 
   // The bottom rows corresponding to the number of empty contacts of the
@@ -165,15 +204,16 @@ TEST_F(CollisionAvoidanceConstraintTest,
 }
 
 // Tests that the coefficient matrix and bounds have the expected values in
-// the rows that do not have contacts.
+// the rows that have contacts.
 TEST_F(CollisionAvoidanceConstraintTest,
-       CoefficientMatrixValuesAsExpectedInRowsWithContacts) {
+       CoefficientMatrixValuesAsExpectedInRowsWithContactsMultiContact) {
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
 
   // Initialize constraint.
   CollisionAvoidanceConstraint::Parameters params;
   params.lib = mjlib_;
   params.model = model_.get();
+  params.use_minimum_distance_contacts_only = false;
   params.collision_detection_distance = 0.3;
   params.minimum_normal_distance = 0.05;
   params.gain = 0.85;
@@ -210,6 +250,51 @@ TEST_F(CollisionAvoidanceConstraintTest,
     EXPECT_THAT(coefficient_matrix.row(i),
                 Pointwise(DoubleNear(1.0e-10), jacobian.row(0)));
   }
+}
+
+TEST_F(CollisionAvoidanceConstraintTest,
+       CoefficientMatrixValuesAsExpectedInRowsWithContactsSingleContact) {
+  LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
+
+  // Initialize constraint.
+  CollisionAvoidanceConstraint::Parameters params;
+  params.lib = mjlib_;
+  params.model = model_.get();
+  params.use_minimum_distance_contacts_only = true;
+  params.collision_detection_distance = 0.3;
+  params.minimum_normal_distance = 0.05;
+  params.gain = 0.85;
+  for (int i = 1; i < model_->njnt; ++i) {
+    params.joint_ids.insert(i);
+  }
+  params.geom_pairs = GetAllGeomPairs(*model_);
+  CollisionAvoidanceConstraint constraint(params, *data_);
+
+  // Every row of the coefficient matrix should be the jacobian, in order,
+  // corresponding to each contact.
+  int max_num_contacts = params.geom_pairs.size();
+  ASSERT_EQ(constraint.GetCoefficientMatrix().size(),
+            max_num_contacts * params.joint_ids.size());
+  Eigen::Map<const Eigen::MatrixXd> coefficient_matrix(
+      constraint.GetCoefficientMatrix().data(), max_num_contacts,
+      params.joint_ids.size());
+  int contact_counter = 0;
+  for (const auto& pair : params.geom_pairs) {
+    absl::optional<mjContact> maybe_contact = ComputeContactWithMinimumDistance(
+        *mjlib_, *model_, *data_, pair.first, pair.second,
+        params.collision_detection_distance);
+    if (maybe_contact.has_value()) {
+      Eigen::MatrixXd jacobian = ComputeContactNormalJacobianForJoints(
+          *mjlib_, *model_, *data_, *maybe_contact, params.joint_ids);
+      EXPECT_THAT(coefficient_matrix.row(contact_counter),
+                  Pointwise(DoubleNear(1.0e-10), jacobian.row(0)));
+      ++contact_counter;
+    }
+  }
+
+  // Ensure that the number of detected contacts in the current configuration
+  // is not zero, for this test to be valid.
+  ASSERT_NE(contact_counter, 0);
 }
 
 }  // namespace

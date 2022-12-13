@@ -85,6 +85,12 @@ class CollisionAvoidanceConstraint : public LsqpConstraint {
   // unnecessary contacts, e.g. between two geoms corresponding to the same
   // body, or providing the same pair twice in different order.
   //
+  // If `use_minimum_distance_contacts_only` is true, it will only create one
+  // inequality constraint per geom pair, corresponding to the MuJoCo contact
+  // with the minimum distance. Otherwise, it will create one inequality
+  // constraint for each of the MuJoCo contacts detected for each of the given
+  // geom pair.
+  //
   // The caller retains ownership of lib and model.
   // It is the caller's responsibility to ensure that the *lib and *model
   // objects outlive any CollisionAvoidanceConstraint instances created with
@@ -92,6 +98,7 @@ class CollisionAvoidanceConstraint : public LsqpConstraint {
   struct Parameters {
     const MjLib* lib;
     const mjModel* model;
+    bool use_minimum_distance_contacts_only = false;
     double collision_detection_distance;
     double minimum_normal_distance;
     double gain;
@@ -129,6 +136,7 @@ class CollisionAvoidanceConstraint : public LsqpConstraint {
  private:
   const MjLib& lib_;
   const mjModel& model_;
+  bool use_minimum_distance_contacts_only_;
   double collision_detection_distance_;
   double minimum_normal_distance_;
   double gain_;

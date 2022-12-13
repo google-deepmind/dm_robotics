@@ -154,6 +154,17 @@ class Cartesian6dToJointVelocityMapper {
     // Whether to enable active collision avoidance.
     bool enable_collision_avoidance = false;
 
+    // If `use_minimum_distance_contacts_only` is true, it will only create one
+    // inequality constraint per geom pair, corresponding to the MuJoCo contact
+    // with the minimum distance. Otherwise, it will create one inequality
+    // constraint for each of the MuJoCo contacts detected per geom pair.
+    // Ignored if `enable_collision_avoidance` is `false`.
+    //
+    // In problems where many geoms are avoiding each other, setting this option
+    // to `true` will considerably speed up solve times, but the solution is
+    // more likely to result in penetration at high speeds.
+    bool use_minimum_distance_contacts_only = false;
+
     // Value between (0, 1] that defines how fast each geom is allowed to move
     // towards another in each iteration. Values lower than 1 are safer but may
     // make the geoms move slower towards each other. In the literature, a

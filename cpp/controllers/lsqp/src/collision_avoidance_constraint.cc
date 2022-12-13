@@ -30,16 +30,59 @@
 namespace dm_robotics {
 namespace {
 
+void CopyContact(const mjContact& input, mjContact* output) {
+  mjContact& output_ref = *output;
+  output_ref.dist = input.dist;
+  std::copy_n(&input.pos[0], 3, &output_ref.pos[0]);
+  std::copy_n(&input.frame[0], 3, &output_ref.frame[0]);
+  output_ref.geom1 = input.geom1;
+  output_ref.geom2 = input.geom2;
+}
+
 // Computes the contacts for the geom pairs using `buffer`, and returns a view
-// over the contacts for the provided set of geom pairs.
-absl::Span<const mjContact> ComputeContacts(
+// over the contacts with minimum distances for the provided set of geom pairs.
+//
+// This function is only used when the user specifies
+// `use_minimum_distance_contacts_only`, and thus we can guarantee that `buffer`
+// is big enough.
+absl::Span<const mjContact> ComputeContactsWithMinimumDistance(
+    const MjLib& lib, const mjModel& model, const mjData& data,
+    absl::btree_set<std::pair<int, int>>& geom_pairs,
+    const double collision_detection_distance, absl::Span<mjContact> buffer) {
+  CHECK_GE(buffer.size(), geom_pairs.size()) << absl::Substitute(
+      "ComputeContactsWithMinimumDistance: Internal error. `buffer` size [$0] "
+      "is not equal to the number of geom pairs [$1]. Please contact the "
+      "developers.",
+      buffer.size(), geom_pairs.size());
+
+  int num_contacts = 0;
+  for (const auto& pair : geom_pairs) {
+    absl::optional<mjContact> maybe_contact = ComputeContactWithMinimumDistance(
+        lib, model, data, pair.first, pair.second,
+        collision_detection_distance);
+    if (maybe_contact.has_value()) {
+      CopyContact(*maybe_contact, &buffer[num_contacts]);
+      ++num_contacts;
+    }
+  }
+  CHECK_LE(num_contacts, buffer.size()) << absl::Substitute(
+      "ComputeContactsWithMinimumDistance: Internal error. Number of computed "
+      "contacts [$0] is larger than the buffer size [$1]. Please contact the "
+      "developers.",
+      num_contacts, buffer.size());
+  return absl::MakeSpan(buffer.data(), num_contacts);
+}
+
+// Computes the contacts for the geom pairs using `buffer`, and returns a view
+// over the all contacts for the provided set of geom pairs.
+absl::Span<const mjContact> ComputeAllContacts(
     const MjLib& lib, const mjModel& model, const mjData& data,
     absl::btree_set<std::pair<int, int>>& geom_pairs,
     const double collision_detection_distance, absl::Span<mjContact> buffer) {
   absl::StatusOr<int> num_contacts_or = ComputeContactsForGeomPairs(
       lib, model, data, geom_pairs, collision_detection_distance, buffer);
   CHECK_EQ(num_contacts_or.status(), absl::OkStatus()) << absl::Substitute(
-      "ComputeContacts: Internal error [$0]. Please contact the developers.",
+      "ComputeAllContacts: Internal error [$0]. Please contact the developers.",
       num_contacts_or.status().ToString());
   return absl::MakeSpan(buffer.data(), *num_contacts_or);
 }
@@ -50,6 +93,8 @@ CollisionAvoidanceConstraint::CollisionAvoidanceConstraint(
     const Parameters& params, const mjData& data)
     : lib_(*DieIfNull(params.lib)),
       model_(*DieIfNull(params.model)),
+      use_minimum_distance_contacts_only_(
+          params.use_minimum_distance_contacts_only),
       collision_detection_distance_(params.collision_detection_distance),
       minimum_normal_distance_(params.minimum_normal_distance),
       gain_(params.gain),
@@ -68,8 +113,13 @@ CollisionAvoidanceConstraint::CollisionAvoidanceConstraint(
   // at the same time.
   CHECK(!params.geom_pairs.empty())
       << "CollisionAvoidanceConstraint: `geom_pairs` cannot be empty.";
-  int max_num_contacts =
-      ComputeMaximumNumberOfContacts(model_, params.geom_pairs);
+  int max_num_contacts;
+  if (use_minimum_distance_contacts_only_) {
+    max_num_contacts = geom_pairs_.size();
+  } else {
+    max_num_contacts =
+        ComputeMaximumNumberOfContacts(model_, params.geom_pairs);
+  }
 
   // Initialize buffers.
   contacts_buffer_.resize(max_num_contacts);
@@ -83,9 +133,15 @@ CollisionAvoidanceConstraint::CollisionAvoidanceConstraint(
 
 void CollisionAvoidanceConstraint::UpdateCoefficientsAndBounds(
     const mjData& data) {
-  detected_contacts_ = ComputeContacts(lib_, model_, data, geom_pairs_,
-                                       collision_detection_distance_,
-                                       absl::MakeSpan(contacts_buffer_));
+  if (use_minimum_distance_contacts_only_) {
+    detected_contacts_ = ComputeContactsWithMinimumDistance(
+        lib_, model_, data, geom_pairs_, collision_detection_distance_,
+        absl::MakeSpan(contacts_buffer_));
+  } else {
+    detected_contacts_ = ComputeAllContacts(lib_, model_, data, geom_pairs_,
+                                            collision_detection_distance_,
+                                            absl::MakeSpan(contacts_buffer_));
+  }
 
   // Reset upper bound and coefficients.
   const int max_num_contacts = contacts_buffer_.size();

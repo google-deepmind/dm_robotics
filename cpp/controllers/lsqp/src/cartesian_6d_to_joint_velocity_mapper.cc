@@ -93,6 +93,8 @@ CollisionAvoidanceConstraint::Parameters ToCollisionAvoidanceParams(
   CollisionAvoidanceConstraint::Parameters output_params;
   output_params.lib = params.lib;
   output_params.model = params.model;
+  output_params.use_minimum_distance_contacts_only =
+      params.use_minimum_distance_contacts_only;
   output_params.collision_detection_distance =
       params.collision_detection_distance;
   output_params.minimum_normal_distance =
