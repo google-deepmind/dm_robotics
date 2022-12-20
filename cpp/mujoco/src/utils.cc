@@ -47,7 +47,7 @@ using CollisionIdPair = std::pair<GeomIdGroup, GeomIdGroup>;
 // Note that only the upper-right triangle is initialized.
 // The returned values are guaranteed to be positive integers or 0.
 constexpr std::array<std::array<int, mjNGEOMTYPES>, mjNGEOMTYPES>
-GetMujocoMaxContactsArray() {
+GetMujocoMaxContactsArray(bool is_multiccd) {
   std::array<std::array<int, mjNGEOMTYPES>, mjNGEOMTYPES> max_contacts{};
 
   // Plane
@@ -80,9 +80,9 @@ GetMujocoMaxContactsArray() {
   // Capsule
   max_contacts[mjGEOM_CAPSULE][mjGEOM_CAPSULE] = 2;
   max_contacts[mjGEOM_CAPSULE][mjGEOM_ELLIPSOID] = 1;
-  max_contacts[mjGEOM_CAPSULE][mjGEOM_CYLINDER] = 1;
+  max_contacts[mjGEOM_CAPSULE][mjGEOM_CYLINDER] = is_multiccd ? 5 : 1;
   max_contacts[mjGEOM_CAPSULE][mjGEOM_BOX] = 2;
-  max_contacts[mjGEOM_CAPSULE][mjGEOM_MESH] = 1;
+  max_contacts[mjGEOM_CAPSULE][mjGEOM_MESH] = is_multiccd ? 5 : 1;
 
   // Ellipsoid
   max_contacts[mjGEOM_ELLIPSOID][mjGEOM_ELLIPSOID] = 1;
@@ -91,20 +91,23 @@ GetMujocoMaxContactsArray() {
   max_contacts[mjGEOM_ELLIPSOID][mjGEOM_MESH] = 1;
 
   // Cylinder
-  max_contacts[mjGEOM_CYLINDER][mjGEOM_CYLINDER] = 1;
-  max_contacts[mjGEOM_CYLINDER][mjGEOM_BOX] = 1;
-  max_contacts[mjGEOM_CYLINDER][mjGEOM_MESH] = 1;
+  max_contacts[mjGEOM_CYLINDER][mjGEOM_CYLINDER] = is_multiccd ? 5 : 1;
+  max_contacts[mjGEOM_CYLINDER][mjGEOM_BOX] = is_multiccd ? 5 : 1;
+  max_contacts[mjGEOM_CYLINDER][mjGEOM_MESH] = is_multiccd ? 5 : 1;
 
   // Box
   max_contacts[mjGEOM_BOX][mjGEOM_BOX] = 8;
-  max_contacts[mjGEOM_BOX][mjGEOM_MESH] = 1;
+  max_contacts[mjGEOM_BOX][mjGEOM_MESH] = is_multiccd ? 5 : 1;
 
   // Mesh
-  max_contacts[mjGEOM_MESH][mjGEOM_MESH] = 1;
+  max_contacts[mjGEOM_MESH][mjGEOM_MESH] = is_multiccd ? 5 : 1;
   return max_contacts;
 }
 constexpr std::array<std::array<int, mjNGEOMTYPES>, mjNGEOMTYPES>
-    kMujocoMaxContacts = GetMujocoMaxContactsArray();
+    kMujocoMaxContacts = GetMujocoMaxContactsArray(false);
+
+constexpr std::array<std::array<int, mjNGEOMTYPES>, mjNGEOMTYPES>
+    kMujocoMaxContactsMultiCcd = GetMujocoMaxContactsArray(true);
 
 // Returns all geom names inside `model` as a single string with line endings
 // after each name.
@@ -305,6 +308,21 @@ int ComputeContactsBetweenGeoms(const MjLib& lib, const mjModel& model,
       lib.mj_id2name(&model, mjOBJ_GEOM, geom2_id), geom2_id,
       collision_detection_distance);
 
+  // Check-fail if there are more contacts than the maximum allowed for the geom
+  // types.
+  bool is_multiccd = model.opt.enableflags & mjENBL_MULTICCD;
+  int max_contacts;
+  if (is_multiccd) {
+    max_contacts = kMujocoMaxContactsMultiCcd[geom1_type][geom2_type];
+  } else {
+    max_contacts = kMujocoMaxContacts[geom1_type][geom2_type];
+  }
+  CHECK(num_collisions <= max_contacts) << absl::Substitute(
+      "ComputeContactsBetweenGeoms: Unexpected number of collisions [$0] "
+      "between geom of type [$1] and geom of type [$2]. Please contact the "
+      "developers for more information.",
+      num_collisions, geom1_type, geom2_type);
+
   // Fill geom IDs.
   for (int i = 0; i < num_collisions; ++i) {
     contacts->at(i).geom1 = geom1_id;
@@ -378,6 +396,7 @@ absl::btree_set<int> JointIdsToDofIds(const mjModel& model,
 int ComputeMaximumNumberOfContacts(
     const mjModel& model,
     const absl::btree_set<std::pair<int, int>>& geom_pairs) {
+  bool is_multiccd = model.opt.enableflags & mjENBL_MULTICCD;
   int max_num_contacts = 0;
   for (const auto [geom_a, geom_b] : geom_pairs) {
     // Ensure only the upper-triangle of kMujocoMaxContacts is used.
@@ -385,7 +404,11 @@ int ComputeMaximumNumberOfContacts(
         std::min(model.geom_type[geom_a], model.geom_type[geom_b]);
     const int second_type =
         std::max(model.geom_type[geom_a], model.geom_type[geom_b]);
-    max_num_contacts += kMujocoMaxContacts[first_type][second_type];
+    if (is_multiccd) {
+      max_num_contacts += kMujocoMaxContactsMultiCcd[first_type][second_type];
+    } else {
+      max_num_contacts += kMujocoMaxContacts[first_type][second_type];
+    }
   }
   return max_num_contacts;
 }
