@@ -34,9 +34,10 @@ class BasicRenderingObserverTest(absltest.TestCase):
 
     with mock.patch(_GUI_PATH):
       self.observer = mujoco_rendering.Observer(self.env, *_WINDOW_PARAMS)
+      self.observer._viewer = mock.MagicMock()
+      self.observer._render_surface = mock.MagicMock()
 
   def test_deinitializing_viewer_on_episode_end(self):
-    self.observer._viewer = mock.MagicMock()
     self.observer.end_episode(
         agent_id=0, termination_reason=1, agent_time_step=2)
     self.observer._viewer.deinitialize.assert_called_once()
@@ -51,7 +52,6 @@ class BasicRenderingObserverTest(absltest.TestCase):
 
     self.observer.camera_config = initial_camera_cfg
 
-    self.observer._viewer = mock.MagicMock()
     self.observer._viewer.camera.settings.lookat = np.zeros(3)
 
     self.observer.step(0, None, None)
@@ -72,7 +72,6 @@ class BasicRenderingObserverTest(absltest.TestCase):
 
     self.observer.camera_config = initial_camera_cfg
 
-    self.observer._viewer = mock.MagicMock()
     self.observer._viewer.camera.settings.lookat = np.zeros(3)
 
     self.observer.step(0, None, None)

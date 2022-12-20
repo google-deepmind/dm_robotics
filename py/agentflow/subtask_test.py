@@ -222,7 +222,7 @@ class SubTaskOptionTest(absltest.TestCase):
     parent_action = np.random.random(size=(5,)).astype(np.float32)
     parent_timestep = _random_timestep()
     parent_timestep_without_reward = parent_timestep._replace(
-        reward=np.float("nan"))
+        reward=np.float32("nan"))
     subtask_timestep = _random_timestep(task_obs_spec)
     pterm = 0.7
 

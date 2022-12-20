@@ -40,10 +40,10 @@ echo "Using tox command '$tox_binary'"
 python_version="$($python_binary --version | grep --only-matching '[0-9.]*' 2>&1)" && exit_status=$? || exit_status=$?
 
 # Allow the python version to be overridden.
-python_version=${PYTHON_VERION:-$python_version}
+python_version=${PYTHON_VERSION:-$python_version}
 
 # Finally default python_version, but this should not be needed.
-python_version=${pytagentflowhon_version:-3.8}
+python_version=${python_version:-3.10}
 echo "Using python version '$python_version'"
 
 # Install tox, which we use to build the packages.
@@ -51,7 +51,7 @@ echo "Using python version '$python_version'"
 if ! [[ -x $tox_binary ]]; then
   # tox 4 deprecates the distshare configuration parameter in tox.ini.
   # TODO(b/261983169): support tox 4.
-  $PYTHON_EXE -m pip install "tox < 4"
+  $python_binary -m pip install "tox < 4"
 fi
 
 echo "Recreating $root/cpp/build directory"

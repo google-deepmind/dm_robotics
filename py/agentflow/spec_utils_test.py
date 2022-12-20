@@ -59,16 +59,17 @@ class ValidationTest(parameterized.TestCase):
       spec_utils.validate(
           spec, float(0.5), ignore_nan=False, ignore_ranges=False)
       self.fail('Expected exception')
-    except ValueError as expected:
-      del expected
+    except ValueError as unused_but_expected:
+      del unused_but_expected
 
     try:
       spec_utils.validate(
           spec, np.float64(0.5), ignore_nan=False, ignore_ranges=False)
       self.fail('Expected exception')
-    except ValueError as expected:
-      del expected
+    except ValueError as unused_but_expected:
+      del unused_but_expected
 
+  @absltest.skip('dm_env StringArray incompatible with numpy 1.24')
   def test_StringArray(self):
     test_string = 'test string'
     spec = specs.StringArray(shape=(), string_type=str, name='foo')
@@ -139,8 +140,8 @@ class ValidationTest(parameterized.TestCase):
     try:
       spec_utils.validate(spec, value, ignore_nan=False, ignore_ranges=False)
       self.fail('Validation failure expected.')
-    except ValueError as expected:
-      del expected
+    except ValueError as unused_but_expected:
+      del unused_but_expected
 
   @parameterized.parameters(float, np.float32, np.float64)
   def test_IgnoreNan_Scalar_BoundedArraySpec(self, dtype):
@@ -155,8 +156,8 @@ class ValidationTest(parameterized.TestCase):
     try:
       spec_utils.validate(spec, value, ignore_nan=False, ignore_ranges=False)
       self.fail('Validation failure expected.')
-    except ValueError as expected:
-      del expected
+    except ValueError as unused_but_expected:
+      del unused_but_expected
 
   @parameterized.parameters(float, np.float32, np.float64)
   def test_IgnoreNan_Array(self, dtype):
@@ -167,8 +168,8 @@ class ValidationTest(parameterized.TestCase):
     try:
       spec_utils.validate(spec, value, ignore_nan=False, ignore_ranges=False)
       self.fail('Validation failure expected.')
-    except ValueError as expected:
-      del expected
+    except ValueError as unused_but_expected:
+      del unused_but_expected
 
   @parameterized.parameters(float, np.float32, np.float64)
   def test_IgnoreNan_BoundedArray(self, dtype):
@@ -184,8 +185,8 @@ class ValidationTest(parameterized.TestCase):
     try:
       spec_utils.validate(spec, value, ignore_nan=False, ignore_ranges=False)
       self.fail('Validation failure expected.')
-    except ValueError as expected:
-      del expected
+    except ValueError as unused_but_expected:
+      del unused_but_expected
 
   @parameterized.parameters(float, np.float32, np.float64)
   def test_IgnoreNan_BoundedArray_RespectsLimits(self, dtype):
@@ -200,15 +201,15 @@ class ValidationTest(parameterized.TestCase):
     try:
       spec_utils.validate(spec, oob_value, ignore_nan=True, ignore_ranges=False)
       self.fail('Validation failure expected.')
-    except ValueError as expected:
-      del expected
+    except ValueError as unused_but_expected:
+      del unused_but_expected
 
     try:
       spec_utils.validate(
           spec, oob_value, ignore_nan=False, ignore_ranges=False)
       self.fail('Validation failure expected.')
-    except ValueError as expected:
-      del expected
+    except ValueError as unused_but_expected:
+      del unused_but_expected
 
   @parameterized.parameters(float, np.float32, np.float64)
   def test_IgnoreRanges_And_IgnoreNan(self, dtype):
@@ -225,8 +226,8 @@ class ValidationTest(parameterized.TestCase):
     try:
       spec_utils.validate(spec, oob_value, ignore_nan=True, ignore_ranges=False)
       self.fail('Validation failure expected.')
-    except ValueError as expected:
-      del expected
+    except ValueError as unused_but_expected:
+      del unused_but_expected
 
   @parameterized.parameters(float, np.float32, np.float64)
   def test_IgnoreRanges(self, dtype):
@@ -244,8 +245,8 @@ class ValidationTest(parameterized.TestCase):
       spec_utils.validate(
           spec, oob_value, ignore_ranges=False, ignore_nan=False)
       self.fail('Validation failure expected.')
-    except ValueError as expected:
-      del expected
+    except ValueError as unused_but_expected:
+      del unused_but_expected
 
   @parameterized.parameters(float, np.float32, np.float64)
   def test_TypeCheck_Scalar(self, dtype):
@@ -282,8 +283,8 @@ class EnsureSpecCompatibilityTest(absltest.TestCase):
     try:
       spec_utils.ensure_spec_compatibility(timestep_subspec, timestep_fullspec)
       self.fail('Validation failure expected.')
-    except ValueError as expected:
-      del expected
+    except ValueError as unused_but_expected:
+      del unused_but_expected
 
   def test_DifferentDiscount(self):
     observation_spec = random_observation_spec()
@@ -303,8 +304,8 @@ class EnsureSpecCompatibilityTest(absltest.TestCase):
     try:
       spec_utils.ensure_spec_compatibility(timestep_subspec, timestep_fullspec)
       self.fail('Validation failure expected.')
-    except ValueError as expected:
-      del expected
+    except ValueError as unused_but_expected:
+      del unused_but_expected
 
   def test_SubsetObservation(self):
     reward_spec = random_reward_spec()
@@ -344,8 +345,8 @@ class EnsureSpecCompatibilityTest(absltest.TestCase):
     try:
       spec_utils.ensure_spec_compatibility(timestep_subspec, timestep_fullspec)
       self.fail('Validation failure expected.')
-    except KeyError as expected:
-      del expected
+    except KeyError as unused_but_expected:
+      del unused_but_expected
 
   def test_WrongObservation(self):
     reward_spec = random_reward_spec()
@@ -373,8 +374,8 @@ class EnsureSpecCompatibilityTest(absltest.TestCase):
     try:
       spec_utils.ensure_spec_compatibility(timestep_subspec, timestep_fullspec)
       self.fail('Validation failure expected.')
-    except ValueError as expected:
-      del expected
+    except ValueError as unused_but_expected:
+      del unused_but_expected
 
 
 class CastTest(absltest.TestCase):
@@ -588,7 +589,7 @@ class PrefixSlicerTest(absltest.TestCase):
   def test_ArmJoints(self):
     spec = specs.BoundedArray(
         shape=(3,),
-        dtype=np.float,
+        dtype=np.float32,
         minimum=np.asarray([1.0, 2.0, 3.0]),
         maximum=np.asarray([11.0, 22.0, 33.0]),
         name='name/sawyer/j0\tname/sawyer/j1\tname/sawyer/gripper')
@@ -598,7 +599,7 @@ class PrefixSlicerTest(absltest.TestCase):
     # Verify the retuurned spec.
     expected_spec = specs.BoundedArray(
         shape=(2,),
-        dtype=np.float,
+        dtype=np.float32,
         minimum=np.asarray([1.0, 2.0]),
         maximum=np.asarray([11.0, 22.0]),
         name='name/sawyer/j0\tname/sawyer/j1')
@@ -612,7 +613,7 @@ class PrefixSlicerTest(absltest.TestCase):
   def test_Gripper(self):
     spec = specs.BoundedArray(
         shape=(3,),
-        dtype=np.float,
+        dtype=np.float32,
         minimum=np.asarray([1.0, 2.0, 3.0]),
         maximum=np.asarray([11.0, 22.0, 33.0]),
         name='name/sawyer/j0\tname/sawyer/j1\tname/sawyer/gripper')
@@ -622,7 +623,7 @@ class PrefixSlicerTest(absltest.TestCase):
     # Verify the retuurned spec.
     expected_spec = specs.BoundedArray(
         shape=(1,),
-        dtype=np.float,
+        dtype=np.float32,
         minimum=np.asarray([3.0]),
         maximum=np.asarray([33.0]),
         name='name/sawyer/gripper')
@@ -636,7 +637,7 @@ class PrefixSlicerTest(absltest.TestCase):
   def test_NonContiguousMatches(self):
     spec = specs.BoundedArray(
         shape=(4,),
-        dtype=np.float,
+        dtype=np.float32,
         minimum=np.asarray([1.0, 2.0, 3.0, 4.0]),
         maximum=np.asarray([11.0, 22.0, 33.0, 44.0]),
         name='h1\tm1\th2\tm2')
@@ -645,7 +646,7 @@ class PrefixSlicerTest(absltest.TestCase):
 
     expected_spec = specs.BoundedArray(
         shape=(2,),
-        dtype=np.float,
+        dtype=np.float32,
         minimum=np.asarray([1.0, 3.0]),
         maximum=np.asarray([11.0, 33.0]),
         name='h1\th2')
@@ -658,7 +659,7 @@ class PrefixSlicerTest(absltest.TestCase):
   def test_EmptySpec(self):
     spec = specs.BoundedArray(
         shape=(0,),
-        dtype=np.float,
+        dtype=np.float32,
         minimum=np.asarray([]),
         maximum=np.asarray([]),
         name='')
@@ -667,12 +668,12 @@ class PrefixSlicerTest(absltest.TestCase):
 
     spec_utils.verify_specs_equal_bounded(spec, action_space.spec())
     np.testing.assert_array_almost_equal(
-        np.asarray([]), action_space.project(np.asarray([])))
+        np.asarray([]), action_space.project(np.asarray([], dtype=np.float32)))
 
   def test_AllMatch(self):
     spec = specs.BoundedArray(
         shape=(2,),
-        dtype=np.float,
+        dtype=np.float32,
         minimum=np.asarray([1.0, 2.0]),
         maximum=np.asarray([11.0, 22.0]),
         name='h1\th2')
@@ -686,7 +687,7 @@ class PrefixSlicerTest(absltest.TestCase):
   def test_NoneMatch(self):
     spec = specs.BoundedArray(
         shape=(2,),
-        dtype=np.float,
+        dtype=np.float32,
         minimum=np.asarray([1.0, 2.0]),
         maximum=np.asarray([11.0, 22.0]),
         name='h1\th2')
@@ -694,7 +695,7 @@ class PrefixSlicerTest(absltest.TestCase):
     action_space = action_spaces.prefix_slicer(spec, prefix='m.$')
     expected_spec = specs.BoundedArray(
         shape=(0,),
-        dtype=np.float,
+        dtype=np.float32,
         minimum=np.asarray([]),
         maximum=np.asarray([]),
         name='')
@@ -707,7 +708,7 @@ class PrefixSlicerTest(absltest.TestCase):
   def test_Defaulting(self):
     spec = specs.BoundedArray(
         shape=(4,),
-        dtype=np.float,
+        dtype=np.float32,
         minimum=np.asarray([1.0, 2.0, 3.0, 4.0]),
         maximum=np.asarray([11.0, 22.0, 33.0, 44.0]),
         name='h1\tm1\th2\tm2')
@@ -725,7 +726,7 @@ class TimeStepSpecTest(parameterized.TestCase):
   def test_EqualSpecs(self):
     array = specs.BoundedArray(
         shape=(2,),
-        dtype=np.float,
+        dtype=np.float32,
         minimum=np.asarray([-1.0, -2.0]),
         maximum=np.asarray([1.0, 2.0]),
         name='bounded_array')
@@ -737,7 +738,7 @@ class TimeStepSpecTest(parameterized.TestCase):
   def test_NonEqualSpecs(self):
     array = specs.BoundedArray(
         shape=(2,),
-        dtype=np.float,
+        dtype=np.float32,
         minimum=np.asarray([-1.0, -2.0]),
         maximum=np.asarray([1.0, 2.0]),
         name='bounded_array')
@@ -746,7 +747,7 @@ class TimeStepSpecTest(parameterized.TestCase):
         observation_spec=obs_spec, reward_spec=array, discount_spec=array)
     array2 = specs.BoundedArray(
         shape=(2,),
-        dtype=np.float,
+        dtype=np.float32,
         minimum=np.asarray([-3.0, -4.0]),
         maximum=np.asarray([3.0, 4.0]),
         name='bounded_array2')

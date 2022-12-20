@@ -535,8 +535,8 @@ class TruncatedNormal(Distribution):
         than this will be re-sampled.
     """
     super().__init__()
-    self._mean = np.array(mean, dtype=np.float)
-    self._sd = np.array(sd, dtype=np.float)
+    self._mean = np.array(mean, dtype=np.float32)
+    self._sd = np.array(sd, dtype=np.float32)
     self._clip_sd = clip_sd
 
   def sample(self, random_state: np.random.RandomState) -> np.ndarray:
