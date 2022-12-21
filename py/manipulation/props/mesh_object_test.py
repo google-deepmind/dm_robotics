@@ -19,6 +19,7 @@ from absl.testing import parameterized
 from dm_robotics.manipulation.props import mesh_object
 import numpy as np
 
+# Internal file import.
 # Internal resources import.
 
 _TEST_ASSETS_PATH = os.path.join(

@@ -27,6 +27,8 @@ from dm_robotics.agentflow.decorators import register_class_properties
 from dm_robotics.agentflow.decorators import register_property
 import numpy as np
 
+# Internal usage logging import.
+
 
 Arg = np.ndarray  # pylint: disable=invalid-name
 ArgSpec = specs.Array
@@ -184,6 +186,7 @@ class Policy(abc.ABC, Renderable):
     Args:
       name: (optional) A name for the policy.
     """
+    # Internal usage logging hook.
 
     self._name = name or self.__class__.__name__
 

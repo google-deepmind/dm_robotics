@@ -1,5 +1,7 @@
 # AgentFlow Core Components
 
+<!--* B 2020-07-21 internal placeholder *-->
+
 [TOC]
 
 ## Policy
@@ -123,6 +125,7 @@ A MetaOption is an option that contains other options, AgentFlow comes with
 
 *   `Sequence`: Runs a list of options one after the other, each option is run
     until it signals termination from `pterm`.
+<!-- Internal placeholder E -->
 
 ## Options Core Library
 
@@ -173,3 +176,5 @@ dimensions into parts which individual options can deal with separately.
     in a given action specification. This assumes the action spec's min <= 0 <=
     max
 *   `IdentityActionSpace`: Performs no modification to actions it is given.
+
+<!--Internal marker for docs on non-general components.-->

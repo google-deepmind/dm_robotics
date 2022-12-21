@@ -78,9 +78,11 @@ void RaiseRuntimeErrorWithMessage(absl::string_view message) {
   throw py::error_already_set();
 }
 
-const MjLib* LoadMjLibFromDmControl() {
-  py::gil_scoped_acquire gil;
+const MjLib* LoadMjLibFromDmControlStatically() {
+  return new MjLib("", RTLD_NOW);
+}
 
+const MjLib* LoadMjLibFromDmControlDynamically() {
   // Get the path to the mujoco library.
   const py::module mujoco(py::module::import("mujoco"));
 
@@ -106,6 +108,11 @@ const MjLib* LoadMjLibFromDmControl() {
 
   // Create the MjLib object by dlopen'ing the DSO.
   return new MjLib(dso_path, RTLD_NOW);
+}
+
+const MjLib* LoadMjLibFromDmControl() {
+  py::gil_scoped_acquire gil;
+  return LoadMjLibFromDmControlDynamically();
 }
 
 // Helper function for getting an mjModel object from a py::handle.

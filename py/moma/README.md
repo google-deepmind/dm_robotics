@@ -139,6 +139,8 @@ To build a new MoMa environment, you can use the [subtask_env_builder]
 pattern. An example of this pattern can be found in our [example task] and in
 the tutorial linked at the top.
 
+<!--internal doc marker-->
+
 [Composer library]: https://deepmind.com/research/publications/dm-control-Software-and-Tasks-for-Continuous-Control
 [`dm_control`]: https://github.com/deepmind/dm_control/tree/master
 [Sensors]: https://github.com/deepmind/dm_robotics/tree/main/py/moma/sensor.py

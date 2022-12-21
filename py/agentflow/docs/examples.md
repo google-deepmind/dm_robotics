@@ -1,5 +1,7 @@
 # AgentFlow Examples
 
+<!--* B 2021-07-21 internal placeholder *-->
+
 [TOC]
 
 ## Modeling a simple insertion task.

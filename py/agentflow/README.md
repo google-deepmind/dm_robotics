@@ -1,5 +1,7 @@
 # AgentFlow: A Modular Toolkit for Scalable RL Research
 
+<!--* B 2021-07-21 internal placeholder *-->
+
 ## Overview
 
 `AgentFlow` is a library for composing Reinforcement-Learning agents. The core
@@ -28,6 +30,8 @@ The graph-building step is entirely optional, and is intended only for use-cases
 that require something like a (possibly learnable, possibly stochastic)
 state-machine.
 
+<!-- Internal placeholder C -->
 ### [Components](docs/components.md)
 ### [Control Flow](docs/control_flow.md)
 ### [Examples](docs/examples.md)
+<!-- Internal placeholder D -->

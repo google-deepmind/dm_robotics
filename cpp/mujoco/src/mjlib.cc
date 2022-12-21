@@ -31,11 +31,25 @@ struct LibMujocoHandleDeleter {
 };
 using LibMujocoHandle = std::unique_ptr<void, LibMujocoHandleDeleter>;
 
+LibMujocoHandle OpenImpl(const char *path, int dlopen_flags) {
+  dlerror();  // Clear error state before calling dlopen.
+  void* handle = dlopen(path, dlopen_flags);
+  CHECK(handle != nullptr) << "dlopen '" << path << "' failed: " << dlerror();
+
+  // Ensure we close the library with dlclose:
+  LibMujocoHandle handle_with_close(handle);
+
+  // validate the library:
+  dlerror();  // Clear error state before calling dlsym.
+  if (!dlsym(handle, "mj_version")) {
+    LOG(FATAL) << "MuJoCo symbols not present: " << dlerror();
+  }
+
+  return handle_with_close;
+}
+
 LibMujocoHandle DlOpen(const std::string& path, int dlopen_flags) {
-  LibMujocoHandle handle(dlopen(path.c_str(), dlopen_flags));
-  CHECK(handle != nullptr)
-      << "Failed to dlopen '" << path << "', error: " << dlerror();
-  return handle;
+  return OpenImpl(path.c_str(), dlopen_flags);
 }
 
 }  // namespace

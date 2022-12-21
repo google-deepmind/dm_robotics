@@ -18,10 +18,12 @@
 
 #include <string>
 
+// Internal file library include
 #include "dm_robotics/support/logging.h"
 #include "dm_robotics/support/status-matchers.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+// Internal flag library include
 #include "dm_robotics/mujoco/defs.h"
 #include "dm_robotics/mujoco/mjlib.h"
 

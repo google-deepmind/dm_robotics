@@ -5,12 +5,13 @@
 The control_flow directory contains several examples for how to build and
 visualize AgentFlow graphs that use control flow options.
 
-
 ### simple_insertion.py
 
 This example uses `Cond`, `Repeat`, and `Sequence` to construct a graph for a
 plug-insertion experiment which combines a single learner with a set of scripted
 behaviors.
+
+<!-- Reference to internal example -->
 
 ![Simple Example](./example_agentflow_controlflow_graph.png)
 

@@ -1,5 +1,7 @@
 # RGB-objects &#128721;&#129001;&#128311; for robotic manipulation
 
+<!--* A 2022-05-23 internal placeholder *-->
+
 This folder provides the RGB-objects introduced in the paper
 [Beyond Pick-and-Place: Tackling Robotic Stacking of Diverse Shapes][pick_and_place_paper]
 and related code used by the [RGB-Stacking][rgb_stacking] environment.

@@ -68,6 +68,7 @@ class PropsVersion(enum.Enum):
   Several iterations of RGB-objects have been designed. Listed below are those
   we support in simulation and for real robot manipulation.
   """
+  # placeholder line for pre-release internal version number.
   RGB_OBJECTS_V1_3 = parametric_rgb_object.RgbVersion.v1_3
 
 
@@ -197,6 +198,7 @@ def random_triplet(
     id_list_green = id_list
   if not id_list_blue:
     id_list_blue = id_list
+  # Placeholder line for version used pre-release.
   prop_ids = [
       np.random.choice(id_list_red, 1)[0],
       np.random.choice(id_list_green, 1)[0],
@@ -242,12 +244,15 @@ def _define_blue_prop_triplets(
 
 PROP_TRIPLETS_TEST: Dict[str, PropsSetType] = {
     # Object groups as per 'Triplets v1.0':
+    # https://github.com/deepmind/dm_robotics/blob/main/py/manipulation/props/rgb_objects/README.md#rgb-objects--for-robotic-manipulation
     'rgb_test_triplet1': PropsSetType(V1_3, ('r3', 's0', 'b2')),
     'rgb_test_triplet2': PropsSetType(V1_3, ('r5', 'g2', 'b3')),
     'rgb_test_triplet3': PropsSetType(V1_3, ('r6', 'g3', 'b5')),
     'rgb_test_triplet4': PropsSetType(V1_3, ('s0', 'g5', 'b6')),
     'rgb_test_triplet5': PropsSetType(V1_3, ('r2', 'g6', 's0')),
 }
+
+# Placeholder line for triplets used pre-release.
 
 RANDOM_PROP_TRIPLETS_FUNCTIONS = object_collection.PropSetDict({
     # Return changing triplets on every access.
@@ -259,6 +264,7 @@ RANDOM_PROP_TRIPLETS_FUNCTIONS = object_collection.PropSetDict({
             random_triplet, rgb_version=V1_3, id_list=RGB_OBJECTS_HELDOUT_SET),
     'rgb_test_random':   # Randomly loads one of the 5 test triplets.
         functools.partial(fixed_random_triplet, rgb_version=V1_3),
+# Placeholder line for test/train sets used pre-release.
 })
 
 PROP_TRIPLETS = object_collection.PropSetDict({
@@ -296,8 +302,9 @@ class RgbObjectParameters:
 
   @classmethod
   def min_max(
-      cls,
-      rgb_version) -> Tuple[collections.OrderedDict, collections.OrderedDict]:
+      cls, rgb_version
+  ) -> Tuple['collections.OrderedDict[str, rgb_object_names.ParametersDict]',
+             'collections.OrderedDict[str, rgb_object_names.ParametersDict]']:
     """Calculates min and max values for all dataset parameters."""
     all_params = RgbObjectParameters._dataset_generated_params[rgb_version]
     params_min = next(iter(all_params.values())).copy()  # OrderedDict init.

@@ -1,5 +1,7 @@
 # Objects for robotic manipulation
 
+<!--* A 2022-11-09 internal placeholder *-->
+
 This folder provides various physical objects and software utilities used to
 build simulated environments for robotic manipulation.
 
@@ -14,6 +16,7 @@ Contains assets and supported code that allows using the RGB-objects in
 simulated environments. The RGB-objects is a set of parametric objects crafted
 for [RGB-stacking][rgb_stacking] manipulation tasks.
 
+<!-- internal documentation link -->
 
 <!-- Hyperlinks  -->
 

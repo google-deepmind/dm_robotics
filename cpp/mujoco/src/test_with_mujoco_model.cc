@@ -17,9 +17,12 @@
 #include <memory>
 #include <string>
 
+// Internal file library include
+// Internal tools library include
 #include "dm_robotics/support/status-matchers.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+// Internal flag library include
 #include "absl/strings/string_view.h"
 
 namespace dm_robotics::testing {
@@ -31,8 +34,10 @@ void TestWithMujocoModel::LoadModelFromXmlPath(absl::string_view path_to_xml) {
   // the string is null-terminated.
   char mujoco_load_error[kMujocoErrorSize];
 
-  model_.reset(mjlib_->mj_loadXML(std::string(path_to_xml).c_str(), nullptr,
-                                  mujoco_load_error, kMujocoErrorSize));
+  std::string path(path_to_xml);
+  model_.reset(mjlib_->mj_loadXML(
+      path.c_str(), nullptr, mujoco_load_error, kMujocoErrorSize));
+
   ASSERT_NE(model_, nullptr)
       << "TestWithMujocoModel::LoadModelFromXmlPath: MuJoCo mj_loadXML failed "
          "with the following error: "

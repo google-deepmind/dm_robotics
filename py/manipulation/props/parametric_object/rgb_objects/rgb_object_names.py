@@ -86,6 +86,7 @@ _OBJECTS_V1_3 = collections.OrderedDict({
     "r6": ParametersDict({ "sds": 4, "shr": 0, "drf": 0, "hlw": 0, "shx": 0, "shy": 0, "scx": 29, "scy": 29, "scz": 150}),
     "r7": ParametersDict({ "sds": 4, "shr": 0, "drf": 0, "hlw": 0, "shx": 0, "shy": 0, "scx": 29, "scy": 150, "scz": 29}),
     "r8": ParametersDict({ "sds": 4, "shr": 0, "drf": 0, "hlw": 0, "shx": 0, "shy": 0, "scx": 150, "scy": 29, "scz": 29})})
+# Internal TODO A
 _OBJECTS_V1_3_NON_GRASPABLE = ("l36", "m36", "y36", "r36", "r67", "v36")
 _OBJECTS_V1_3_NON_UNIQUE = ("f25", "h27", "l27", "m27", "r27", "r68", "u27", "v27", "x27", "y27", "h28", "l28", "m28", "r28", "u28", "v28", "x28", "y28", "r78")
 
@@ -97,7 +98,8 @@ def parameters_interpolations(
     params_dict1: ParametersDict,
     params_dict2: ParametersDict,
     interpolation_length: int = 1,
-    interpolation_keys: Tuple[str, ...] = ()) -> collections.OrderedDict:
+    interpolation_keys: Tuple[str, ...] = ()
+) -> "collections.OrderedDict[str, ParametersDict]":
   """Function to interpolate in between two parametersDict.
 
   This function can be used to interpolate in between parametersDicts. The
@@ -131,10 +133,11 @@ def parameters_interpolations(
 
 
 def parameters_numeric_combinations(
-    params_dict_collection: collections.OrderedDict,
+    params_dict_collection: "collections.OrderedDict[str, ParametersDict]",
     labels_alphabetic_keys: Tuple[str, ...],
     labels_numeric_keys: Tuple[str, ...],
-    combination_length: int = 2) -> collections.OrderedDict:
+    combination_length: int = 2
+) -> "collections.OrderedDict[str, ParametersDict]":
   """Function to combine collections of parametersDict with alphanumeric keys.
 
   This function can be used to create combinations of parametersDict. The
@@ -175,8 +178,9 @@ def parameters_numeric_combinations(
 
 
 def parameters_equispaced_combinations(
-    params_dict_collection: collections.OrderedDict,
-    coefficients: Tuple[int, ...]) -> collections.OrderedDict:
+    params_dict_collection: "collections.OrderedDict[str, ParametersDict]",
+    coefficients: Tuple[int,
+                        ...]) -> "collections.OrderedDict[str, ParametersDict]":
   """Function to create equispaced combinations.
 
   This function can be used to create equispaced distributed combinations of
