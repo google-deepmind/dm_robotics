@@ -72,14 +72,14 @@ class DummySubTask(subtask.SubTask):
   def arg_spec(self) -> Optional[specs.Array]:
     return
 
-  def action_spec(self) -> specs.Array:
+  def action_spec(self) -> specs.Array:  # pytype: disable=signature-mismatch  # overriding-return-type-checks
     return specs.BoundedArray(
         shape=(2,), dtype=np.float32, minimum=0., maximum=1., name='dummy_act')
 
   def agent_to_parent_action(self, agent_action: np.ndarray) -> np.ndarray:
     return np.hstack((agent_action, np.zeros(2)))  # Return full action.
 
-  def parent_to_agent_timestep(self, parent_timestep: dm_env.TimeStep,
+  def parent_to_agent_timestep(self, parent_timestep: dm_env.TimeStep,  # pytype: disable=signature-mismatch  # overriding-return-type-checks
                                arg_key: Text) -> Tuple[dm_env.TimeStep, float]:
     return (parent_timestep, 1.0)
 
