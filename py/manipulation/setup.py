@@ -52,7 +52,7 @@ setuptools.setup(
         "dm_robotics.manipulation.props.utils",
         "dm_robotics.manipulation.standard_cell",
     ],
-    version="0.4.0",
+    version="0.5.0",
     license="Apache 2.0",
     author="DeepMind",
     description="Parametrically defined mesh objects",
