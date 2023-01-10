@@ -236,8 +236,10 @@ class ConcurrentOptionTest(absltest.TestCase):
     overall_spec = testing_functions.composite_spec(spec_a, spec_b)
 
     option = basic_options.ConcurrentOption(
-        options_list=[(testing_functions.SpyOp(value=value_a, pterm=0.2)),
-                      (testing_functions.SpyOp(value=value_b, pterm=0.5))],
+        options_list=[(testing_functions.SpyOp(action=value_a,
+                                               pterm=0.2)),
+                      (testing_functions.SpyOp(action=value_b,
+                                               pterm=0.5))],
         action_spec=overall_spec)
 
     pterm = option.pterm(_timestep_with_no_values())
@@ -248,8 +250,8 @@ class ConcurrentOptionTest(absltest.TestCase):
     spec_b, value_b = _rand_spec_and_value(shape=(2,), dtype=np.float32)
     overall_spec = testing_functions.composite_spec(spec_a, spec_b)
 
-    option1 = testing_functions.SpyOp(value=value_a, pterm=0.2)
-    option2 = testing_functions.SpyOp(value=value_b, pterm=0.5)
+    option1 = testing_functions.SpyOp(action=value_a, pterm=0.2)
+    option2 = testing_functions.SpyOp(action=value_b, pterm=0.5)
 
     actual_pterms = []
 
@@ -333,8 +335,8 @@ class ConcurrentOptionTest(absltest.TestCase):
     result_2 = core.OptionResult(
         termination_reason=core.TerminationType.FAILURE, data='data_2')
 
-    option_1 = testing_functions.SpyOp(value=value_1, result=result_1)
-    option_2 = testing_functions.SpyOp(value=value_2, result=result_2)
+    option_1 = testing_functions.SpyOp(action=value_1, result=result_1)
+    option_2 = testing_functions.SpyOp(action=value_2, result=result_2)
     option = basic_options.ConcurrentOption(
         options_list=[option_1, option_2], action_spec=overall_spec)
 
@@ -353,8 +355,8 @@ class ConcurrentOptionTest(absltest.TestCase):
     result_2 = core.OptionResult(
         termination_reason=core.TerminationType.SUCCESS, data='data_2')
 
-    option_1 = testing_functions.SpyOp(value=value_1, result=result_1)
-    option_2 = testing_functions.SpyOp(value=value_2, result=result_2)
+    option_1 = testing_functions.SpyOp(action=value_1, result=result_1)
+    option_2 = testing_functions.SpyOp(action=value_2, result=result_2)
     option = basic_options.ConcurrentOption(
         options_list=[option_1, option_2], action_spec=overall_spec)
 
@@ -380,8 +382,10 @@ class ConcurrentOptionTest(absltest.TestCase):
     arg_spec_1, arg_1 = _rand_spec_and_value(shape=(3,))
     arg_spec_2, arg_2 = _rand_spec_and_value(shape=(4,))
 
-    option_1 = testing_functions.SpyOp(value=value_a, arg_spec=arg_spec_1)
-    option_2 = testing_functions.SpyOp(value=value_b, arg_spec=arg_spec_2)
+    option_1 = testing_functions.SpyOp(action=value_a,
+                                       arg_spec=arg_spec_1)
+    option_2 = testing_functions.SpyOp(action=value_b,
+                                       arg_spec=arg_spec_2)
     option = basic_options.ConcurrentOption(
         options_list=[option_1, option_2], action_spec=spec)
 
@@ -431,8 +435,10 @@ class ConcurrentOptionTest(absltest.TestCase):
     option_1.clear_timesteps()
 
   def test_arg_spec(self):
-    spec_a, val_a = _rand_spec_and_value(shape=(1,), dtype=np.float32)
-    spec_b, val_b = _rand_spec_and_value(shape=(2,), dtype=np.float32)
+    spec_a, action_a = _rand_spec_and_value(shape=(1,),
+                                            dtype=np.float32)
+    spec_b, action_b = _rand_spec_and_value(shape=(2,),
+                                            dtype=np.float32)
     overall_spec = testing_functions.composite_spec(spec_a, spec_b)
 
     arg_spec_a = testing_functions.random_array_spec(
@@ -440,8 +446,10 @@ class ConcurrentOptionTest(absltest.TestCase):
     arg_spec_b = testing_functions.random_array_spec(
         shape=(4,), dtype=np.float32)
 
-    option_1 = testing_functions.SpyOp(value={'A': val_a}, arg_spec=arg_spec_a)
-    option_2 = testing_functions.SpyOp(value={'B': val_b}, arg_spec=arg_spec_b)
+    option_1 = testing_functions.SpyOp(action=action_a,
+                                       arg_spec=arg_spec_a)
+    option_2 = testing_functions.SpyOp(action=action_b,
+                                       arg_spec=arg_spec_b)
     option = basic_options.ConcurrentOption(
         options_list=[option_1, option_2], action_spec=overall_spec)
 

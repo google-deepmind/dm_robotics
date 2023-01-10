@@ -24,18 +24,22 @@ from dm_robotics.agentflow import testing_functions
 from dm_robotics.agentflow.meta_options.control_flow import cond
 from dm_robotics.agentflow.meta_options.control_flow import sequence
 from dm_robotics.agentflow.options import basic_options
+import numpy as np
 
-_SUCCESS_RESULT = core.OptionResult(core.TerminationType.SUCCESS)
+_SUCCESS_RESULT_TEXT = 'All good.'
+_SUCCESS_RESULT = core.OptionResult(
+    core.TerminationType.SUCCESS,
+    termination_text=_SUCCESS_RESULT_TEXT)
 _FAILURE_RESULT = core.OptionResult(core.TerminationType.FAILURE)
 _FIXED_ACTION = [0.1, 0.2, -0.3, 0.05]
 
 
-def _make_simple_option():
+def _make_simple_option(result=_SUCCESS_RESULT):
   fixed_action = _FIXED_ACTION
   option = mock.MagicMock(spec=basic_options.FixedOp)
   option.step.return_value = fixed_action
   option.pterm.return_value = 1.0
-  option.result.return_value = _SUCCESS_RESULT
+  option.result.return_value = result
   return option
 
 
@@ -162,6 +166,32 @@ class SequenceTest(absltest.TestCase):
         agent.result(last_timestep).termination_reason,
         core.TerminationType.FAILURE)
 
+  def test_sequence_failure_on_immediate_option_failure(self):
+    """Test that sets up a basic sequence and runs a few steps."""
+
+    agent, option_list = self._make_agent(terminate_on_option_failure=True)
+    # Select option and verify no option has been touched yet.
+    first_timestep = testing_functions.random_timestep(
+        step_type=dm_env.StepType.FIRST)
+    last_timestep = testing_functions.random_timestep(
+        step_type=dm_env.StepType.LAST)
+    agent.on_selected(first_timestep)
+    self.assertIsNone(agent._current_option)
+    self.assertIsNone(agent._previous_option)
+
+    option_list[0].pterm.return_value = 1.0
+    option_list[0].result.return_value = _FAILURE_RESULT  # make option fail.
+
+    agent.step(first_timestep)
+    agent.step(last_timestep)
+
+    self.assertIs(option_list[0], agent._previous_option)
+    # Assert sequence is terminal and failure because the option failed.
+    self.assertEqual(agent.pterm(last_timestep), 1.0)
+    self.assertEqual(
+        agent.result(last_timestep).termination_reason,
+        core.TerminationType.FAILURE)
+
   def test_nested_with_cond(self):
     """Test that composes a nested set of Sequence and Cond options."""
 
@@ -263,6 +293,76 @@ class SequenceTest(absltest.TestCase):
     expected_pterm = child_op.pterm(first_timestep)
     actual_pterm = sequence_op.pterm(first_timestep)
     self.assertEqual(expected_pterm, actual_pterm)
+
+  def test_success_result_single_child(self):
+    """Test that Sequence wrapping a single child can return results."""
+    child_op = _make_simple_option()
+    sequence_op = sequence.Sequence([child_op])
+
+    timestep = testing_functions.random_timestep()
+    pterm = sequence_op.pterm(timestep)
+    self.assertEqual(pterm, 0.)  # Should be zero before sequence is stepped.
+
+    first_timestep = testing_functions.random_timestep(
+        step_type=dm_env.StepType.FIRST)
+    last_timestep = testing_functions.random_timestep(
+        step_type=dm_env.StepType.LAST)
+    sequence_op.step(first_timestep)
+    sequence_op.step(last_timestep)
+
+    result = sequence_op.result(last_timestep)
+    self.assertEqual(result.termination_reason,
+                     core.TerminationType.SUCCESS)
+    self.assertEqual(result.termination_text, _SUCCESS_RESULT_TEXT)
+
+  def test_failure_result_single_child(self):
+    """Test that Sequence wrapping a single child can return results."""
+    child_op = _make_simple_option(_FAILURE_RESULT)
+    sequence_op = sequence.Sequence([child_op])
+
+    timestep = testing_functions.random_timestep()
+    pterm = sequence_op.pterm(timestep)
+    self.assertEqual(pterm, 0.)  # Should be zero before sequence is stepped.
+
+    first_timestep = testing_functions.random_timestep(
+        step_type=dm_env.StepType.FIRST)
+    last_timestep = testing_functions.random_timestep(
+        step_type=dm_env.StepType.LAST)
+    sequence_op.step(first_timestep)
+    sequence_op.step(last_timestep)
+
+    result = sequence_op.result(last_timestep)
+    self.assertEqual(result, _FAILURE_RESULT)
+
+  def test_first_op_gets_last_step_before_second_gets_first_step(
+      self):
+    first_op = testing_functions.SpyOp(np.ndarray(0),
+                                       pterm=1,
+                                       result=_FAILURE_RESULT)
+    second_op = testing_functions.SpyOp(np.ndarray(0))
+    sequence_op = sequence.Sequence([first_op, second_op])
+
+    first_timestep = testing_functions.random_timestep(
+        step_type=dm_env.StepType.FIRST)
+    mid_timestep = testing_functions.random_timestep(
+        step_type=dm_env.StepType.MID)
+
+    sequence_op.step(first_timestep)
+    sequence_op.step(mid_timestep)
+
+    def get_timesteps_passed_to_step_function(spyop):
+      return [spyopcall.step for spyopcall in spyop.timesteps
+              if spyopcall.step]
+
+    self.assertEqual(
+        get_timesteps_passed_to_step_function(first_op),
+        [first_timestep, mid_timestep._replace(
+            step_type=dm_env.StepType.LAST)])
+    self.assertEqual(
+        get_timesteps_passed_to_step_function(second_op),
+        [mid_timestep._replace(step_type=dm_env.StepType.FIRST)])
+    self.assertEqual(second_op.previous_option_result,
+                     _FAILURE_RESULT)
 
 
 if __name__ == '__main__':

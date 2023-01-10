@@ -55,19 +55,23 @@ def _equal_or_close(x: Arg, y: Arg) -> bool:
 
 
 class SpyOp(af.FixedOp):
-  """FixedOp that records the timestep it's given."""
+  """FixedOp that records the timestep it's given.
+
+  It also records the previous option result for on_selected.
+  """
 
   def __init__(self,
-               value,
+               action,
                pterm=None,
                result=None,
                arg_spec=None,
                num_steps: Optional[int] = 0,
                name='SpyOp'):
-    super().__init__(value, num_steps=num_steps, name=name)
+    super().__init__(action, num_steps=num_steps, name=name)
     self._pterm = pterm
     self._result = result
     self._timesteps = []  # type: List[SpyOpCall]
+    self._previous_option_result = None
     self._arg_spec = arg_spec
     self._default_call = SpyOpCall(
         pterm=None, on_selected=None, step=None, result=None)
@@ -92,6 +96,7 @@ class SpyOp(af.FixedOp):
 
   def on_selected(self, timestep, prev_option_result=None):
     self._timesteps.append(self._default_call._replace(on_selected=timestep))
+    self._previous_option_result = prev_option_result
     super().on_selected(timestep, prev_option_result)
 
   def arg_spec(self):
@@ -110,6 +115,10 @@ class SpyOp(af.FixedOp):
   @property
   def timesteps(self):
     return self._timesteps
+
+  @property
+  def previous_option_result(self):
+    return self._previous_option_result
 
   def clear_timesteps(self):
     del self._timesteps[:]
