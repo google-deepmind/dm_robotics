@@ -97,7 +97,7 @@ class SequenceTest(absltest.TestCase):
     agent.step(mid_timestep)
     self.assertIs(option_list[0], agent._previous_option)
     # Make option terminal and assert we advance.
-    option_list[1].pterm.return_value = 1.0  # make non-terminal
+    option_list[1].pterm.return_value = 1.0  # make terminal
     agent.step(mid_timestep)  # marks option1 for termination
     self.assertTrue(agent._terminate_option)
     # Assert sequence isn't terminal yet.
@@ -117,7 +117,7 @@ class SequenceTest(absltest.TestCase):
     self.assertEqual(agent.pterm(mid_timestep), 1.0)
 
   def test_sequence_failure_on_option_failure(self):
-    """Test that sets up a basic sequence and runs a few steps."""
+    """Test that sets up a basic sequence and runs until failure."""
 
     agent, option_list = self._make_agent(terminate_on_option_failure=True)
     # Select option and verify no option has been touched yet.
@@ -182,6 +182,7 @@ class SequenceTest(absltest.TestCase):
     option_list[0].pterm.return_value = 1.0
     option_list[0].result.return_value = _FAILURE_RESULT  # make option fail.
 
+    agent.on_selected(first_timestep)
     agent.step(first_timestep)
     agent.step(last_timestep)
 
@@ -289,6 +290,7 @@ class SequenceTest(absltest.TestCase):
     # FIRST-step the sequence_op and verify the underlying op pterm gets through
     first_timestep = testing_functions.random_timestep(
         step_type=dm_env.StepType.FIRST)
+    sequence_op.on_selected(first_timestep)
     sequence_op.step(first_timestep)
     expected_pterm = child_op.pterm(first_timestep)
     actual_pterm = sequence_op.pterm(first_timestep)
@@ -307,6 +309,7 @@ class SequenceTest(absltest.TestCase):
         step_type=dm_env.StepType.FIRST)
     last_timestep = testing_functions.random_timestep(
         step_type=dm_env.StepType.LAST)
+    sequence_op.on_selected(first_timestep)
     sequence_op.step(first_timestep)
     sequence_op.step(last_timestep)
 
@@ -328,6 +331,7 @@ class SequenceTest(absltest.TestCase):
         step_type=dm_env.StepType.FIRST)
     last_timestep = testing_functions.random_timestep(
         step_type=dm_env.StepType.LAST)
+    sequence_op.on_selected(first_timestep)
     sequence_op.step(first_timestep)
     sequence_op.step(last_timestep)
 
@@ -347,6 +351,7 @@ class SequenceTest(absltest.TestCase):
     mid_timestep = testing_functions.random_timestep(
         step_type=dm_env.StepType.MID)
 
+    sequence_op.on_selected(first_timestep)
     sequence_op.step(first_timestep)
     sequence_op.step(mid_timestep)
 
