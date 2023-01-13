@@ -492,7 +492,8 @@ class LambdaOption(DelegateOption):
     Args:
       delegate: An option to delegate option behavior to.
       func_as_result: If True, pack the output of `on_selected_func` in the
-        OptionResult.
+        OptionResult. If the on_selected_func returns a
+        core.OptionResult, that will be used directly and the result.
       on_selected_func: A callable to invoke when the option is selected.
       on_step_func: A callable to invoke when the option is stepped.
       pterm_func: Optional function which overrides the pterm of the delegate.
@@ -537,14 +538,12 @@ class LambdaOption(DelegateOption):
                         delegate_result)
 
       if isinstance(self._func_output, core.OptionResult):
-        # This might happen in a refactoring, and is probably not the desired
-        # behaviour, because it's wrapped it in another OptionResult.
-        logging.warning('Result is OptionResult - will re-wrap it.')
-
-      # Pack result into an OptionResult.
-      return core.OptionResult(
-          termination_reason=core.TerminationType.SUCCESS,
-          data=self._func_output)
+        return self._func_output
+      else:
+        # Pack result into an OptionResult.
+        return core.OptionResult(
+            termination_reason=core.TerminationType.SUCCESS,
+            data=self._func_output)
     else:
       return delegate_result
 
