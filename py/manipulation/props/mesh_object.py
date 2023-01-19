@@ -225,3 +225,9 @@ class MeshProp(prop.Prop):
       if file_extension.lower() in _MUJOCO_TEXTURE_TYPES:
         textures.append(asset_data)
     return textures
+
+  @property
+  def mass(self) -> float:
+    geoms = self.mjcf_model.find_all('geom')
+    mass = sum([g.mass for g in geoms if g.mass])
+    return mass
