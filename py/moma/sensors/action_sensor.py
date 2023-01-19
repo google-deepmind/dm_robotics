@@ -32,6 +32,9 @@ class SpyEffector(moma_effector.Effector):
     self._previous_action: Optional[np.ndarray] = None
     self._delegate_effector = effector
 
+  def __getattr__(self, attr):
+    return getattr(self._delegate_effector, attr)
+
   def after_compile(self, mjcf_model: mjcf.RootElement,
                     physics: mjcf.Physics) -> None:
     self._delegate_effector.after_compile(mjcf_model, physics)
