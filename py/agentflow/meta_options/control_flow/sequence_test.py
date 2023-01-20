@@ -152,16 +152,24 @@ class SequenceTest(absltest.TestCase):
     # Assert we haven't advanced yet.
     self.assertIs(option_list[0], agent._previous_option)
     self.assertIs(option_list[1], agent._current_option)
-    # Assert sequence is terminal and failure because the option failed.
-    self.assertEqual(agent.pterm(mid_timestep), 1.0)
+    # At this point option_list[1] has not yet received a timestep
+    # with StepType.LAST. Because of that, the result of
+    # option_list[1] cannot be guaranteed to be valid. We'll only find
+    # out about that after the next timestep. Because of that, despite
+    # terminate_on_option_failure=True, pterm is still 0.
+    self.assertEqual(agent.pterm(mid_timestep), 0.0)
     # Pass another MID timestep and assert we haven't advanced yet.
     agent.step(mid_timestep)  # stays stuck on option1 b/c sequence_terminal
-    self.assertIs(option_list[0], agent._previous_option)
-    self.assertIs(option_list[1], agent._current_option)
+    self.assertIs(option_list[1], agent._previous_option)
+    self.assertIs(None, agent._current_option)
+    # Now the sequence knows the result of option_list[1], so we can
+    # assert that the sequence is terminal.
+    self.assertEqual(agent.pterm(mid_timestep), 1.0)
     # Pass a LAST timestep and assert still haven't advanced (sequence_terminal)
     agent.step(last_timestep)
+    # The current/previous options have not changed.
     self.assertIs(option_list[1], agent._previous_option)
-    self.assertIs(option_list[2], agent._current_option)  # won't be selected.
+    self.assertIs(None, agent._current_option)
     self.assertEqual(
         agent.result(last_timestep).termination_reason,
         core.TerminationType.FAILURE)
@@ -191,6 +199,46 @@ class SequenceTest(absltest.TestCase):
     self.assertEqual(agent.pterm(last_timestep), 1.0)
     self.assertEqual(
         agent.result(last_timestep).termination_reason,
+        core.TerminationType.FAILURE)
+
+  def test_wrapped_sequence_failure_on_immediate_option_failure(self):
+    """Test that sets up a basic sequence and runs a few steps."""
+
+    agent, option_list = self._make_agent(terminate_on_option_failure=True)
+    # Select option and verify no option has been touched yet.
+    wrapped_agent = sequence.Sequence([agent])
+    first_timestep = testing_functions.random_timestep(
+        step_type=dm_env.StepType.FIRST)
+    mid_timestep = testing_functions.random_timestep(
+        step_type=dm_env.StepType.MID)
+    last_timestep = testing_functions.random_timestep(
+        step_type=dm_env.StepType.LAST)
+    wrapped_agent.on_selected(first_timestep)
+
+    self.assertIsNone(agent._current_option)
+    self.assertIsNone(agent._previous_option)
+
+    option_list[0].pterm.return_value = 1.0
+    option_list[0].result.return_value = _FAILURE_RESULT  # make option fail.
+
+    wrapped_agent.on_selected(first_timestep)
+    wrapped_agent.step(first_timestep)
+    wrapped_agent.step(mid_timestep)
+    wrapped_agent.step(last_timestep)
+
+    # Check inner agent
+    self.assertIs(option_list[0], agent._previous_option)
+    # Assert sequence is terminal and failure because the option failed.
+    self.assertEqual(agent.pterm(last_timestep), 1.0)
+    self.assertEqual(agent.result(last_timestep).termination_reason,
+                     core.TerminationType.FAILURE)
+
+    self.assertEqual(
+        wrapped_agent.result(last_timestep).termination_reason,
+        core.TerminationType.FAILURE)
+
+    self.assertEqual(
+        wrapped_agent._previous_option_result.termination_reason,
         core.TerminationType.FAILURE)
 
   def test_nested_with_cond(self):
