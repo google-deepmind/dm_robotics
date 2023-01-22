@@ -1,6 +1,6 @@
 # RGB-objects &#128721;&#129001;&#128311; for robotic manipulation
 
-<!--* A 2022-05-23 internal placeholder *-->
+<!--* A 2023-01-21 internal placeholder *-->
 
 This folder provides the RGB-objects introduced in the paper
 [Beyond Pick-and-Place: Tackling Robotic Stacking of Diverse Shapes][pick_and_place_paper]
@@ -37,9 +37,9 @@ Based on the resulting 15 axes, we created a training object set, which consists
 different shapes, and a held-out set. The diagram and gifs below shows a depiction of
 all the objects in the benchmark. The seed object is at the center; all the other
 objects are the result of deformations of this cube. The held-out objects
-(major axes) are enclosed in the uper teal sector of the diagram; the training objects (pairwise
+(major axes) are enclosed in the upper teal sector of the diagram; the training objects (pairwise
 mixing of two major axes) are enclosed in the blue sector. Some objects cannot
-be grasped with a parallel gripper with 85 mm aperture (i.e. the Robotiq 2F-85);
+be grasped with a parallel gripper with 85mm aperture (i.e. the Robotiq 2F-85);
 these objects are transparent and were omitted in our experiments.
 
 ![disk of objects][object_disk]
