@@ -47,12 +47,12 @@ class SequenceTest(absltest.TestCase):
   """Test case for Sequence Option."""
 
   def _make_agent(
-      self, terminate_on_option_failure
+      self, *, num_options, terminate_on_option_failure
   ) -> Tuple[sequence.Sequence, List[core.Option]]:
 
     # create options
     option_list = []
-    for _ in range(3):
+    for _ in range(num_options):
       option_list.append(_make_simple_option())
 
     agent = sequence.Sequence(
@@ -64,7 +64,8 @@ class SequenceTest(absltest.TestCase):
   def test_basic(self):
     """Test that sets up a basic sequence and runs a few steps."""
 
-    agent, option_list = self._make_agent(terminate_on_option_failure=False)
+    agent, option_list = self._make_agent(
+        num_options=3, terminate_on_option_failure=False)
 
     # Ensure we can directly step an option before it is selected.
     first_timestep = testing_functions.random_timestep(
@@ -119,7 +120,8 @@ class SequenceTest(absltest.TestCase):
   def test_sequence_failure_on_option_failure(self):
     """Test that sets up a basic sequence and runs until failure."""
 
-    agent, option_list = self._make_agent(terminate_on_option_failure=True)
+    agent, option_list = self._make_agent(
+        num_options=3, terminate_on_option_failure=True)
     # Select option and verify no option has been touched yet.
     first_timestep = testing_functions.random_timestep(
         step_type=dm_env.StepType.FIRST)
@@ -139,13 +141,11 @@ class SequenceTest(absltest.TestCase):
     # Step through second option.
     option_list[1].pterm.return_value = 0.0  # make non-terminal
     agent.step(mid_timestep)
-    # Assert we haven't advanced yet.
-    self.assertIs(option_list[0], agent._previous_option)
-    # Step again and assert we still haven't advanced
     agent.step(mid_timestep)
-    self.assertIs(option_list[0], agent._previous_option)
+    self.assertIs(option_list[1], agent._current_option)
+
     # Make option terminal and FAIL and assert we advance.
-    option_list[1].pterm.return_value = 1.0  # make non-terminal
+    option_list[1].pterm.return_value = 1.0  # make terminal
     option_list[1].result.return_value = _FAILURE_RESULT  # make option fail.
     agent.step(mid_timestep)  # option1 marked for termination.
     self.assertTrue(agent._terminate_option)  # option1 terminal
@@ -177,7 +177,8 @@ class SequenceTest(absltest.TestCase):
   def test_sequence_failure_on_immediate_option_failure(self):
     """Test that sets up a basic sequence and runs a few steps."""
 
-    agent, option_list = self._make_agent(terminate_on_option_failure=True)
+    agent, option_list = self._make_agent(
+        num_options=3, terminate_on_option_failure=True)
     # Select option and verify no option has been touched yet.
     first_timestep = testing_functions.random_timestep(
         step_type=dm_env.StepType.FIRST)
@@ -204,7 +205,8 @@ class SequenceTest(absltest.TestCase):
   def test_wrapped_sequence_failure_on_immediate_option_failure(self):
     """Test that sets up a basic sequence and runs a few steps."""
 
-    agent, option_list = self._make_agent(terminate_on_option_failure=True)
+    agent, option_list = self._make_agent(
+        num_options=3, terminate_on_option_failure=True)
     # Select option and verify no option has been touched yet.
     wrapped_agent = sequence.Sequence([agent])
     first_timestep = testing_functions.random_timestep(
