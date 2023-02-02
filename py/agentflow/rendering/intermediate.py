@@ -41,7 +41,7 @@ def render(agent: af.Policy) -> subgraph.Node:
   # Look for most-specific match for agent type, falling back to generic node.
   for cls in agent.__class__.mro():
     try:
-      return _RENDER_FUNCS[cls](agent)
+      return _RENDER_FUNCS[cls](agent)  # pytype: disable=wrong-arg-types  # always-use-return-annotations
     except KeyError as ex:
       if ex.args[0] == cls:
         continue
