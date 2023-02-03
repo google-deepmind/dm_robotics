@@ -21,6 +21,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/substitute.h"
 #include "absl/types/span.h"
+#include "dm_robotics/controllers/lsqp/cartesian_6d_velocity_direction_task.h"
 #include "dm_robotics/controllers/lsqp/cartesian_6d_velocity_task.h"
 #include "dm_robotics/controllers/lsqp/collision_avoidance_constraint.h"
 #include "dm_robotics/controllers/lsqp/joint_acceleration_constraint.h"
@@ -83,6 +84,38 @@ Cartesian6dVelocityTask::Parameters ToCartesianVelocityParams(
   output_params.object_name = params.object_name;
   output_params.weighting_matrix =
       params.cartesian_velocity_task_weighting_matrix;
+  return output_params;
+}
+
+// Constructs a Cartesian6dVelocityTaskParameters object from
+// a Cartesian6dToJointVelocityMapper::Parameters object.
+Cartesian6dVelocityDirectionTask::Parameters
+ToCartesianVelocityDirectionTaskParams(
+    const Cartesian6dToJointVelocityMapper::Parameters& params) {
+  Cartesian6dVelocityDirectionTask::Parameters output_params;
+  output_params.lib = params.lib;
+  output_params.model = params.model;
+  output_params.joint_ids = params.joint_ids;
+  output_params.object_type = params.object_type;
+  output_params.object_name = params.object_name;
+  output_params.weighting_matrix =
+      params.cartesian_velocity_direction_task_weighting_matrix;
+  return output_params;
+}
+
+// Constructs a Cartesian6dVelocityTaskParameters object from
+// a Cartesian6dToJointVelocityMapper::Parameters object.
+Cartesian6dVelocityDirectionConstraint::Parameters
+ToCartesianVelocityDirectionConstraintParams(
+    const Cartesian6dToJointVelocityMapper::Parameters& params) {
+  Cartesian6dVelocityDirectionConstraint::Parameters output_params;
+  output_params.lib = params.lib;
+  output_params.model = params.model;
+  output_params.joint_ids = params.joint_ids;
+  output_params.object_type = params.object_type;
+  output_params.object_name = params.object_name;
+  output_params.enable_axis_constraint =
+      params.cartesian_velocity_direction_constraint_axes;
   return output_params;
 }
 
@@ -334,6 +367,13 @@ absl::Status Cartesian6dToJointVelocityMapper::ValidateParameters(
         ValidateGeomGroup(*params.lib, *params.model, collision_pair.second));
   }
 
+  if (params.cartesian_velocity_direction_task_weight < 0.0) {
+    return absl::InvalidArgumentError(absl::Substitute(
+        "ValidateParameters: `cartesian_velocity_direction_task_weight` [$0] "
+        "must not be negative.",
+        params.cartesian_velocity_direction_task_weight));
+  }
+
   if (params.max_cartesian_velocity_control_iterations <= 0) {
     return absl::InvalidArgumentError(absl::Substitute(
         "ValidateParameters: `max_cartesian_velocity_control_iterations` [$0] "
@@ -383,6 +423,8 @@ Cartesian6dToJointVelocityMapper::Cartesian6dToJointVelocityMapper(
       log_collision_warnings_(params.log_collision_warnings &&
                               params.enable_collision_avoidance),
       cartesian_velocity_task_(nullptr),
+      cartesian_velocity_direction_task_(nullptr),
+      cartesian_velocity_direction_constraint_(nullptr),
       nullspace_task_(nullptr),
       joint_kinematic_constraints_(nullptr),
       collision_avoidance_constraint_(nullptr) {
@@ -407,6 +449,29 @@ Cartesian6dToJointVelocityMapper::Cartesian6dToJointVelocityMapper(
                                    std::array<double, 6>()),
                                1.0, false)
           .first;
+
+  if (params.cartesian_velocity_direction_task_weight > 0.0) {
+    cartesian_velocity_direction_task_ =
+        first_hierarchy
+            ->InsertOrAssignTask(
+                "CartesianVelocityDirectionTask",
+                absl::make_unique<Cartesian6dVelocityDirectionTask>(
+                    ToCartesianVelocityDirectionTaskParams(params), *data_,
+                    std::array<double, 6>()),
+                params.cartesian_velocity_direction_task_weight, false)
+            .first;
+  }
+  if (params.enable_cartesian_velocity_direction_constraint) {
+    cartesian_velocity_direction_constraint_ =
+        qp_solver_
+            .InsertOrAssignConstraint(
+                "CartesianVelocityDirectionConstraint",
+                absl::make_unique<Cartesian6dVelocityDirectionConstraint>(
+                    ToCartesianVelocityDirectionConstraintParams(params),
+                    *data_, std::array<double, 6>()))
+            .first;
+  }
+
   first_hierarchy->InsertOrAssignTask(
       "Regularization",
       absl::make_unique<MinimizeNormTask>(joint_dof_ids_.size()),
@@ -577,6 +642,14 @@ absl::Status Cartesian6dToJointVelocityMapper::UpdateTasks(
   // Update Cartesian task.
   cartesian_velocity_task_->UpdateCoefficientsAndBias(
       *data_, target_6d_cartesian_velocity);
+  if (cartesian_velocity_direction_task_ != nullptr) {
+    cartesian_velocity_direction_task_->UpdateCoefficientsAndBias(
+        *data_, target_6d_cartesian_velocity);
+  }
+  if (cartesian_velocity_direction_constraint_ != nullptr) {
+    cartesian_velocity_direction_constraint_->UpdateCoefficients(
+        *data_, target_6d_cartesian_velocity);
+  }
 
   // Update nullspace task if it exists, with the clipped bounds.
   if (nullspace_task_ != nullptr) {

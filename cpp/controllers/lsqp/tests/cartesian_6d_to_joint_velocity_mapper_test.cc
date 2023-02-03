@@ -1,4 +1,4 @@
-// Copyright 2020 DeepMind Technologies Limited
+// Copyright 2022 DeepMind Technologies Limited
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -280,6 +280,107 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
 }
 
 TEST_P(Cartesian6dToJointVelocityMapperTest,
+       SolutionWithDirectionTaskAndConstraintIsOkAndRealizesTarget) {
+  LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
+  const std::string kObjectName = "right_hand";
+  const mjtObj kObjectType = mjtObj::mjOBJ_GEOM;
+  const std::array<double, 6> kTargetVelocity = {0.25, 0.1,  0.1,
+                                                 0.0,  0.05, -0.05};
+  const absl::btree_set<int> kJointIds{16, 17, 18};
+  constexpr double kRegularizationWeight = 0.0;
+  constexpr double kSolutionTolerance = 1.0e-15;
+  constexpr double kExpectedTrackingErrorBound = 1.0e-2;
+
+  // Instantiate mapper and solve once.
+  Cartesian6dToJointVelocityMapper::Parameters params;
+  params.lib = mjlib_;
+  params.model = model_.get();
+  params.joint_ids = kJointIds;
+  params.object_type = kObjectType;
+  params.object_name = kObjectName;
+  params.integration_timestep = absl::Seconds(1);
+  params.solution_tolerance = kSolutionTolerance;
+  params.regularization_weight = kRegularizationWeight;
+  params.use_adaptive_step_size = GetParam();
+
+  const Eigen::Map<const Eigen::Vector<double, 6>> target_cartesian_6d_vel(
+      kTargetVelocity.data());
+
+  // Compute the direction error with a controller without the direction
+  // task/constraint.
+  double without_task_direction_error;
+  {
+    ASSERT_OK(Cartesian6dToJointVelocityMapper::ValidateParameters(params));
+    Cartesian6dToJointVelocityMapper mapper(params);
+    ASSERT_OK_AND_ASSIGN(
+        absl::Span<const double> solution,
+        mapper.ComputeJointVelocities(*data_, kTargetVelocity));
+
+    // Compute the realized Cartesian velocity and compare it with the target
+    // Cartesian velocity.
+    SetSubsetOfJointVelocities(*model_, kJointIds, solution, data_.get());
+    const Eigen::Vector<double, 6> realized_cartesian_6d_vel(
+        ComputeObjectCartesian6dVelocityWithJacobian(*mjlib_, *model_, *data_,
+                                                     kObjectName, kObjectType)
+            .data());
+
+    // Ensure the realized Cartesian velocity is within tolerance of the target
+    // velocity.
+    double max_tracking_err =
+        (realized_cartesian_6d_vel - target_cartesian_6d_vel)
+            .lpNorm<Eigen::Infinity>();
+    ASSERT_LE(max_tracking_err, kExpectedTrackingErrorBound);
+
+    // Compute the direction error.
+    const Eigen::Vector<double, 6> target_dir =
+        target_cartesian_6d_vel.normalized();
+    const Eigen::Vector<double, 6> orthogonal_component =
+        realized_cartesian_6d_vel -
+        (realized_cartesian_6d_vel.transpose() * target_dir) * target_dir;
+    without_task_direction_error = orthogonal_component.norm();
+  }
+
+  // Compute the direction error with a controller with the direction
+  // task/constraint.
+  params.cartesian_velocity_direction_task_weight = 1.0;
+  params.enable_cartesian_velocity_direction_constraint = true;
+  double with_task_direction_error;
+  {
+    ASSERT_OK(Cartesian6dToJointVelocityMapper::ValidateParameters(params));
+    Cartesian6dToJointVelocityMapper mapper(params);
+    ASSERT_OK_AND_ASSIGN(
+        absl::Span<const double> solution,
+        mapper.ComputeJointVelocities(*data_, kTargetVelocity));
+
+    // Compute the realized Cartesian velocity and compare it with the target
+    // Cartesian velocity.
+    SetSubsetOfJointVelocities(*model_, kJointIds, solution, data_.get());
+    const Eigen::Vector<double, 6> realized_cartesian_6d_vel(
+        ComputeObjectCartesian6dVelocityWithJacobian(*mjlib_, *model_, *data_,
+                                                     kObjectName, kObjectType)
+            .data());
+
+    // The tracking error should not have changed that much.
+    double max_tracking_err =
+        (realized_cartesian_6d_vel - target_cartesian_6d_vel)
+            .lpNorm<Eigen::Infinity>();
+    EXPECT_LE(max_tracking_err, kExpectedTrackingErrorBound);
+
+    // Compute the direction error.
+    const Eigen::Vector<double, 6> target_dir =
+        target_cartesian_6d_vel.normalized();
+    const Eigen::Vector<double, 6> orthogonal_component =
+        realized_cartesian_6d_vel -
+        (realized_cartesian_6d_vel.transpose() * target_dir) * target_dir;
+    with_task_direction_error = orthogonal_component.norm();
+  }
+
+  // The direction error should be less when the task and constraint are
+  // enabled.
+  EXPECT_LT(with_task_direction_error, without_task_direction_error);
+}
+
+TEST_P(Cartesian6dToJointVelocityMapperTest,
        SolutionWithAllConstraintsAndNullspaceIsOkAndNotInCollision) {
   bool use_adaptive_step_size = GetParam();
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
@@ -327,6 +428,7 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
                     GeomGroup{"floor"})};
 
   params.check_solution_validity = true;
+  params.max_cartesian_velocity_control_iterations = 1000;
   params.solution_tolerance = kSolutionTolerance;
   params.regularization_weight = kRegularizationWeight;
   params.enable_nullspace_control = true;

@@ -21,6 +21,8 @@
 #include "absl/container/btree_set.h"
 #include "absl/status/statusor.h"
 #include "absl/types/span.h"
+#include "dm_robotics/controllers/lsqp/cartesian_6d_velocity_direction_constraint.h"
+#include "dm_robotics/controllers/lsqp/cartesian_6d_velocity_direction_task.h"
 #include "dm_robotics/controllers/lsqp/cartesian_6d_velocity_task.h"
 #include "dm_robotics/controllers/lsqp/collision_avoidance_constraint.h"
 #include "dm_robotics/controllers/lsqp/joint_acceleration_constraint.h"
@@ -210,6 +212,42 @@ class Cartesian6dToJointVelocityMapper {
         0.0, 0.0, 0.0, 0.0, 0.0, 1.0   // Angular velocity - Z
     };
 
+    // Weight of the Cartesian velocity direction task.
+    //
+    // This task attempts to minimize the component of the
+    // realized Cartesian velocity that is perpendicular to the target Cartesian
+    // velocity direction. Setting this weight to zero disables the task.
+    double cartesian_velocity_direction_task_weight = 0.0;
+
+    // 6x6 matrix (in column-major ordering) containing the weights for each
+    // component of the Cartesian 6D velocity direction being controlled by the
+    // Cartesian velocity direction task, such that the quadratic cost term of
+    // this task is defined as:
+    //   || W (C q_dot - b) ||^2
+    // where `W` is the weighting matrix; `C` is the coefficient matrix; `q_dot`
+    // are the joint velocities; and `b` is the bias.
+    std::array<double, 36> cartesian_velocity_direction_task_weighting_matrix =
+        {
+            1.0, 0.0, 0.0, 0.0, 0.0, 0.0,  // Linear velocity - X
+            0.0, 1.0, 0.0, 0.0, 0.0, 0.0,  // Linear velocity - Y
+            0.0, 0.0, 1.0, 0.0, 0.0, 0.0,  // Linear velocity - Z
+            0.0, 0.0, 0.0, 1.0, 0.0, 0.0,  // Angular velocity - X
+            0.0, 0.0, 0.0, 0.0, 1.0, 0.0,  // Angular velocity - Y
+            0.0, 0.0, 0.0, 0.0, 0.0, 1.0   // Angular velocity - Z
+    };
+
+    // Whether to enable the Cartesian velocity direction constraint.
+    //
+    // This constraint task limits the realized Cartesian velocity direction to
+    // be within a 180 degree shift from the target Cartesian velocity
+    // direction.
+    bool enable_cartesian_velocity_direction_constraint = false;
+
+    // Array of flags defining which components of the velocity should be
+    // constrained in the following order: [Vx, Vy, Vz, Wx, Wy, Wz].
+    std::array<bool, 6> cartesian_velocity_direction_constraint_axes = {
+        true, true, true, true, true, true};
+
     // If `true`, an extra validity check will be performed on the computed
     // velocities to ensure it does not violate any constraints. At the moment,
     // this checks whether the computed velocities would result in increased
@@ -227,7 +265,7 @@ class Cartesian6dToJointVelocityMapper {
 
     // Weight of the regularization task for singularity robustness on the
     // Cartesian velocity control optimization problem.
-    double regularization_weight = 1e-3;
+    double regularization_weight = 1.0e-3;
 
     // Absolute tolerance for the internal LSQP solver. A smaller tolerance may
     // be more accurate but may require a large number of iterations. This
@@ -370,6 +408,9 @@ class Cartesian6dToJointVelocityMapper {
 
   // Owned by qp_solver_ if not null.
   Cartesian6dVelocityTask* cartesian_velocity_task_;
+  Cartesian6dVelocityDirectionTask* cartesian_velocity_direction_task_;
+  Cartesian6dVelocityDirectionConstraint*
+      cartesian_velocity_direction_constraint_;
   IdentityTask* nullspace_task_;
   IdentityConstraintUnion* joint_kinematic_constraints_;
   CollisionAvoidanceConstraint* collision_avoidance_constraint_;

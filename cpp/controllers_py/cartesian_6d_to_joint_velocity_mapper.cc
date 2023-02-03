@@ -1,4 +1,4 @@
-// Copyright 2020 DeepMind Technologies Limited.
+// Copyright 2022 DeepMind Technologies Limited.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -145,6 +145,22 @@ Attributes:
   cartesian_velocity_task_weighting_matrix: (`Sequence[float]`) 6x6 matrix, in
     column-major ordering, containing the weights for each component of the
     Cartesian 6D velocity being controlled by the Cartesian velocity task.
+  cartesian_velocity_direction_task_weight: (`float`) weight of the Cartesian
+    velocity direction task. This task attempts to minimize the component of
+    the realized Cartesian velocity that is perpendicular to the target
+    Cartesian velocity direction. A weight of 0.0 disables this task.
+  cartesian_velocity_direction_task_weighting_matrix: (`Sequence[float]`) 6x6
+    matrix, in column-major ordering, containing the weights for each component
+    of the Cartesian 6D velocity direction being controlled by the Cartesian
+    velocity direction task.
+  enable_cartesian_velocity_direction_constraint: (`bool`) whether to enable the
+    Cartesian velocity direction constraint. This constraint limits the
+    realized Cartesian velocity direction to be within 180 degrees from the
+    target Cartesian velocity direction.
+  cartesian_velocity_direction_constraint_axes: (`Sequence[bool]`) sequence of
+    flags defining which components of the velocity should be constrained by
+    the Cartesian velocity direction constraint. The flags correspond to each
+    of the velocity axes in the order [Vx, Vy, Vz, Wx, Wy, Wz].
   check_solution_validity: (`bool`) if true, an extra validity check will be
     performed on the computed velocities to ensure it does not violate any
     constraints. At the moment, this checks whether the computed velocities
@@ -406,6 +422,30 @@ class PyCartesian6dToJointVelocityMapperParameters {
       cartesian_velocity_task_weighting_matrix,
       GetCartesianVelocityTaskWeightingMatrix,
       SetCartesianVelocityTaskWeightingMatrix)
+
+  // `cartesian_velocity_direction_task_weight` property.
+  PYBIND_CARTESIAN_MAPPER_PARAMETERS_PROPERTY(
+      cartesian_velocity_direction_task_weight,
+      GetCartesianVelocityDirectionTaskWeight,
+      SetCartesianVelocityDirectionTaskWeight)
+
+  // `cartesian_velocity_direction_task_weighting_matrix` property.
+  PYBIND_CARTESIAN_MAPPER_PARAMETERS_PROPERTY(
+      cartesian_velocity_direction_task_weighting_matrix,
+      GetCartesianVelocityDirectionTaskWeightingMatrix,
+      SetCartesianVelocityDirectionTaskWeightingMatrix)
+
+  // `enable_cartesian_velocity_direction_constraint` property.
+  PYBIND_CARTESIAN_MAPPER_PARAMETERS_PROPERTY(
+      enable_cartesian_velocity_direction_constraint,
+      GetEnableCartesianVelocityDirectionConstraint,
+      SetEnableCartesianVelocityDirectionConstraint)
+
+  // `cartesian_velocity_direction_constraint_axes` property.
+  PYBIND_CARTESIAN_MAPPER_PARAMETERS_PROPERTY(
+      cartesian_velocity_direction_constraint_axes,
+      GetCartesianVelocityDirectionConstraintAxes,
+      SetCartesianVelocityDirectionConstraintAxes)
 
   // `check_solution_validity` property.
   PYBIND_CARTESIAN_MAPPER_PARAMETERS_PROPERTY(check_solution_validity,
@@ -695,11 +735,32 @@ PYBIND11_MODULE(cartesian_6d_to_joint_velocity_mapper, m) {
           "collision_pairs",
           &PyCartesian6dToJointVelocityMapperParameters::GetCollisionPairs,
           &PyCartesian6dToJointVelocityMapperParameters::SetCollisionPairs)
+
       .def_property("cartesian_velocity_task_weighting_matrix",
                     &PyCartesian6dToJointVelocityMapperParameters::
                         GetCartesianVelocityTaskWeightingMatrix,
                     &PyCartesian6dToJointVelocityMapperParameters::
                         SetCartesianVelocityTaskWeightingMatrix)
+      .def_property("cartesian_velocity_direction_task_weight",
+                    &PyCartesian6dToJointVelocityMapperParameters::
+                        GetCartesianVelocityDirectionTaskWeight,
+                    &PyCartesian6dToJointVelocityMapperParameters::
+                        SetCartesianVelocityDirectionTaskWeight)
+      .def_property("cartesian_velocity_direction_task_weighting_matrix",
+                    &PyCartesian6dToJointVelocityMapperParameters::
+                        GetCartesianVelocityDirectionTaskWeightingMatrix,
+                    &PyCartesian6dToJointVelocityMapperParameters::
+                        SetCartesianVelocityDirectionTaskWeightingMatrix)
+      .def_property("enable_cartesian_velocity_direction_constraint",
+                    &PyCartesian6dToJointVelocityMapperParameters::
+                        GetEnableCartesianVelocityDirectionConstraint,
+                    &PyCartesian6dToJointVelocityMapperParameters::
+                        SetEnableCartesianVelocityDirectionConstraint)
+      .def_property("cartesian_velocity_direction_constraint_axes",
+                    &PyCartesian6dToJointVelocityMapperParameters::
+                        GetCartesianVelocityDirectionConstraintAxes,
+                    &PyCartesian6dToJointVelocityMapperParameters::
+                        SetCartesianVelocityDirectionConstraintAxes)
 
       .def_property("check_solution_validity",
                     &PyCartesian6dToJointVelocityMapperParameters::

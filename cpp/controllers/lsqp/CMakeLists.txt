@@ -18,6 +18,8 @@
 set(SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/src/cartesian_6d_to_joint_velocity_mapper.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/cartesian_6d_velocity_task.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/cartesian_6d_velocity_direction_task.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/cartesian_6d_velocity_direction_constraint.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/collision_avoidance_constraint.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/joint_acceleration_constraint.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/joint_position_limit_constraint.cc
@@ -25,6 +27,8 @@ set(SRCS
 set(HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/include/dm_robotics/controllers/lsqp/cartesian_6d_to_joint_velocity_mapper.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/dm_robotics/controllers/lsqp/cartesian_6d_velocity_task.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/dm_robotics/controllers/lsqp/cartesian_6d_velocity_direction_task.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/dm_robotics/controllers/lsqp/cartesian_6d_velocity_direction_constraint.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/dm_robotics/controllers/lsqp/collision_avoidance_constraint.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/dm_robotics/controllers/lsqp/joint_acceleration_constraint.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/dm_robotics/controllers/lsqp/joint_position_limit_constraint.h
@@ -119,6 +123,20 @@ if(DM_ROBOTICS_BUILD_TESTS)
     DEF_EIGEN_RUNTIME_NO_MALLOC
     NAME dmr_controllers_lsqp_cartesian_6d_velocity_task_test
     SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/tests/cartesian_6d_velocity_task_test.cc
+  )
+
+  # Cartesian 6D velocity direction task test.
+  AddDmrControllersLsqpTest(
+    DEF_EIGEN_RUNTIME_NO_MALLOC
+    NAME dmr_controllers_lsqp_cartesian_6d_velocity_direction_task_test
+    SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/tests/cartesian_6d_velocity_direction_task_test.cc
+  )
+
+  # Cartesian 6D velocity direction constraint test.
+  AddDmrControllersLsqpTest(
+    DEF_EIGEN_RUNTIME_NO_MALLOC
+    NAME dmr_controllers_lsqp_cartesian_6d_velocity_direction_constraint_test
+    SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/tests/cartesian_6d_velocity_direction_constraint_test.cc
   )
 
   # Collision avoidance constraint test.

@@ -42,21 +42,37 @@ def _compute_object_jacobian(physics, object_name, object_type):
 
   jacobian = np.empty((6, physics.model.nv), dtype=physics.data.qpos.dtype)
   if object_type == _MjGeom or object_type == "geom":
-    mjlib.mj_jacGeom(physics.model.ptr, physics.data.ptr, jacobian[:3],
-                     jacobian[3:], physics.model.name2id(object_name, _MjGeom))
+    mjlib.mj_jacGeom(
+        physics.model.ptr,
+        physics.data.ptr,
+        jacobian[:3],
+        jacobian[3:],
+        physics.model.name2id(object_name, _MjGeom),
+    )
   elif object_type == _MjSite or object_type == "site":
-    mjlib.mj_jacSite(physics.model.ptr, physics.data.ptr, jacobian[:3],
-                     jacobian[3:], physics.model.name2id(object_name, _MjSite))
+    mjlib.mj_jacSite(
+        physics.model.ptr,
+        physics.data.ptr,
+        jacobian[:3],
+        jacobian[3:],
+        physics.model.name2id(object_name, _MjSite),
+    )
   elif object_type == _MjBody or object_type == "body":
-    mjlib.mj_jacBody(physics.model.ptr, physics.data.ptr, jacobian[:3],
-                     jacobian[3:], physics.model.name2id(object_name, _MjBody))
+    mjlib.mj_jacBody(
+        physics.model.ptr,
+        physics.data.ptr,
+        jacobian[:3],
+        jacobian[3:],
+        physics.model.name2id(object_name, _MjBody),
+    )
   else:
     raise ValueError("Invalid object type.")
   return jacobian
 
 
-def _compute_object_jacobian_for_joints(physics, object_name, object_type,
-                                        joint_ids):
+def _compute_object_jacobian_for_joints(
+    physics, object_name, object_type, joint_ids
+):
   """Computes an object's Jacobian for a subset of joints."""
   jacobian = _compute_object_jacobian(physics, object_name, object_type)
   dof_ids = [physics.model.jnt_dofadr[joint_id] for joint_id in joint_ids]
@@ -78,7 +94,8 @@ class Cartesian6DToJointVelocityMapperTest(absltest.TestCase):
     params = cartesian_6d_to_joint_velocity_mapper.Parameters()
 
     attributes = sorted(
-        [attr for attr in dir(params) if not attr.startswith("_")])
+        [attr for attr in dir(params) if not attr.startswith("_")]
+    )
     expected_attributes = sorted([
         "model",
         "joint_ids",
@@ -99,6 +116,10 @@ class Cartesian6DToJointVelocityMapperTest(absltest.TestCase):
         "collision_detection_distance",
         "collision_pairs",
         "cartesian_velocity_task_weighting_matrix",
+        "cartesian_velocity_direction_task_weight",
+        "cartesian_velocity_direction_task_weighting_matrix",
+        "enable_cartesian_velocity_direction_constraint",
+        "cartesian_velocity_direction_constraint_axes",
         "check_solution_validity",
         "max_cartesian_velocity_control_iterations",
         "regularization_weight",
@@ -136,8 +157,9 @@ class Cartesian6DToJointVelocityMapperParameterizedTest(absltest.TestCase):
 
     self.assertTrue(hasattr(mapper, "compute_joint_velocities"))
 
-  def test_solution_without_nullspace_realizes_target(self,
-                                                      use_adaptive_step_size):
+  def test_solution_without_nullspace_realizes_target(
+      self, use_adaptive_step_size
+  ):
     physics = humanoid.Physics.from_xml_string(*humanoid.get_model_and_assets())
 
     params = cartesian_6d_to_joint_velocity_mapper.Parameters()
@@ -154,16 +176,23 @@ class Cartesian6DToJointVelocityMapperParameterizedTest(absltest.TestCase):
 
     # Set target to a realizable velocity and solve.
     target_velocity = [
-        0.0450566, 0.0199436, 0.0199436, 0, 0.0071797, -0.0071797
+        0.0450566,
+        0.0199436,
+        0.0199436,
+        0,
+        0.0071797,
+        -0.0071797,
     ]
-    solution = mapper.compute_joint_velocities(physics.data, target_velocity,
-                                               None)
+    solution = mapper.compute_joint_velocities(
+        physics.data, target_velocity, None
+    )
     _set_joint_velocities(physics, params.joint_ids, solution)
 
     # Realized Cartesian velocity must be within the specified tolerance of the
     # target velocity.
     realized_velocity = _compute_object_velocity_with_jacobian(
-        physics, params.object_name, params.object_type)
+        physics, params.object_name, params.object_type
+    )
 
     # Ensure the realized Cartesian velocity is within tolerance of the target
     # velocity.
@@ -172,17 +201,20 @@ class Cartesian6DToJointVelocityMapperParameterizedTest(absltest.TestCase):
     # the solution is, measured by:
     #   e_dual = W ||J^T J qvel - (xdot_target^T J)^T||
     #   e_dual = W ||J^T xdot_target - J^T xdot_realized||
-    jacobian = _compute_object_jacobian_for_joints(physics, params.object_name,
-                                                   params.object_type,
-                                                   params.joint_ids)
+    jacobian = _compute_object_jacobian_for_joints(
+        physics, params.object_name, params.object_type, params.joint_ids
+    )
     e_dual = np.linalg.norm(
-        np.transpose(jacobian).dot(realized_velocity -
-                                   np.array(target_velocity)),
-        ord=np.inf)
+        np.transpose(jacobian).dot(
+            realized_velocity - np.array(target_velocity)
+        ),
+        ord=np.inf,
+    )
     self.assertLess(e_dual, params.solution_tolerance)
 
-  def test_solution_with_nullspace_realizes_target(self,
-                                                   use_adaptive_step_size):
+  def test_solution_with_nullspace_realizes_target(
+      self, use_adaptive_step_size
+  ):
     physics = humanoid.Physics.from_xml_string(*humanoid.get_model_and_assets())
 
     target_velocity = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -204,10 +236,12 @@ class Cartesian6DToJointVelocityMapperParameterizedTest(absltest.TestCase):
     # Compute solution without nullspace.
     no_nullspace_mapper = cartesian_6d_to_joint_velocity_mapper.Mapper(params)
     no_nullspace_solution = no_nullspace_mapper.compute_joint_velocities(
-        physics.data, target_velocity)
+        physics.data, target_velocity
+    )
     _set_joint_velocities(physics, params.joint_ids, no_nullspace_solution)
     no_nullspace_cartesian_vel = _compute_object_velocity_with_jacobian(
-        physics, params.object_name, params.object_type)
+        physics, params.object_name, params.object_type
+    )
 
     # Reuse the same parameters but add nullspace projection, and compute the
     # solution to the optimization problem with nullspace.
@@ -216,10 +250,12 @@ class Cartesian6DToJointVelocityMapperParameterizedTest(absltest.TestCase):
     params.nullspace_projection_slack = 1.0e-7
     nullspace_mapper = cartesian_6d_to_joint_velocity_mapper.Mapper(params)
     nullspace_solution = nullspace_mapper.compute_joint_velocities(
-        physics.data, target_velocity, nullspace_bias)
+        physics.data, target_velocity, nullspace_bias
+    )
     _set_joint_velocities(physics, params.joint_ids, nullspace_solution)
     nullspace_cartesian_vel = _compute_object_velocity_with_jacobian(
-        physics, params.object_name, params.object_type)
+        physics, params.object_name, params.object_type
+    )
 
     # The nullspace solution should be different than the no-nullspace solution.
     # For this problem, we computed the Euclidean distance of both solutions to
@@ -228,11 +264,14 @@ class Cartesian6DToJointVelocityMapperParameterizedTest(absltest.TestCase):
     # least 0.8, and that the nullspace solution is closer to the nullspace
     # target.
     solution_diff = np.linalg.norm(
-        np.array(nullspace_solution) - np.array(no_nullspace_solution))
+        np.array(nullspace_solution) - np.array(no_nullspace_solution)
+    )
     no_nullspace_sol_bias_error = np.linalg.norm(
-        np.array(nullspace_bias) - np.array(no_nullspace_solution))
+        np.array(nullspace_bias) - np.array(no_nullspace_solution)
+    )
     nullspace_sol_bias_error = np.linalg.norm(
-        np.array(nullspace_bias) - np.array(nullspace_solution))
+        np.array(nullspace_bias) - np.array(nullspace_solution)
+    )
     self.assertGreater(solution_diff, 0.8)
     self.assertLess(nullspace_sol_bias_error, no_nullspace_sol_bias_error)
 
@@ -243,13 +282,16 @@ class Cartesian6DToJointVelocityMapperParameterizedTest(absltest.TestCase):
     # Cartesian velocity achieved without nullspace.
     self.assertLess(
         np.linalg.norm(
-            np.array(nullspace_cartesian_vel) -
-            np.array(no_nullspace_cartesian_vel),
-            ord=np.inf),
-        params.solution_tolerance + params.nullspace_projection_slack)
+            np.array(nullspace_cartesian_vel)
+            - np.array(no_nullspace_cartesian_vel),
+            ord=np.inf,
+        ),
+        params.solution_tolerance + params.nullspace_projection_slack,
+    )
 
   def test_solution_with_all_constraints_and_nullspace_not_in_collision(
-      self, use_adaptive_step_size):
+      self, use_adaptive_step_size
+  ):
     physics = humanoid.Physics.from_xml_string(*humanoid.get_model_and_assets())
 
     # Increase collision detection margin for all geoms.
@@ -284,9 +326,10 @@ class Cartesian6DToJointVelocityMapperParameterizedTest(absltest.TestCase):
     params.collision_avoidance_normal_velocity_scale = 0.01
     params.minimum_distance_from_collisions = 0.005
     params.collision_detection_distance = 10.0
-    params.collision_pairs = [
-        (["left_upper_arm", "left_lower_arm", "left_hand"], ["floor"])
-    ]
+    params.collision_pairs = [(
+        ["left_upper_arm", "left_lower_arm", "left_hand"],
+        ["floor"],
+    )]
 
     params.check_solution_validity = True
     params.solution_tolerance = 1e-6
@@ -302,8 +345,10 @@ class Cartesian6DToJointVelocityMapperParameterizedTest(absltest.TestCase):
     # difference in Z components minus the radius.
     lhand_radius = physics.named.model.geom_size["left_hand"][0]
     lhand_floor_dist = (
-        physics.named.data.geom_xpos["left_hand"][2] -
-        physics.named.data.geom_xpos["floor"][2] - lhand_radius)
+        physics.named.data.geom_xpos["left_hand"][2]
+        - physics.named.data.geom_xpos["floor"][2]
+        - lhand_radius
+    )
 
     nullspace_bias = [-1.0, 0.0, 1.0]
     target_velocity = [0.0, 0.0, -1.0, 0.0, 0.0, 0.0]
@@ -311,22 +356,28 @@ class Cartesian6DToJointVelocityMapperParameterizedTest(absltest.TestCase):
     # Compute velocities and integrate, for 5000 steps.
     for _ in range(0, 5000):
       # Compute joint velocities.
-      solution = mapper.compute_joint_velocities(physics.data, target_velocity,
-                                                 nullspace_bias)
+      solution = mapper.compute_joint_velocities(
+          physics.data, target_velocity, nullspace_bias
+      )
 
       # Set joint velocities, integrate, and run MuJoCo kinematics.
       _set_joint_velocities(physics, params.joint_ids, solution)
-      mjlib.mj_integratePos(physics.model.ptr, physics.data.qpos,
-                            physics.data.qvel,
-                            params.integration_timestep.total_seconds())
+      mjlib.mj_integratePos(
+          physics.model.ptr,
+          physics.data.qpos,
+          physics.data.qvel,
+          params.integration_timestep.total_seconds(),
+      )
       mjlib.mj_fwdPosition(physics.model.ptr, physics.data.ptr)
 
       # Compute the new distance between the floor and the left hand.
       # We expect the left hand site to get closer to the floor and settle at
       # around <0.006.
       new_lhand_floor_dist = (
-          physics.named.data.geom_xpos["left_hand"][2] -
-          physics.named.data.geom_xpos["floor"][2] - lhand_radius)
+          physics.named.data.geom_xpos["left_hand"][2]
+          - physics.named.data.geom_xpos["floor"][2]
+          - lhand_radius
+      )
       self.assertLess(new_lhand_floor_dist, max(0.006, lhand_floor_dist))
       lhand_floor_dist = new_lhand_floor_dist
 
@@ -336,14 +387,18 @@ class Cartesian6DToJointVelocityMapperParameterizedTest(absltest.TestCase):
         geom2_name = physics.model.id2name(contact.geom2, _MjGeom)
         if contact.dist < params.minimum_distance_from_collisions:
           is_any_left_hand = (
-              geom1_name == "left_hand" or geom2_name == "left_hand")
+              geom1_name == "left_hand" or geom2_name == "left_hand"
+          )
           is_any_left_upperarm = (
-              geom1_name == "left_upper_arm" or geom2_name == "left_upper_arm")
+              geom1_name == "left_upper_arm" or geom2_name == "left_upper_arm"
+          )
           is_any_left_lowerarm = (
-              geom1_name == "left_lower_arm" or geom2_name == "left_lower_arm")
+              geom1_name == "left_lower_arm" or geom2_name == "left_lower_arm"
+          )
           is_any_left_arm = (
-              is_any_left_hand or is_any_left_upperarm or is_any_left_lowerarm)
-          is_any_floor = (geom1_name == "floor" or geom2_name == "floor")
+              is_any_left_hand or is_any_left_upperarm or is_any_left_lowerarm
+          )
+          is_any_floor = geom1_name == "floor" or geom2_name == "floor"
 
           self.assertFalse(is_any_left_arm and is_any_floor)
 
