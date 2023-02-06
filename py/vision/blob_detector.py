@@ -155,8 +155,9 @@ class BlobDetector(detector.ImageDetector):
     upper = color_range.upper
     mask = cv2.inRange(yuv_image.copy(), lower, upper)
     # Find contours.
-    _, contours, _ = cv2.findContours(
-        image=mask, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
+    contours, _ = cv2.findContours(
+        image=mask, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE
+    )
     if not contours:
       return None
     # Find the largest contour.
