@@ -14,6 +14,8 @@
 
 """Test utilities for MoMa effectors."""
 
+from typing import Optional
+
 from dm_control import mjcf
 from dm_env import specs
 from dm_robotics.geometry import geometry
@@ -33,16 +35,26 @@ SAFE_SAWYER_JOINTS_POS = np.array(
 class SpyEffector(effector.Effector):
   """An effector that allows retrieving the most recent action."""
 
-  def __init__(self, dofs: int):
+  def __init__(
+      self,
+      dofs: int,
+      minimum: Optional[np.ndarray] = None,
+      maximum: Optional[np.ndarray] = None,
+  ):
     self._previous_action = np.zeros(dofs)
+    self._minimum = minimum if minimum is not None else -np.ones(dofs)
+    self._maximum = maximum if maximum is not None else np.ones(dofs)
 
   def initialize_episode(self, physics, random_state) -> None:
     pass
 
   def action_spec(self, physics) -> specs.BoundedArray:
+    actuator_names = [(self.prefix + str(i))
+                      for i in range(self._previous_action.shape[0])]
     return specs.BoundedArray(
         self._previous_action.shape, self._previous_action.dtype,
-        minimum=-1.0, maximum=1.0)
+        minimum=self._minimum, maximum=self._maximum,
+        name='\t'.join(actuator_names))
 
   def set_control(self, physics, command: np.ndarray) -> None:
     self._previous_action = command[:]
