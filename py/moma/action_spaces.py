@@ -44,7 +44,7 @@ def action_limits(
   return cartesian_vals + euler_vals
 
 
-class _DelegateActionSpace(af.ActionSpace[specs.BoundedArray]):
+class DelegateActionSpace(af.ActionSpace[specs.BoundedArray]):
   """Delegate action space.
 
   Base class for delegate action spaces that exist to just give a specific type
@@ -66,37 +66,34 @@ class _DelegateActionSpace(af.ActionSpace[specs.BoundedArray]):
     return self._action_space.project(action)
 
 
-class ArmJointActionSpace(_DelegateActionSpace):
+class ArmJointActionSpace(DelegateActionSpace):
   """Arm joint action space.
 
   This is just giving a type name to a particular action space.
   I.e. while it just delegates to the underlying action space, the name
   tells us that this projects from an arm joint space to some other space.
   """
-  pass
 
 
-class GripperActionSpace(_DelegateActionSpace):
+class GripperActionSpace(DelegateActionSpace):
   """Gripper action space.
 
   This is just giving a type name to a particular action space.
   I.e. while it just delegates to the underlying action space, the name
   tells us that this projects from a gripper joint space to some other space.
   """
-  pass
 
 
-class CartesianTwistActionSpace(_DelegateActionSpace):
+class CartesianTwistActionSpace(DelegateActionSpace):
   """Cartesian Twist action space.
 
   This is just giving a type name to a particular action space.
   I.e. while it just delegates to the underlying action space, the name
   tells us that this projects from a cartesian twist space to some other space.
   """
-  pass
 
 
-class RobotArmActionSpace(_DelegateActionSpace):
+class RobotArmActionSpace(DelegateActionSpace):
   """Action space for a robot arm.
 
   This is just giving a type name to a particular action space.
@@ -105,7 +102,6 @@ class RobotArmActionSpace(_DelegateActionSpace):
   users don't care about the nature of the underlying action space (for example,
   joint action space or cartesian action space).
   """
-  pass
 
 
 class ReframeVelocityActionSpace(af.ActionSpace):
