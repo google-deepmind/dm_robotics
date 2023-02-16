@@ -57,10 +57,12 @@ def main(_):
   try:
     topic = config.topic_by_camera_name[_CAMERA.value]
   except KeyError as ke:
-    raise ValueError("Please provide the name of one of the cameras listed in "
-                     "the config `camera_namespaces` attribute. "
-                     f"Provided: {_CAMERA.value}. Available: "
-                     f"{[cam for cam in config.topic_by_camera_name]}.")
+    raise ValueError(
+        "Please provide the name of one of the cameras listed in "
+        "the config `camera_namespaces` attribute. "
+        f"Provided: {_CAMERA.value}. Available: "
+        f"{[cam for cam in config.topic_by_camera_name]}."
+    ) from ke
   color_ranges = {}
   for name in _PROPS.value:
     prop = blob_tracker_object_defs.Props(name.lower())
@@ -77,7 +79,7 @@ def main(_):
       toolkit=_TOOLKIT.value,
   )
   ros_node = detector_node.DetectorNode(
-      topic=topic,
+      camera_topic=topic,
       detector=detector,
       input_queue_size=config.input_queue_size,
       output_queue_size=config.output_queue_size,

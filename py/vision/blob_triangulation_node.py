@@ -25,6 +25,9 @@ from dmr_vision import utils
 import numpy as np
 import rospy
 
+# prop_name is from the key of BlobTriangulationNode prop_names.
+POSE_PUB_TOPIC_FSTR = "/blob/{prop_name}/pose"
+
 
 class BlobTriangulationNode:
   """A ROS node for triangulating prop positions in a robot base frame."""
@@ -32,6 +35,7 @@ class BlobTriangulationNode:
   def __init__(
       self,
       prop_names: Collection[str],
+      point_topics_by_camera_prop_name: Mapping[str, Mapping[str, str]],
       extrinsics: Mapping[str, types.Extrinsics],
       intrinsics: Optional[Mapping[str, types.Intrinsics]],
       limits: types.PositionLimit,
@@ -47,15 +51,16 @@ class BlobTriangulationNode:
 
     Args:
       prop_names: The names of the props to use.
+      point_topics_by_camera_prop_name:
       extrinsics: A mapping from camera names to extrinsic parameters (a 7D pose
         vector of the camera realtive to a common reference frame).
-      intrinsics: A mapping from camera names to intrinsics parameters. If a
-        camera is not present in this mapping, the node will attempt to collect
-        the intrinsics from the camera ROS driver `camera_info` topic.
+      intrinsics: A mapping from camera names to intrinsics parameters.
       limits: The robot playground limits, specified in terms of upper and lower
-        positions, i.e. a cuboid.
+        positions, i.e. a cuboid. This is used to validate a pose estimated by
+        the triangulator. To know more, check out utils.PoseValidator.
       deadzones: A mapping specifying deadzones with their limits, specified in
-        the same terms of `limits`.
+        the same terms of `limits`. This is used to validate a pose estimated by
+        the triangulator. To know more, check out utils.PoseValidator.
       fuse_tolerance: Maximum time interval between fused data points.
       planar_constraint: An optional mapping of prop names to planes (in global
         frame) that the blob must lie in. This is useful for example for
@@ -84,9 +89,9 @@ class BlobTriangulationNode:
     self._point_handler = collections.defaultdict(dict)
     for prop_name in self._prop_names:
       for camera_name in self._camera_names:
-        point_topic = f"{camera_name}/blob/{prop_name}/center"
+        topic = point_topics_by_camera_prop_name[camera_name][prop_name]
         self._point_handler[prop_name][camera_name] = ros_utils.PointHandler(
-            topic=point_topic, queue_size=input_queue_size)
+            topic=topic, queue_size=input_queue_size)
 
   def spin(self) -> None:
     """Loops the node until shutdown."""
@@ -207,7 +212,7 @@ class BlobTriangulationNode:
     if most_recent_stamp is None:
       return {}, most_recent_stamp
     # Remove outdated points.
-    filtered_points = collections.defaultdict(dict)
+    centers = collections.defaultdict(dict)
     for prop_name, cameras in points_and_stamps.items():
       for camera_name, info_tuple in cameras.items():
         center, stamp = info_tuple
@@ -215,8 +220,8 @@ class BlobTriangulationNode:
           logging.warning("Discarding outdated data ('%s', '%s').", camera_name,
                           prop_name)
           continue
-        filtered_points[prop_name][camera_name] = center
-    return filtered_points, most_recent_stamp
+        centers[prop_name][camera_name] = center
+    return centers, most_recent_stamp
 
   def _publish_poses(self, poses: Mapping[str, np.ndarray],
                      stamp: rospy.Time) -> None:
@@ -225,12 +230,13 @@ class BlobTriangulationNode:
         if not self._pose_validator.is_valid(pose):
           continue
         if prop_name not in self._pose_publishers:
-          self._setup_pose_publisher(prop_name, "pose")
+          self._setup_pose_publisher(prop_name)
         self._pose_publishers[prop_name].publish(pose, stamp=stamp)
 
-  def _setup_pose_publisher(self, prop_name: str, topic: str) -> None:
-    topic = f"/blob/{prop_name}/{topic}"
+  def _setup_pose_publisher(self, prop_name: str) -> None:
+    topic = POSE_PUB_TOPIC_FSTR.format(prop_name=prop_name)
     self._pose_publishers[prop_name] = ros_utils.PosePublisher(
         topic=topic,
         frame_id=self._base_frame,
-        queue_size=self._output_queue_size)
+        queue_size=self._output_queue_size,
+    )

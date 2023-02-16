@@ -20,8 +20,6 @@ from dmr_vision import robot_config
 from dmr_vision import types
 import numpy as np
 
-ROS_TOPIC_CAM_PREFIX = "/pylon_"
-
 
 @dataclasses.dataclass(init=False)
 class BlobTriangulationConfig:
@@ -73,7 +71,7 @@ def get_config(robot_type: str) -> BlobTriangulationConfig:
 
   ## Robot configuration
   config.extrinsics = {
-      ROS_TOPIC_CAM_PREFIX + cam_name: cam.extrinsics
+      cam_name: cam.extrinsics
       for cam_name, cam in r_config.cameras.items()
   }
 

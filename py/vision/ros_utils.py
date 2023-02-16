@@ -65,8 +65,8 @@ class CameraInfoHandler:
         queue_size=self._queue_size,
         tcp_nodelay=True,
     )
-    logging.info("Waiting for the first message on topic %s", topic)
-    rospy.wait_for_message(topic, sensor_msgs.CameraInfo)
+    logging.info("Waiting for the first message on topic %s", self._topic)
+    rospy.wait_for_message(self._topic, sensor_msgs.CameraInfo)
 
   def close(self) -> None:
     """Gently cleans up CameraInfoHandler and closes ROS topics."""

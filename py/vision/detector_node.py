@@ -22,13 +22,16 @@ from dmr_vision import types
 import numpy as np
 import rospy
 
+POINT_PUB_TOPIC_FSTR = "/{namespace}/blob/{blob_name}/center"
+VISUALISATION_PUB_TOPIC_FSTR = "/{namespace}/blob/{blob_name}/visualization"
+
 
 class DetectorNode:
   """A ROS node for generic image-based detection."""
 
   def __init__(
       self,
-      topic: str,
+      camera_topic: str,
       detector: vision_detector.Signature,
       input_queue_size: int = 1,
       output_queue_size: int = 1,
@@ -37,7 +40,7 @@ class DetectorNode:
     """Constructs a `DetectorNode` instance.
 
     Args:
-      topic: the camera ROS topic.
+      camera_topic: the camera ROS topic where to get the images.
       detector: the detector to use.
       input_queue_size: the size of input queues.
       output_queue_size: the size of output queues.
@@ -48,8 +51,8 @@ class DetectorNode:
     Raises:
       EnvironmentError: if `image_optimizer` fails and return `False`.
     """
-    self._topic = topic
-    self._namespace = "/" + topic.split("/")[1]
+    self._camera_topic = camera_topic
+    self._namespace = camera_topic.split("/")[1]
     self._detector = detector
     self._input_queue_size = input_queue_size
     self._output_queue_size = output_queue_size
@@ -60,7 +63,7 @@ class DetectorNode:
       raise EnvironmentError("Provided `image_optimizer` failed execution.")
 
     self._image_handler = ros_utils.ImageHandler(
-        topic=self._topic,
+        topic=self._camera_topic,
         queue_size=input_queue_size,
     )
 
@@ -95,7 +98,7 @@ class DetectorNode:
     for blob_name, center in centers.items():
       if center is not None:
         if blob_name not in self._point_publishers:
-          self._setup_point_publisher(blob_name, "center", frame_id)
+          self._setup_point_publisher(blob_name, frame_id)
         self._point_publishers[blob_name].publish(center, stamp=stamp)
 
   def _publish_detections(self, detections: types.Detections, frame_id: str,
@@ -103,18 +106,28 @@ class DetectorNode:
     for blob_name, visualization in detections.items():
       if visualization is not None:
         if blob_name not in self._visualization_publishers:
-          self._setup_image_publisher(blob_name, "visualization", frame_id)
+          self._setup_image_publisher(blob_name, frame_id)
         publisher = self._visualization_publishers[blob_name]
         publisher.publish(visualization, stamp=stamp)
 
-  def _setup_point_publisher(self, blob_name: str, topic: str,
-                             frame_id: str) -> None:
-    topic = f"{self._namespace}/blob/{blob_name}/{topic}"
+  def _setup_point_publisher(self, blob_name: str, frame_id: str) -> None:
+    topic = POINT_PUB_TOPIC_FSTR.format(
+        namespace=self._namespace,
+        blob_name=blob_name,
+    )
     self._point_publishers[blob_name] = ros_utils.PointPublisher(
-        topic=topic, frame_id=frame_id, queue_size=self._output_queue_size)
+        topic=topic,
+        frame_id=frame_id,
+        queue_size=self._output_queue_size,
+    )
 
-  def _setup_image_publisher(self, blob_name: str, topic: str,
-                             frame_id: str) -> None:
-    topic = f"{self._namespace}/blob/{blob_name}/{topic}"
+  def _setup_image_publisher(self, blob_name: str, frame_id: str) -> None:
+    topic = VISUALISATION_PUB_TOPIC_FSTR.format(
+        namespace=self._namespace,
+        blob_name=blob_name,
+    )
     self._visualization_publishers[blob_name] = ros_utils.ImagePublisher(
-        topic=topic, frame_id=frame_id, queue_size=self._output_queue_size)
+        topic=topic,
+        frame_id=frame_id,
+        queue_size=self._output_queue_size,
+    )
