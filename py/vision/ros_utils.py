@@ -27,6 +27,9 @@ import cv_bridge
 from std_msgs import msg as std_msgs
 
 
+_INITIAL_MESSAGE_TIMEOUT = 10.0
+
+
 @dataclasses.dataclass(frozen=True)
 class PointData:
   """ROS data representing a point.
@@ -233,12 +236,17 @@ class ImagePublisher:
 class PointHandler:
   """Handler for receiving point data."""
 
-  def __init__(self, topic: str, queue_size: int = 1):
+  def __init__(
+      self, topic: str, queue_size: int = 1, max_attempts: Optional[int] = None
+  ):
     """Constructs a `PointHandler` instance.
 
     Args:
       topic: The ROS topic to subscribe to.
       queue_size: The ROS subscriber queue size.
+      max_attempts: maximum number of times to wait for an initial message
+        before aborting with an exception. If non-positive or zero, keep
+        retrying indefinitely.
     """
     self._lock = threading.Condition(threading.RLock())
     self._subscriber = rospy.Subscriber(
@@ -248,12 +256,31 @@ class PointHandler:
         queue_size=queue_size,
         tcp_nodelay=True)
     logging.info("Waiting for the first message on topic %s", topic)
-    try:
-      rospy.wait_for_message(topic, geometry_msgs.PointStamped, timeout=10.)
-    except rospy.exceptions.ROSException:
-      logging.warning(
-          "Did not reveive a message on topic %s, object may be "
-          "occluded or colors may be poorly calibrated.", topic)
+    self._wait_for_message(topic, max_attempts or 0)
+
+  def _wait_for_message(self, topic: str, max_attempts: int) -> None:
+    """Wait for first message and repeatedly print warning."""
+    attempts = 0
+    while max_attempts < 1 or attempts < max_attempts:
+      attempts += 1
+      try:
+        rospy.wait_for_message(
+            topic, geometry_msgs.PointStamped, timeout=_INITIAL_MESSAGE_TIMEOUT
+        )
+        return
+      except rospy.exceptions.ROSException:
+        logging.warning(
+            (
+                "Did not receive a message on topic %s, object may be occluded"
+                " or colors may be poorly calibrated. Will keep blocking until"
+                " a message has been received."
+            ),
+            topic,
+        )
+    raise IOError(
+        f"Did not receive a message on topic {topic} after {max_attempts}"
+        " attempts."
+    )
 
   def close(self) -> None:
     """Gently cleans up `PointHandler` and closes ROS topics."""
