@@ -441,8 +441,8 @@ class DelegateOption(core.Option, abc.ABC):
   def pterm(self, timestep: dm_env.TimeStep) -> float:
     return self._delegate.pterm(timestep)
 
-  def result(self, unused_timestep: dm_env.TimeStep) -> core.OptionResult:
-    return self._delegate.result(unused_timestep)
+  def result(self, timestep: dm_env.TimeStep) -> core.OptionResult:
+    return self._delegate.result(timestep)
 
   def render_frame(self, canvas):
     self._delegate.render_frame(canvas)
