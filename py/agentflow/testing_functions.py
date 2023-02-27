@@ -425,7 +425,8 @@ def valid_value(spec: Union[specs.Array, spec_utils.ObservationSpec,
       value *= (maximum - minimum)
       value += minimum
     else:
-      value *= 1e10  # Make range / magnitude assumptions unlikely to hold.
+      if np.issubdtype(prim_spec.dtype, np.floating):
+        value *= 1e10  # Make range / magnitude assumptions unlikely to hold.
     return value.astype(prim_spec.dtype)
 
   if isinstance(spec, dict):
