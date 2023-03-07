@@ -20,6 +20,7 @@ from typing import Sequence, Text, Union
 from absl.testing import absltest
 from absl.testing import parameterized
 
+import dm_env
 from dm_env import specs
 from dm_robotics.agentflow import spec_utils
 from dm_robotics.agentflow import testing_functions
@@ -234,6 +235,161 @@ class ComputeRewardTest(absltest.TestCase):
     reward_preprocessor.setup_io_spec(input_spec)
     output_timestep = reward_preprocessor.process(input_timestep)
     np.testing.assert_allclose(output_timestep.reward, [2.0, 3.0])
+
+
+class FilterRewardTest(absltest.TestCase):
+  # TODO(jscholz) test with nested rewards.
+  # TODO(jscholz) test with state_spec on filter object.
+
+  def test_scalar_consec_reward_filtered_from_lambda(self):
+
+    input_spec = testing_functions.random_timestep_spec()
+    cast_ = lambda r: np.array(r, dtype=input_spec.reward_spec.dtype)
+
+    input_timestep = testing_functions.random_timestep(
+        input_spec, reward=cast_(1.0)
+    )
+
+    filter_fn = lambda reward: reward + 1
+    reward_preprocessor = rewards.FilterReward(filter_fn=filter_fn)
+    reward_preprocessor.setup_io_spec(input_spec)
+
+    input_reward = input_timestep.reward
+    output_timestep = reward_preprocessor.process(input_timestep)
+    self.assertEqual(output_timestep.reward, input_reward + 1)
+
+  def test_consec_reward_filter(self):
+    input_spec = testing_functions.random_timestep_spec()
+    cast_ = lambda r: np.array(r, dtype=input_spec.reward_spec.dtype)
+
+    first_timestep = testing_functions.random_timestep(
+        input_spec, reward=cast_(0.0), step_type=dm_env.StepType.FIRST,
+    )
+
+    filter_fn = rewards.ConsecutiveValueFilter(num_steps=2, obs_prefix='crf')
+    reward_preprocessor = rewards.FilterReward(filter_fn=filter_fn)
+    reward_preprocessor.setup_io_spec(input_spec)
+
+    with self.subTest('reward sequence'):
+      input_rewards = [0, 0, 1, 1, 0, 0, 1, 1]
+      expected_rewards = [0, 0, 0, 1, 1, 0, 0, 1]
+      _ = reward_preprocessor.process(first_timestep)
+      actual_rewards = []
+      for r in input_rewards:
+        input_timestep = testing_functions.random_timestep(
+            input_spec, reward=cast_(r), step_type=dm_env.StepType.MID,
+        )
+        output_timestep = reward_preprocessor.process(input_timestep)
+        actual_rewards.append(output_timestep.reward)
+      self.assertEqual(actual_rewards, expected_rewards)
+
+    with self.subTest('filter state'):
+      mid_timestep = testing_functions.random_timestep(
+          input_spec,
+          step_type=dm_env.StepType.MID,
+      )
+      successful_timestep = mid_timestep._replace(reward=cast_(1.0))
+      unsuccessful_timestep = mid_timestep._replace(reward=cast_(0.0))
+      _ = reward_preprocessor.process(first_timestep)  # reset
+
+      # Step first success.
+      output_timestep = reward_preprocessor.process(successful_timestep)
+      self.assertEqual(output_timestep.reward, 0.)
+      self.assertEqual(output_timestep.observation['crf_last_reward'], 1.)
+      self.assertEqual(output_timestep.observation['crf_ctr_normalized'], 0.)
+
+      # Step second success.
+      output_timestep = reward_preprocessor.process(successful_timestep)
+      self.assertEqual(output_timestep.reward, 1.)
+      self.assertEqual(output_timestep.observation['crf_last_reward'], 1.)
+      self.assertEqual(output_timestep.observation['crf_ctr_normalized'], 0.5)
+
+      # Step third success.
+      output_timestep = reward_preprocessor.process(successful_timestep)
+      self.assertEqual(output_timestep.reward, 1.)
+      self.assertEqual(output_timestep.observation['crf_last_reward'], 1.)
+      self.assertEqual(output_timestep.observation['crf_ctr_normalized'], 1.)
+
+      # First unsuccessful step.
+      output_timestep = reward_preprocessor.process(unsuccessful_timestep)
+      self.assertEqual(output_timestep.reward, 1.)
+      self.assertEqual(output_timestep.observation['crf_last_reward'], 0.)
+      self.assertEqual(output_timestep.observation['crf_ctr_normalized'], 0.)
+
+      # Second unsuccessful step.
+      output_timestep = reward_preprocessor.process(unsuccessful_timestep)
+      self.assertEqual(output_timestep.reward, 0.)
+      self.assertEqual(output_timestep.observation['crf_last_reward'], 0.)
+      self.assertEqual(output_timestep.observation['crf_ctr_normalized'], 0.5)
+
+  def test_stacked_reward_filter(self):
+    input_spec = testing_functions.random_timestep_spec()
+    cast_ = lambda r: np.array(r, dtype=input_spec.reward_spec.dtype)
+    first_timestep = testing_functions.random_timestep(
+        input_spec, reward=cast_(0.0), step_type=dm_env.StepType.FIRST,
+    )
+
+    filter_fn = rewards.StackedRewardsFilter.min_last_k_above_threshold(
+        threshold=0.8, num_steps=3, obs_prefix='crf'
+    )
+    reward_preprocessor = rewards.FilterReward(filter_fn=filter_fn)
+    reward_preprocessor.setup_io_spec(input_spec)
+
+    with self.subTest('reward sequence'):
+      input_rewards = [0, 0, 0.7, 0.8, 0.9, 1., 0, 1]
+      expected_rewards = [0, 0, 0, 0, 0, 1., 0, 0]
+      _ = reward_preprocessor.process(first_timestep)
+      actual_rewards = []
+      for r in input_rewards:
+        input_timestep = testing_functions.random_timestep(
+            input_spec, reward=cast_(r), step_type=dm_env.StepType.MID,
+        )
+        output_timestep = reward_preprocessor.process(input_timestep)
+        actual_rewards.append(output_timestep.reward)
+      self.assertEqual(actual_rewards, expected_rewards)
+
+    with self.subTest('filter state'):
+      successful_timestep = testing_functions.random_timestep(
+          input_spec, reward=cast_(1.), step_type=dm_env.StepType.MID,
+      )
+      unsuccessful_timestep = testing_functions.random_timestep(
+          input_spec, reward=cast_(0.), step_type=dm_env.StepType.MID,
+      )
+      _ = reward_preprocessor.process(first_timestep)  # reset
+
+      # Step first success.
+      output_timestep = reward_preprocessor.process(successful_timestep)
+      self.assertEqual(output_timestep.reward, 0.0)
+      np.testing.assert_allclose(
+          output_timestep.observation['crf_last_k_rewards'],
+          [0.0, 0.0, 1.0],
+      )
+
+      # Step second success.
+      output_timestep = reward_preprocessor.process(successful_timestep)
+      self.assertEqual(output_timestep.reward, 0.)
+      np.testing.assert_allclose(
+          output_timestep.observation['crf_last_k_rewards'], [0., 1., 1.])
+
+      # Step third success.
+      output_timestep = reward_preprocessor.process(successful_timestep)
+      self.assertEqual(output_timestep.reward, 1.)
+      np.testing.assert_allclose(
+          output_timestep.observation['crf_last_k_rewards'], [1., 1., 1.])
+
+      # Step non-success.
+      output_timestep = reward_preprocessor.process(unsuccessful_timestep)
+      self.assertEqual(output_timestep.reward, 0.)
+      np.testing.assert_allclose(
+          output_timestep.observation['crf_last_k_rewards'], [1., 1., 0.])
+
+      # ... it takes 3 more successes to flip back to success.
+      output_timestep = reward_preprocessor.process(successful_timestep)
+      self.assertEqual(output_timestep.reward, 0.)
+      output_timestep = reward_preprocessor.process(successful_timestep)
+      self.assertEqual(output_timestep.reward, 0.)
+      output_timestep = reward_preprocessor.process(successful_timestep)
+      self.assertEqual(output_timestep.reward, 1.)
 
 
 class CombineRewardsTest(parameterized.TestCase):

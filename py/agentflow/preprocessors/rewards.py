@@ -15,8 +15,10 @@
 # python3
 """A collection of timestep preprocessors that define rewards."""
 
-from typing import Callable, Sequence, Text, Union, Optional
+import collections
+from typing import Callable, Optional, Sequence, Text, Union
 
+from absl import logging
 from dm_env import specs
 from dm_robotics.agentflow import core
 from dm_robotics.agentflow import spec_utils
@@ -24,6 +26,7 @@ from dm_robotics.agentflow.decorators import overrides
 from dm_robotics.agentflow.preprocessors import timestep_preprocessor
 import numpy as np
 import tree
+import typing_extensions
 
 # Internal profiling
 
@@ -251,6 +254,235 @@ class ComputeReward(timestep_preprocessor.TimestepPreprocessor):
         shape=self._output_shape, dtype=input_spec.reward_spec.dtype))
 
 
+@typing_extensions.runtime_checkable
+class RewardFilter(typing_extensions.Protocol):
+  """An object which filters a reward signal."""
+
+  def __call__(self, reward: RewardVal) -> RewardVal:
+    raise NotImplementedError()
+
+  def state(self) -> Optional[spec_utils.ObservationValue]:
+    """Returns the internal state of the filter.
+
+    This state should have a consistent spec regardless of the filter's state.
+    """
+    return None
+
+  def state_spec(self) -> Optional[spec_utils.ObservationSpec]:
+    """Returns the spec of internal state of the filter.
+
+    Note: if not provided, a `specs.Array` will be generated from `state`.
+    """
+    return None
+
+  def reset(self) -> None:
+    """Resets the filter state."""
+    return
+
+
+class ConsecutiveValueFilter(RewardFilter):
+  """A filter which changes state only after K equal readings."""
+
+  def __init__(
+      self,
+      num_steps: int = 2,
+      obs_prefix: str = 'consecutive_reward_filter',
+  ):
+    """Initializes ConsecutiveValueFilter.
+
+    Args:
+      num_steps: Number of consecutive steps that a given reward must be seen
+        before updating the output to that value.
+      obs_prefix: The key under which to expose the counter
+    """
+    super().__init__()
+    self._num_steps = num_steps
+    self._obs_prefix = obs_prefix
+
+    self._cur_reward = 0.
+    self._last_reward = 0.
+    self._ctr = 0
+
+  def __call__(self, reward: RewardVal) -> RewardVal:
+    if np.isclose(reward, self._last_reward):
+      self._ctr += 1
+    else:
+      self._ctr = 0
+      self._last_reward = reward
+
+    if self._ctr >= (self._num_steps - 1):
+      self._cur_reward = self._last_reward
+    return self._cur_reward
+
+  def state(self) -> Optional[spec_utils.ObservationValue]:
+    # Note: `_cur_reward` not needed in state bc always returned as reward.
+    return {
+        f'{self._obs_prefix}_ctr_normalized': np.asarray(
+            float(self._ctr) / self._num_steps, dtype=np.float32
+        ),
+        f'{self._obs_prefix}_last_reward': np.asarray(
+            self._last_reward, dtype=np.float32
+        ),
+    }
+
+  def reset(self) -> None:
+    self._cur_reward = 0.
+    self._last_reward = 0.
+    self._ctr = 0
+
+
+class StackedRewardsFilter(RewardFilter):
+  """A filter which stacks rewards and applies a user-defined callable."""
+
+  def __init__(
+      self,
+      fn: Callable[[Sequence[RewardVal]], RewardVal],
+      num_steps: int = 2,
+      obs_prefix: str = 'stacked_reward_filter',
+  ):
+    """Initializes StackedRewardsFilter.
+
+    Args:
+      fn: A callable taking the stacked rewards and returning a reward. This
+        function should accept inputs with lengths between 0 and `num_steps`.
+      num_steps: Number of rewards to stack into a last-k-rewards window for
+        filtering by `fn`. These rewards are accumulated each time this filter
+        is called.
+      obs_prefix: The key under which to expose the counter
+    """
+    super().__init__()
+    self._fn = fn
+    self._obs_prefix = obs_prefix
+    self._last_k_rewards = collections.deque([0.] * num_steps, maxlen=num_steps)
+
+  def __call__(self, reward: RewardVal) -> RewardVal:
+    self._last_k_rewards.append(reward)
+    return self._fn(self._last_k_rewards)
+
+  def state(self) -> Optional[spec_utils.ObservationValue]:
+    return {
+        f'{self._obs_prefix}_last_k_rewards': np.asarray(
+            self._last_k_rewards, dtype=np.float32
+        ),
+    }
+
+  def reset(self) -> None:
+    num_steps = self._last_k_rewards.maxlen
+    self._last_k_rewards = collections.deque([0.] * num_steps, maxlen=num_steps)
+
+  @classmethod
+  def min_last_k_above_threshold(
+      cls,
+      threshold: float,
+      num_steps: int = 2,
+      obs_prefix: str = 'stacked_reward_filter',
+  ) -> 'StackedRewardsFilter':
+    """Creates a callable with logic `np.amin(last_k_rewards) >= threshold`."""
+    return cls(
+        fn=lambda r: np.array(np.amin(r) >= threshold),
+        num_steps=num_steps,
+        obs_prefix=obs_prefix,
+    )
+
+
+class FilterReward(timestep_preprocessor.TimestepPreprocessor):
+  """Applys a user-provided callable to the reward and exposes the filter obs.
+  """
+
+  def __init__(
+      self,
+      *,
+      filter_fn: RewardFilter,
+      name: Optional[str] = None,
+  ):
+    """Initializes FilterReward.
+
+    Args:
+      filter_fn: A callable which consumes a reward and emits a filtered reward.
+        For stateless cases e.g. thresholding this can be a simple lambda (i.e.
+        `lambda x: 1 if x > 0.5 else 0`), but for more complex cases with
+        internal state consider implementing the full `RewardFilter` API to
+        expose the state in the observation.
+      name: A name for this TimestepPreprocessor.
+    """
+    super().__init__(name=name)
+    self._filter_fn = filter_fn
+
+  @overrides(timestep_preprocessor.TimestepPreprocessor)
+  def _process_impl(
+      self, timestep: timestep_preprocessor.PreprocessorTimestep
+  ) -> timestep_preprocessor.PreprocessorTimestep:
+    if timestep.first() and isinstance(self._filter_fn, RewardFilter):
+      self._filter_fn.reset()
+
+    reward = self._filter_fn(timestep.reward)
+
+    # Cast (possibly nested) reward to expected dtype.
+    reward = tree.map_structure(
+        lambda r: _cast_reward_to_type(r, self._out_spec.reward_spec.dtype),
+        reward)
+    timestep = timestep._replace(reward=reward)
+
+    try:
+      # Expose filter state as observation so the task is markov.
+      filter_obs = self._filter_fn.state()
+      if filter_obs is not None:
+        processed_obs = dict(timestep.observation)
+        processed_obs.update(filter_obs)
+        timestep = timestep._replace(observation=processed_obs)
+    except Exception:  # pylint: disable=broad-except
+      logging.log_first_n(
+          logging.INFO, 'Failed to generate filter state observation.', 10
+      )
+
+    return timestep
+
+  @overrides(timestep_preprocessor.TimestepPreprocessor)
+  def _output_spec(
+      self, input_spec: spec_utils.TimeStepSpec
+  ) -> spec_utils.TimeStepSpec:
+
+    # If filter is stateful, generate a spec for the filter observation.
+    observation_spec = dict(input_spec.observation_spec)
+    try:
+      filter_obs_spec = self._filter_fn.state_spec()
+      if filter_obs_spec is None:
+        # Generate a value to produce a spec.
+        filter_obs = self._filter_fn.state()
+        if filter_obs is not None:
+          filter_obs_spec = {
+              k: specs.Array(
+                  shape=np.asarray(v).shape, dtype=np.asarray(v).dtype, name=k
+              )
+              for k, v in filter_obs.items()
+          }
+
+      if filter_obs_spec is not None:
+        conflicting_keys = set(input_spec.observation_spec.keys()).intersection(
+            filter_obs_spec.keys()
+        )
+        if conflicting_keys:
+          raise ValueError(f'Observations {conflicting_keys} already exist.')
+
+        observation_spec.update(filter_obs_spec)
+
+    except Exception:  # pylint: disable=broad-except
+      logging.log_first_n(
+          logging.INFO, 'Failed to generate filter state observation spec.', 10
+      )
+
+    dummy_reward = input_spec.reward_spec.generate_value()
+    filtered_reward = self._filter_fn(dummy_reward)
+    reward_spec = specs.Array(
+        shape=np.asarray(filtered_reward).shape,
+        dtype=input_spec.reward_spec.dtype,
+    )
+
+    return input_spec.replace(
+        observation_spec=observation_spec, reward_spec=reward_spec
+    )
+
+
 class StagedWithActiveThreshold(RewardCombinationStrategy):
   """A RewardCombinationStrategy that stages a sequences of rewards.
 
@@ -357,11 +589,11 @@ class StagedWithSuccessThreshold(RewardCombinationStrategy):
 
     num_stages = len(rewards)
     tasks_above_threshold = np.asarray(rewards) > self._thresh
+    solved_task_idxs = np.nonzero(tasks_above_threshold)[0]
 
     if self._assume_cumulative_success:
-      if np.any(tasks_above_threshold):
-        solved_task_idxs = np.argwhere(tasks_above_threshold)  # last "True"
-        num_tasks_solved = solved_task_idxs.max() + 1
+      if solved_task_idxs.size:
+        num_tasks_solved = solved_task_idxs[-1] + 1
       else:
         num_tasks_solved = 0
 
