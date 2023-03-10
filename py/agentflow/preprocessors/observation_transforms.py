@@ -698,6 +698,87 @@ class StackObservations(tsp.TimestepPreprocessor):
     return input_spec.replace(processed_obs_spec)
 
 
+class UnstackObservations(tsp.TimestepPreprocessor):
+  """A timestep preprocessor that unstacks observations."""
+
+  def __init__(
+      self,
+      obs_to_unstack: Sequence[str],
+      override_obs: bool = False,
+      added_obs_prefix: str = 'unstacked_',
+      validation_frequency: tsp.ValidationFrequency = (
+          tsp.ValidationFrequency.ONCE_PER_EPISODE),
+  ):
+    """UnstackObservations preprocessor constructor.
+
+    Args:
+      obs_to_unstack: A list of observation to unstack.
+      override_obs: If True, add the unstacked observations and replace the
+        existing ones. Otherwise, the unstacked observations will be added to
+        the existing ones. The name of the ustacked observation is given by
+        `added_obs_prefix` added to their original name.
+      added_obs_prefix: The prefix to be added to the original observation name.
+      validation_frequency: How often should we validate the obs specs.
+    """
+    super().__init__(validation_frequency)
+    self._obs_to_unstack: FrozenSet[str] = frozenset(obs_to_unstack)
+    self._override_obs = override_obs
+    self._added_obs_prefix = added_obs_prefix
+
+  @overrides(tsp.TimestepPreprocessor)
+  # Profiling for .wrap('UnstackObservations._process_impl')
+  def _process_impl(
+      self, timestep: tsp.PreprocessorTimestep) -> tsp.PreprocessorTimestep:
+    if self._override_obs:
+      processed_obs = {
+          k: self._maybe_process(timestep, k, v)
+          for k, v in timestep.observation.items()
+      }
+    else:
+      unstacked_obs = {
+          self._added_obs_prefix + str(k):
+          self._maybe_process(timestep, k, timestep.observation[k])
+          for k in self._obs_to_unstack
+      }
+      processed_obs = {**timestep.observation, **unstacked_obs}
+
+    return timestep._replace(observation=processed_obs)
+
+  def _maybe_process(self, timestep, key, val):
+    if key not in self._obs_to_unstack:
+      return val
+    unstack = timestep.observation[key][0]
+    if not unstack.shape:
+      unstack = np.asarray([unstack])
+    return unstack
+
+  def _maybe_process_spec(self, key, spec):
+    if key not in self._obs_to_unstack:
+      return spec
+    model_array = spec.generate_value()[0]
+    if not model_array.shape:
+      model_array = np.asarray([model_array])
+    return specs.Array(
+        shape=model_array.shape, dtype=model_array.dtype, name=spec.name)
+
+  @overrides(tsp.TimestepPreprocessor)
+  def _output_spec(
+      self, input_spec: spec_utils.TimeStepSpec) -> spec_utils.TimeStepSpec:
+    if self._override_obs:
+      processed_obs_spec = {
+          k: self._maybe_process_spec(k, v)
+          for k, v in input_spec.observation_spec.items()
+      }
+    else:
+      unstacked_obs_spec = {
+          self._added_obs_prefix + str(k): self._maybe_process_spec(k, v)
+          for k, v in input_spec.observation_spec.items()
+      }
+      processed_obs_spec = {**input_spec.observation_spec, **unstacked_obs_spec}
+
+    return input_spec.replace(processed_obs_spec)
+
+
 class FoldObservations(tsp.TimestepPreprocessor):
   """Performs a fold operation and transormation some observation."""
 

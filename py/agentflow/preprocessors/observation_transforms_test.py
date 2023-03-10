@@ -966,6 +966,80 @@ class StackObservationsTest(parameterized.TestCase):
     np.testing.assert_allclose(expected_output_pos.shape, output_shape)
 
 
+class UnstackObservationsTest(parameterized.TestCase):
+
+  @parameterized.parameters(
+      (False, (3, 4), (4,)),
+      (True, (1, 7), (7,)),
+  )
+  def test_unstack_observations_spec(
+      self, override, input_shape, output_shape):
+    # Generate the input spec and input timestep.
+    input_obs_spec = {
+        'pos': specs.Array(shape=input_shape, dtype=np.float32, name='pos'),
+    }
+    input_spec = _build_unit_timestep_spec(
+        observation_spec=input_obs_spec)
+
+    # Generate the expected stacked output spec.
+    if override:
+      expected_output_obs_spec = {
+          'pos': specs.Array(shape=output_shape, dtype=np.float32, name='pos'),
+      }
+    else:
+      expected_output_obs_spec = {
+          'pos': specs.Array(shape=input_shape, dtype=np.float32, name='pos'),
+          'unstacked_pos': specs.Array(
+              shape=output_shape, dtype=np.float32, name='unstacked_pos'),
+      }
+    expected_output_spec = _build_unit_timestep_spec(
+        observation_spec=expected_output_obs_spec)
+
+    preprocessor = observation_transforms.UnstackObservations(
+        obs_to_unstack=['pos'],
+        override_obs=override)
+
+    output_spec = preprocessor.setup_io_spec(input_spec)
+    self.assertEqual(expected_output_spec, output_spec)
+
+  @parameterized.parameters(
+      (False, (3, 4,), (3, 4)),
+      (True, (1, 7,), (7,)),
+  )
+  def test_unstack_observations(
+      self, override, input_shape, output_shape):
+    input_obs_spec = {
+        'pos': specs.Array(shape=input_shape, dtype=np.float32, name='pos'),
+    }
+    # Generate the input spec and input timestep.
+    input_spec = _build_unit_timestep_spec(
+        observation_spec=input_obs_spec)
+
+    preprocessor = observation_transforms.UnstackObservations(
+        obs_to_unstack=['pos'],
+        override_obs=override)
+
+    preprocessor.setup_io_spec(input_spec)
+
+    input_pos = np.random.random(input_shape).astype(np.float32)
+
+    if override:
+      expected_output_pos = input_pos[0]
+    else:
+      expected_output_pos = input_pos
+
+    input_timestep = testing_functions.random_timestep(
+        spec=input_spec,
+        step_type=dm_env.StepType.FIRST,
+        observation={'pos': input_pos,})
+
+    output_timestep = preprocessor.process(input_timestep)
+    output_pos = output_timestep.observation['pos']
+
+    np.testing.assert_allclose(expected_output_pos, output_pos)
+    np.testing.assert_allclose(expected_output_pos.shape, output_shape)
+
+
 class AddObservationTest(absltest.TestCase):
 
   def test_no_overwriting(self):
