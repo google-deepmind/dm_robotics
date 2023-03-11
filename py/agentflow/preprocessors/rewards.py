@@ -386,13 +386,16 @@ class StackedRewardsFilter(RewardFilter):
 
 
 class FilterReward(timestep_preprocessor.TimestepPreprocessor):
-  """Applys a user-provided callable to the reward and exposes the filter obs.
+  """Applies a user-provided callable to the reward and exposes the filter obs.
   """
 
   def __init__(
       self,
       *,
       filter_fn: RewardFilter,
+      expose_filter_obs: bool = True,
+      validation_frequency: timestep_preprocessor.ValidationFrequency = (
+          timestep_preprocessor.ValidationFrequency.ONCE_PER_EPISODE),
       name: Optional[str] = None,
   ):
     """Initializes FilterReward.
@@ -403,10 +406,14 @@ class FilterReward(timestep_preprocessor.TimestepPreprocessor):
         `lambda x: 1 if x > 0.5 else 0`), but for more complex cases with
         internal state consider implementing the full `RewardFilter` API to
         expose the state in the observation.
+      expose_filter_obs: if True, add the output of `filter.state()` to the
+        observation.
+      validation_frequency: How often should we validate the obs specs.
       name: A name for this TimestepPreprocessor.
     """
-    super().__init__(name=name)
+    super().__init__(validation_frequency=validation_frequency, name=name)
     self._filter_fn = filter_fn
+    self._expose_filter_obs = expose_filter_obs
 
   @overrides(timestep_preprocessor.TimestepPreprocessor)
   def _process_impl(
@@ -423,17 +430,18 @@ class FilterReward(timestep_preprocessor.TimestepPreprocessor):
         reward)
     timestep = timestep._replace(reward=reward)
 
-    try:
-      # Expose filter state as observation so the task is markov.
-      filter_obs = self._filter_fn.state()
-      if filter_obs is not None:
-        processed_obs = dict(timestep.observation)
-        processed_obs.update(filter_obs)
-        timestep = timestep._replace(observation=processed_obs)
-    except Exception:  # pylint: disable=broad-except
-      logging.log_first_n(
-          logging.INFO, 'Failed to generate filter state observation.', 10
-      )
+    if self._expose_filter_obs:
+      try:
+        # Expose filter state as observation so the task is markov.
+        filter_obs = self._filter_fn.state()
+        if filter_obs is not None:
+          processed_obs = dict(timestep.observation)
+          processed_obs.update(filter_obs)
+          timestep = timestep._replace(observation=processed_obs)
+      except Exception:  # pylint: disable=broad-except
+        logging.log_first_n(
+            logging.INFO, 'Failed to generate filter state observation.', 10
+        )
 
     return timestep
 
@@ -442,34 +450,38 @@ class FilterReward(timestep_preprocessor.TimestepPreprocessor):
       self, input_spec: spec_utils.TimeStepSpec
   ) -> spec_utils.TimeStepSpec:
 
-    # If filter is stateful, generate a spec for the filter observation.
-    observation_spec = dict(input_spec.observation_spec)
-    try:
-      filter_obs_spec = self._filter_fn.state_spec()
-      if filter_obs_spec is None:
-        # Generate a value to produce a spec.
-        filter_obs = self._filter_fn.state()
-        if filter_obs is not None:
-          filter_obs_spec = {
-              k: specs.Array(
-                  shape=np.asarray(v).shape, dtype=np.asarray(v).dtype, name=k
-              )
-              for k, v in filter_obs.items()
-          }
+    if self._expose_filter_obs:
+      # If filter is stateful, generate a spec for the filter observation.
+      observation_spec = dict(input_spec.observation_spec)
+      try:
+        filter_obs_spec = self._filter_fn.state_spec()
+        if filter_obs_spec is None:
+          # Generate a value to produce a spec.
+          filter_obs = self._filter_fn.state()
+          if filter_obs is not None:
+            filter_obs_spec = {
+                k: specs.Array(
+                    shape=np.asarray(v).shape, dtype=np.asarray(v).dtype, name=k
+                )
+                for k, v in filter_obs.items()
+            }
 
-      if filter_obs_spec is not None:
-        conflicting_keys = set(input_spec.observation_spec.keys()).intersection(
-            filter_obs_spec.keys()
+        if filter_obs_spec is not None:
+          conflicting_keys = set(
+              input_spec.observation_spec.keys()
+          ).intersection(filter_obs_spec.keys())
+          if conflicting_keys:
+            raise ValueError(f'Observations {conflicting_keys} already exist.')
+
+          observation_spec.update(filter_obs_spec)
+          input_spec = input_spec.replace(observation_spec=observation_spec)
+
+      except Exception:  # pylint: disable=broad-except
+        logging.log_first_n(
+            logging.INFO,
+            'Failed to generate filter state observation spec.',
+            10,
         )
-        if conflicting_keys:
-          raise ValueError(f'Observations {conflicting_keys} already exist.')
-
-        observation_spec.update(filter_obs_spec)
-
-    except Exception:  # pylint: disable=broad-except
-      logging.log_first_n(
-          logging.INFO, 'Failed to generate filter state observation spec.', 10
-      )
 
     dummy_reward = input_spec.reward_spec.generate_value()
     filtered_reward = self._filter_fn(dummy_reward)
@@ -478,9 +490,7 @@ class FilterReward(timestep_preprocessor.TimestepPreprocessor):
         dtype=input_spec.reward_spec.dtype,
     )
 
-    return input_spec.replace(
-        observation_spec=observation_spec, reward_spec=reward_spec
-    )
+    return input_spec.replace(reward_spec=reward_spec)
 
 
 class StagedWithActiveThreshold(RewardCombinationStrategy):

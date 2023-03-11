@@ -391,6 +391,27 @@ class FilterRewardTest(absltest.TestCase):
       output_timestep = reward_preprocessor.process(successful_timestep)
       self.assertEqual(output_timestep.reward, 1.)
 
+  def test_without_filter_obs(self):
+
+    input_spec = testing_functions.random_timestep_spec()
+    cast_ = lambda r: np.array(r, dtype=input_spec.reward_spec.dtype)
+
+    input_timestep = testing_functions.random_timestep(
+        input_spec, reward=cast_(1.0)
+    )
+
+    # Create a stateful filter.
+    filter_fn = rewards.StackedRewardsFilter.min_last_k_above_threshold(
+        threshold=0.8, num_steps=3, obs_prefix='crf'
+    )
+    reward_preprocessor = rewards.FilterReward(
+        filter_fn=filter_fn,
+        expose_filter_obs=False)
+    reward_preprocessor.setup_io_spec(input_spec)
+
+    output_timestep = reward_preprocessor.process(input_timestep)
+    self.assertEqual(input_timestep.observation, output_timestep.observation)
+
 
 class CombineRewardsTest(parameterized.TestCase):
 
