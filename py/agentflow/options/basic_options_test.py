@@ -583,6 +583,21 @@ class ArgAdaptorTest(absltest.TestCase):
     adaptor_func.assert_called_with(parent_arg)
 
 
+class IgnoreErrorDelegateOptionTest(absltest.TestCase):
+
+  def testResultIsSuccess(self):
+    _, value = _rand_spec_and_value(shape=(1,), dtype=np.float32)
+
+    delegate_result = core.OptionResult(
+        termination_reason=core.TerminationType.FAILURE, data='failure')
+
+    delegate = testing_functions.SpyOp(action=value, result=delegate_result)
+    option = basic_options.IgnoreErrorDelegateOption(delegate, 'name')
+
+    result = option.result(_timestep_with_no_values())
+    self.assertIs(result.termination_reason, core.TerminationType.SUCCESS)
+
+
 def _rand_spec_and_value(shape, dtype=None):
   spec = testing_functions.random_array_spec(shape=shape, dtype=dtype)
   return spec, testing_functions.valid_value(spec)

@@ -630,3 +630,11 @@ class ArgAdaptor(DelegateOption):
     timestep = timestep._replace(observation=adapted_observation)
 
     return super().step(timestep)
+
+
+class IgnoreErrorDelegateOption(DelegateOption):
+  """A DelegateOption that ignores the result of the delegate."""
+
+  def result(self, timestep: dm_env.TimeStep) -> core.OptionResult:
+    del timestep
+    return core.OptionResult(termination_reason=core.TerminationType.SUCCESS)
