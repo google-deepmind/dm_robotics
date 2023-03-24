@@ -630,7 +630,7 @@ class StackObservations(tsp.TimestepPreprocessor):
     self._stack_depth = stack_depth  # type: np.integer
     self._add_leading_dim = add_leading_dim
     self._stacks = {
-        name: collections.deque(maxlen=self._stack_depth)
+        name: collections.deque(maxlen=self._stack_depth)  # pytype: disable=wrong-arg-types  # numpy-scalars
         for name in self._obs_to_stack
     }
     self._override_obs = override_obs
