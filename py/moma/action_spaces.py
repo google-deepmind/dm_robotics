@@ -14,6 +14,7 @@
 
 """Action spaces for manipulation."""
 
+import enum
 from typing import Callable, List, Optional, Sequence
 
 from dm_control import mjcf  # type: ignore
@@ -167,3 +168,81 @@ class ReframeVelocityActionSpace(af.ActionSpace):
       output_action = output_action[self._velocity_dims]
 
     return spec_utils.shrink_to_fit(value=output_action, spec=self._spec)
+
+
+class ConstrainedActionSpace(DelegateActionSpace):
+  """Limits actions before sending them to the underlying action space."""
+
+  @enum.unique
+  class ConstrainMethod(enum.Enum):
+    SHRINK = enum.auto()
+    CLIP = enum.auto()
+
+  def __init__(
+      self,
+      action_space: af.ActionSpace[specs.BoundedArray],
+      limits: specs.BoundedArray,
+      constrain_method: ConstrainMethod = ConstrainMethod.SHRINK,
+  ):
+    super().__init__(action_space)
+    self._limits = limits
+    self._constrain_method = constrain_method
+
+  @property
+  def name(self):
+    return (f'{self._action_space.name}_constrained_'
+            f'{self._constrain_method.name.lower()}')
+
+  def spec(self) -> specs.BoundedArray:
+    return self._limits
+
+  def project(self, action: np.ndarray) -> np.ndarray:
+    if self._constrain_method == ConstrainedActionSpace.ConstrainMethod.SHRINK:
+      action = spec_utils.shrink_to_fit(action, self._limits)
+    elif self._constrain_method == ConstrainedActionSpace.ConstrainMethod.CLIP:
+      action = np.clip(action, self._limits.minimum, self._limits.maximum)
+    else:
+      raise ValueError(
+          f'Unknown constrain method: {self._constrain_method.name}')
+    return super().project(action)
+
+
+class FillUpActionSpace(af.ActionSpace[specs.BoundedArray]):
+  """Fills up a new action based on default values and a mask."""
+
+  def __init__(
+      self,
+      limits: specs.BoundedArray,
+      default_values: np.ndarray,
+      mask: Sequence[bool],
+      name: str = 'FillUp',
+  ):
+    if len(mask) != default_values.shape[0]:
+      raise ValueError(
+          'Length of the default_values must equal the length of the mask.\n'
+          'Provided:\n'
+          f'default_values: {default_values}\n'
+          f'mask:{mask}')
+    if sum(mask) != limits.shape[0]:
+      raise ValueError(
+          'Length of the limits must equal the number of Trues in the mask.\n'
+          'Provided:\n'
+          f'limits: {limits}\n'
+          f'mask:{mask}')
+    self._limits = limits
+    self._default_values = default_values
+    self._mask = mask
+    self._name = name
+
+  @property
+  def name(self) -> str:
+    return self._name
+
+  def spec(self) -> specs.BoundedArray:
+    return self._limits
+
+  def project(self, action: np.ndarray) -> np.ndarray:
+    self._limits.validate(action)
+    new_action = np.array(self._default_values)
+    new_action[self._mask] = action
+    return new_action
