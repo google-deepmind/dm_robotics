@@ -16,7 +16,7 @@
 
 import dataclasses
 import enum
-from typing import Dict, Mapping, Optional, Sequence, Tuple, Union
+from typing import Dict, Mapping, Optional, Tuple, Union, List
 
 from absl import logging
 from dm_control import mjcf
@@ -294,7 +294,7 @@ def build_camera_sensors(
     camera_configurations: Mapping[str, CameraConfig],
     mjcf_root: mjcf.element.RootElement,
     mjcf_full_identifiers: Optional[Mapping[str, str]] = None,
-    ) -> Sequence[Union[CameraPoseSensor, CameraImageSensor]]:
+    ) -> List[Union[CameraPoseSensor, CameraImageSensor]]:
   """Create the camera sensors for a list of cameras.
 
   Args:
