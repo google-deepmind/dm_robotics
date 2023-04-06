@@ -135,21 +135,18 @@ class Cartesian4DVelocityEffectorTest(parameterized.TestCase):
         physics, joint_angles=test_utils.SAFE_SAWYER_JOINTS_POS)
     physics.step()  # propagate the changes to the rest of the physics
 
-    # The frame the we want to align the z axis of the arm wrist site to.
-    target_frame = self._target_frame = geometry.HybridPoseStamped(
-        pose=None,
-        frame=arm.wrist_site,
-        quaternion_override=geometry.PoseStamped(
-            pose=geometry.Pose(
-                position=None, quaternion=(
-                    cartesian_4d_velocity_effector.DOWNFACING_EE_QUAT_WXYZ))))
-
     # The frame in which the 6d effector expects to receive the velocity
     # command.
     world_orientation_frame = geometry.HybridPoseStamped(
         pose=None,
         frame=arm.wrist_site,
         quaternion_override=geometry.PoseStamped(None, None))
+
+    # The frame of the controlled element.
+    element_frame = geometry.HybridPoseStamped(
+        pose=None,
+        frame=arm.wrist_site,
+    )
 
     # Run the test 10 times with random poses.
     np.random.seed(42)
@@ -166,40 +163,58 @@ class Cartesian4DVelocityEffectorTest(parameterized.TestCase):
               effector_prefix='sawyer_4d'))
       cartesian_effector.after_compile(arm.mjcf_model, physics)
 
-      # Create a cartesian command, this command is expressed in the
-      # control frame.
-      cartesian_command = np.array([0.3, 0.1, -0.2, 0.0, 0.0, 0.5],
-                                   dtype=np.float32)
+      # Create a cartesian command, the linear component of this component is
+      # expressed in the control frame and the rotation is epxressed in the
+      # element frame.
+      cartesian_command_linear = np.array(
+          [0.3, 0.1, -0.2, 0.0, 0.0, 0.0], dtype=np.float32
+      )
+      cartesian_command_angular = np.array(
+          [0.0, 0.0, 0.0, 0.0, 0.0, 0.5], dtype=np.float32
+      )
 
       # Send the command to the effector.
       cartesian_effector.set_control(
-          physics=physics, command=np.append(
-              cartesian_command[0:3], cartesian_command[5]))
+          physics=physics,
+          command=np.append(
+              cartesian_command_linear[0:3], cartesian_command_angular[5]
+          ),
+      )
 
-      # Create the twist stamped command
-      stamped_command_control_frame = geometry.TwistStamped(
-          cartesian_command, control_frame)
+      # Create the twist stamped commands
+      stamped_command_linear_control_frame = geometry.TwistStamped(
+          cartesian_command_linear, control_frame
+      )
 
-      # Get the twist in target frame and remove the x and y rotations.
+      # Get the twist in element frame and remove the x and y rotations.
       # The robot is already pointing downwards, and is therefore aligned with
       # the target frame. This means that we do not expect to have any rotation
       # along the x or y axis of the target frame.
-      stamped_command_target_frame = stamped_command_control_frame.to_frame(
-          target_frame, mujoco_physics.wrap(physics))
-      target_frame_command = copy.copy(stamped_command_target_frame.twist.full)
-      target_frame_command[3:5] = np.zeros(2)
-      stamped_command_target_frame = stamped_command_target_frame.with_twist(
-          target_frame_command)
+      stamped_command_linear_element_frame = (
+          stamped_command_linear_control_frame.to_frame(
+              element_frame, mujoco_physics.wrap(physics)
+          )
+      )
+      element_frame_command_linear = copy.copy(
+          stamped_command_linear_element_frame.twist.full
+      )
+      element_frame_full_command = element_frame_command_linear
+      element_frame_full_command[5] = -cartesian_command_angular[5]
+      stamped_full_command_element_frame = geometry.TwistStamped(
+          element_frame_full_command, element_frame
+      )
 
       # Change the command to the world orientation frame.
       stamped_command_world_orientation_frame = (
-          stamped_command_target_frame.to_frame(
-              world_orientation_frame, mujoco_physics.wrap(physics)))
+          stamped_full_command_element_frame.to_frame(
+              world_orientation_frame, mujoco_physics.wrap(physics)
+          )
+      )
 
       np.testing.assert_allclose(
           effector_6d.previous_action,
           stamped_command_world_orientation_frame.twist.full,
-          atol=1e-3)
+      )
 
 if __name__ == '__main__':
   absltest.main()

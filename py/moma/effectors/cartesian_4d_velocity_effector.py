@@ -32,6 +32,9 @@ _MjcfElement = mjcf.element._ElementImpl  # pylint: disable=protected-access
 # Orientation corresponding to the endeffector pointing downwards.
 DOWNFACING_EE_QUAT_WXYZ = np.array([0.0, 0.0, 1.0, 0.0])
 
+# Largest angle allowed
+_ANGLE_LIMIT_FOR_Z_ROTATION = np.deg2rad(3)
+
 
 class _OrientationController():
   """Proportional controller for maintaining the desired orientation."""
@@ -51,27 +54,17 @@ class _OrientationController():
   def step(
       self, current_quat: np.ndarray, desired_quat: np.ndarray
   ) -> np.ndarray:
-    """Computes angular velocity to orient with a target quat."""
-
-    error_quat = transformations.quat_diff_active(
-        source_quat=current_quat, target_quat=desired_quat)
+    """Computes angular velocity to orient with a desired quat."""
 
     if not self._align_z:
-      # Ignore the z component of the error because the effector controls that.
-      error_euler = transformations.quat_to_euler(error_quat)
-      z_correction = transformations.euler_to_quat(
-          np.array([0, 0, error_euler[2]]))
-
-      # Compute a new target quat whose Z orientation is already aligned with
-      # the current frame.
-      new_desired_quat = transformations.quat_mul(desired_quat, z_correction)
-
-      # Recompute the error with this new aligned target quat.
+      error_quat = _compute_z_axis_aligning_quat(current_quat, desired_quat)
+    else:
       error_quat = transformations.quat_diff_active(
-          current_quat, new_desired_quat)
+          source_quat=current_quat, target_quat=desired_quat
+      )
+      # Normalize the error because quaternions are unit vectors.
+      error_quat = error_quat / np.linalg.norm(error_quat)
 
-    # Normalize the error.
-    error_quat = error_quat / np.linalg.norm(error_quat)
     return self._p * transformations.quat_to_axisangle(error_quat)
 
 
@@ -98,29 +91,28 @@ class Cartesian4dVelocityEffector(effector.Effector):
 
     Args:
       effector_6d: Cartesian 6D velocity effector controlling the linear and
-        angular velocities of `element`. The action spec of this effector
-        should have a shape of 6 elements corresponding to the 6D velocity.
-        The effector should have a property `control_frame` that returns the
+        angular velocities of `element`. The action spec of this effector should
+        have a shape of 6 elements corresponding to the 6D velocity. The
+        effector should have a property `control_frame` that returns the
         geometry.Frame in which the command should be expressed.
       element: the `mjcf.Element` being controlled. The 4D Cartesian velocity
         commands are expressed about the element's origin in the world
         orientation, unless overridden by `control_frame`. Only site elements
         are supported.
       effector_prefix: Prefix to the actuator names in the action spec.
-      control_frame: `geometry.Frame` in which to interpet the Cartesian 4D
-        velocity command. If `None`, assumes that the control command is
-        expressed about the element's origin in the world orientation. Note that
-        this is different than expressing the Cartesian 6D velocity about the
-        element's own origin and orientation. Note that you will have to update
-        the `target_alignment` quaternion if the frame does not have a downward
-        z axis.
+      control_frame: `geometry.Frame` in which to interpet the linear component
+        of the 4D velocity command. If `None`, assumes that the control command
+        is expressed about the element's origin in the world orientation. - Note
+        that this is different than expressing the Cartesian 4D velocity about
+        the element's own origin and orientation. - Note that the gripper
+        rotation will always be expressed about the element frame.
       rotation_gain: Gain applied to the rotational feedback control used to
-          maintain a downward-facing orientation. A value too low of this
-          parameter will result in the robot not being able to maintain the
-          desired orientation. A value too high will lead to oscillations.
-      target_alignment: Unit quat [w, i, j, k] denoting the desired alignment
-          of the element's frame, represented in the world frame. Defaults to
-          facing downwards.
+        maintain a downward-facing orientation. A value too low of this
+        parameter will result in the robot not being able to maintain the
+        desired orientation. A value too high will lead to oscillations.
+      target_alignment: Unit quat [w, i, j, k] denoting the desired alignment of
+        the element's frame, represented in the world frame. Defaults to facing
+        downwards.
     """
     self._effector_6d = effector_6d
     self._element = element
@@ -133,7 +125,8 @@ class Cartesian4dVelocityEffector(effector.Effector):
     self._control_frame = control_frame or geometry.HybridPoseStamped(
         pose=None,
         frame=self._element,
-        quaternion_override=geometry.PoseStamped(None, None))
+        quaternion_override=geometry.PoseStamped(None, None),
+    )
 
     # We use the target frame to compute a "stabilizing angular velocity" such
     # that the z axis of the target frame aligns with the z axis of the
@@ -142,7 +135,9 @@ class Cartesian4dVelocityEffector(effector.Effector):
         pose=None,
         frame=self._element,
         quaternion_override=geometry.PoseStamped(
-            pose=geometry.Pose(position=None, quaternion=target_alignment)))
+            pose=geometry.Pose(position=None, quaternion=target_alignment)
+        ),
+    )
 
     self._element_frame = geometry.PoseStamped(pose=None, frame=element)
 
@@ -168,7 +163,8 @@ class Cartesian4dVelocityEffector(effector.Effector):
         dtype=action_spec_6d.dtype,
         minimum=action_spec_6d.minimum[[0, 1, 2, 5]],
         maximum=action_spec_6d.maximum[[0, 1, 2, 5]],
-        name='\t'.join(actuator_names))
+        name='\t'.join(actuator_names),
+    )
 
   def set_control(self, physics: mjcf.Physics, command: np.ndarray) -> None:
     """Sets a 4 DoF Cartesian velocity command at the current timestep.
@@ -186,28 +182,36 @@ class Cartesian4dVelocityEffector(effector.Effector):
     # Turn the input into a 6D velocity expressed in the control frame.
     twist = np.zeros(6)
     twist[0:3] = command[0:3]
-    twist[5] = command[3]
     twist_stamped = geometry.TwistStamped(twist, self._control_frame)
 
-    # We then project the velocity to the target frame.
-    twist_target_frame = copy.copy(twist_stamped.to_frame(
-        self._target_frame, physics=mujoco_physics.wrap(physics)).twist.full)
+    # We then project the velocity to the element frame.
+    twist_element_frame = copy.copy(
+        twist_stamped.to_frame(
+            self._element_frame, physics=mujoco_physics.wrap(physics)
+        ).twist.full
+    )
+    # The rotation of the wrist is equal to the rotation of the z axis in the
+    # element frame. We use the opposite of the command because the element
+    # frame is pointing downwards.
+    twist_element_frame[5] = -command[3]
 
     # We compute the angular velocity that aligns the element's frame with
-    # the target frame.
-    stabilizing_vel = self._compute_stabilizing_ang_vel(physics)
-
-    # We only use the x and y components of the stabilizing velocity and keep
-    # the z rotation component of the command.
-    twist_target_frame[3:5] = stabilizing_vel[0:2]
-    twist_stamped_target_frame = geometry.TwistStamped(
-        twist_target_frame, self._target_frame)
+    # the target frame. This is expressed in the element frame. It is important
+    # to express it along the element frame because the resulting velocity will
+    # have a rotation around z of 0. This allows the user to be in full control
+    # of the z rotation.
+    stabilizing_vel_element_frame = self._compute_stabilizing_ang_vel(physics)
+    twist_element_frame[3:5] = stabilizing_vel_element_frame[0:2]
+    twist_stamped_element_frame = geometry.TwistStamped(
+        twist_element_frame, self._element_frame
+    )
 
     # Transform the command to the frame expected by the underlying 6D effector.
     try:
-      twist = twist_stamped_target_frame.to_frame(
+      twist = twist_stamped_element_frame.to_frame(
           self._effector_6d.control_frame,  # pytype: disable=attribute-error
-          mujoco_physics.wrap(physics)).twist.full
+          mujoco_physics.wrap(physics),
+      ).twist.full
     except AttributeError as error:
       raise AttributeError(
           'The 6D effector does not have a `control_frame` attribute.'
@@ -231,20 +235,33 @@ class Cartesian4dVelocityEffector(effector.Effector):
     Args:
       physics: An instance of physics.
     """
-    # Express the quaternion of both the element and the target in the target
-    # frame. This ensures that the velocity returned by the orientation
-    # controller will align the z axis of the element frame with the z axis of
-    # the target frame.
-    element_quat_target_frame = self._element_frame.to_frame(
-        self._target_frame, mujoco_physics.wrap(physics)).pose.quaternion
-
-    # The target quaternion is expressed in the target frame (the result is the
-    # unit quaternion)
-    target_quat_target_frame = self._target_frame.pose.quaternion
+    # Express the quaternion of both the element and the target in the element
+    # frame. The resulting velocity will have a 0 on the z component of the
+    # rotation. This is because we are trying to align the z axis of the
+    # element frame and the z axis of the target frame.
+    element_quat_element_frame = self._element_frame.pose.quaternion
+    target_quat_element_frame = self._target_frame.to_frame(
+        self._element_frame, mujoco_physics.wrap(physics)
+    ).pose.quaternion
 
     return self._orientation_ctrl.step(
-        current_quat=element_quat_target_frame,
-        desired_quat=target_quat_target_frame)
+        current_quat=element_quat_element_frame,
+        desired_quat=target_quat_element_frame,
+    )
+
+
+def _compute_z_axis_aligning_quat(
+    from_quat: np.ndarray, to_quat: np.ndarray
+) -> np.ndarray:
+  """Returns the quaternion that aligns the z axis or the rotations frames."""
+
+  z_axis_from_quat = np.array(transformations.quat_to_mat(from_quat))[:3, 2]
+  z_axis_to_quat = np.array(transformations.quat_to_mat(to_quat))[:3, 2]
+  correction_quat = transformations.quat_between_vectors(
+      z_axis_from_quat, z_axis_to_quat
+  )
+
+  return correction_quat / np.linalg.norm(correction_quat)
 
 
 def limit_to_workspace(
@@ -256,7 +273,7 @@ def limit_to_workspace(
     wrist_limits: Optional[Sequence[float]] = None,
     reverse_wrist_range: bool = False,
     pose_getter: Optional[Callable[[mjcf.Physics], np.ndarray]] = None,
-    ) -> effector.Effector:
+) -> effector.Effector:
   """Returns an effector that restricts the 4D actions to a workspace.
 
   If wrist limits are provided, this effector will also restrict the Z rotation
