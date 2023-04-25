@@ -417,6 +417,8 @@ def valid_value(spec: Union[specs.Array, spec_utils.ObservationSpec,
   """Returns a valid value from the primitive, dict, or timestep spec."""
 
   def valid_primitive(prim_spec):
+    if isinstance(prim_spec, specs.StringArray):
+      return np.array(random_string(), dtype=object)
     value = np.random.random(size=prim_spec.shape).astype(prim_spec.dtype)
     if isinstance(prim_spec, specs.BoundedArray):
       # Clip specs to handle +/- np.inf in the specs.
