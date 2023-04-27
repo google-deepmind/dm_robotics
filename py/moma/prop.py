@@ -57,7 +57,7 @@ class Prop(composer.Entity):
     """Returns the `mjcf.RootElement` object corresponding to this prop."""
     return self._mjcf_root
 
-  def set_pose(self, physics: mjcf.Physics, position: np.ndarray,
+  def set_pose(self, physics: mjcf.Physics, position: np.ndarray,  # pytype: disable=signature-mismatch  # overriding-parameter-count-checks
                quaternion: np.ndarray) -> None:
     """Sets the pose of the prop wrt to where it was defined.
 
@@ -119,7 +119,7 @@ class WrapperProp(Prop):
 class Camera(Prop):
   """Base class for Moma camera props."""
 
-  def _build(  # pylint:disable=arguments-renamed
+  def _build(  # pylint:disable=arguments-renamed  # pytype: disable=signature-mismatch  # overriding-parameter-count-checks
       self,
       name: str,
       mjcf_root: mjcf.RootElement,
