@@ -818,9 +818,10 @@ def quat_angle(quat: types.QuatArray) -> np.ndarray:
   condition = quat[..., 0] < _TOL_ARCCOS
   angle = np.where(
       condition,
-      2 * np.arccos(quat[..., 0], where=condition),
-      2 * np.arcsin(np.linalg.norm(quat[..., 1:], axis=-1), where=~condition))
-  return angle
+      np.arccos(quat[..., 0], where=condition),
+      np.arcsin(np.linalg.norm(quat[..., 1:], axis=-1), where=~condition),
+  )
+  return 2 * angle
 
 # LINT.ThenChange(_transformations_quat.py)
 
@@ -1671,7 +1672,7 @@ def cross_2d(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     # In 2D this produces a vector.
     return np.array([-va[0] * vb[1], va[0] * vb[0]])
   else:
-    raise Exception('Unsupported argument vector lengths')
+    raise Exception('Unsupported argument vector lengths')  # pylint: disable=broad-exception-raised
 
 
 def velocity_transform_2d(ht: types.HomogeneousMatrix2d,
