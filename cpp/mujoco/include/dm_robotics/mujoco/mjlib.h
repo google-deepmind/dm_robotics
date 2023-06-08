@@ -29,8 +29,6 @@ namespace dm_robotics {
 
 extern "C" {
 
-using MjActivateFunc = int(const char*);
-using MjDeactivateFunc = void();
 using MjDefaultVFSFunc = void(mjVFS*);
 using MjAddFileVFSFunc = int(mjVFS*, const char*, const char*);
 using MjMakeEmptyFileVFSFunc = int(mjVFS*, const char*, int);
@@ -377,8 +375,6 @@ class MjLib {
   MjLib(const std::string& libmujoco_path, int dlopen_flags);
   ~MjLib();
 
-  MjActivateFunc* const mj_activate;                        // NOLINT
-  MjDeactivateFunc* const mj_deactivate;                    // NOLINT
   MjDefaultVFSFunc* const mj_defaultVFS;                    // NOLINT
   MjAddFileVFSFunc* const mj_addFileVFS;                    // NOLINT
   MjMakeEmptyFileVFSFunc* const mj_makeEmptyFileVFS;        // NOLINT

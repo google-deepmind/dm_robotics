@@ -74,8 +74,6 @@ struct MjLib::Impl {
 
 MjLib::MjLib(const std::string& libmujoco_path, int dlopen_flags)
     : pimpl_(absl::make_unique<Impl>(libmujoco_path, dlopen_flags)),
-      INIT_WITH_DLSYM(mj_activate),
-      INIT_WITH_DLSYM(mj_deactivate),
       INIT_WITH_DLSYM(mj_defaultVFS),
       INIT_WITH_DLSYM(mj_addFileVFS),
       INIT_WITH_DLSYM(mj_makeEmptyFileVFS),
