@@ -20,7 +20,7 @@ from typing import List, NamedTuple, Optional, Sequence, Union
 from absl import logging
 from dm_control import mjcf
 from dm_control.mujoco.wrapper import mjbindings
-from dm_control.mujoco.wrapper.mjbindings.enums import mjtObj
+from dm_control.mujoco.wrapper.mjbindings import enums
 from dm_robotics.controllers import cartesian_6d_to_joint_velocity_mapper
 from dm_robotics.geometry import geometry
 from dm_robotics.geometry import mujoco_physics
@@ -140,17 +140,19 @@ class IkSolver():
     self._nullspace_gain = nullspace_gain
     self._create_qp_mapper()
 
-  def solve(self,
-            ref_pose: geometry.Pose,
-            linear_tol: float = 1e-3,
-            angular_tol: float = 1e-3,
-            max_steps: int = 100,
-            early_stop: bool = False,
-            num_attempts: int = 30,
-            stop_on_first_successful_attempt: bool = False,
-            inital_joint_configuration: Optional[np.ndarray] = None,
-            nullspace_reference: Optional[np.ndarray] = None
-            ) -> Optional[np.ndarray]:
+  def solve(
+      self,
+      ref_pose: geometry.Pose,
+      random_state: np.random.RandomState,
+      linear_tol: float = 1e-3,
+      angular_tol: float = 1e-3,
+      max_steps: int = 100,
+      early_stop: bool = False,
+      num_attempts: int = 30,
+      stop_on_first_successful_attempt: bool = False,
+      initial_joint_configuration: Optional[np.ndarray] = None,
+      nullspace_reference: Optional[np.ndarray] = None,
+  ) -> Optional[np.ndarray]:
     """Attempts to solve the inverse kinematics.
 
     This method computes joint configuration that solves the inverse kinematics
@@ -160,8 +162,10 @@ class IkSolver():
     ranges
 
     Args:
-      ref_pose: Target pose of the controlled element, it must be
-        in the world frame.
+      ref_pose: Target pose of the controlled element, it must be in the world
+        frame.
+      random_state: Random state to enable a deterministic position of the
+        gripper.
       linear_tol: The linear tolerance, in meters, that determines if the
         solution found is valid.
       angular_tol: The angular tolerance, in radians, to determine if the
@@ -172,27 +176,27 @@ class IkSolver():
       early_stop: If true, stops the attempt as soon as the configuration is
         within the linear and angular tolerances. If false, it will always run
         `max_steps` iterations per attempt and return the last configuration.
-      num_attempts: The number of different attempts the solver should do.
-        For a given target pose, there exists an infinite number of possible
+      num_attempts: The number of different attempts the solver should do. For a
+        given target pose, there exists an infinite number of possible
         solutions, having more attempts allows to compare different joint
         configurations. The solver will return the solution where the joints are
-        closer to the `nullspace_reference`. Note that not all attempts
-        are successful, and thus, having more attempts gives better chances of
+        closer to the `nullspace_reference`. Note that not all attempts are
+        successful, and thus, having more attempts gives better chances of
         finding a correct solution.
       stop_on_first_successful_attempt: If true, the method will return the
         first solution that meets the tolerance criteria. If false, returns the
         solution where the joints are closer the center of their respective
         range.
-      inital_joint_configuration: A joint configuration that will be used for
-        the first attempt. This can be useful in the case of a complex pose,
-        a user could provide the initial guess that is close to the desired
+      initial_joint_configuration: A joint configuration that will be used for
+        the first attempt. This can be useful in the case of a complex pose, a
+        user could provide the initial guess that is close to the desired
         solution. If None, all the joints will be set to 0 for the first
         attempt.
       nullspace_reference: The desired joint configuration. When the controlled
-       element is in the desired pose, the solver will try and bring the joint
-       configuration closer to the nullspace reference without moving the
-       element. If no nullspace reference is provided, the center of the joint
-       ranges is used as reference.
+        element is in the desired pose, the solver will try and bring the joint
+        configuration closer to the nullspace reference without moving the
+        element. If no nullspace reference is provided, the center of the joint
+        ranges is used as reference.
 
     Returns:
       If a solution is found, returns the corresponding joint configuration.
@@ -200,7 +204,7 @@ class IkSolver():
 
     Raises:
       ValueError: If the `nullspace_reference` does not have the correct length.
-      ValueError: If the `inital_joint_configuration` does not have the correct
+      ValueError: If the `initial_joint_configuration` does not have the correct
         length.
     """
 
@@ -212,32 +216,34 @@ class IkSolver():
           f'elements expected length of {self._num_joints}.'
           f' Got {nullspace_reference}')
 
-    if inital_joint_configuration is not None:
-      if len(inital_joint_configuration) != self._num_joints:
+    if initial_joint_configuration is not None:
+      if len(initial_joint_configuration) != self._num_joints:
         raise ValueError(
-            'The provided inital joint configuration does not have the right '
+            'The provided initial joint configuration does not have the right '
             f'number of elements expected length of {self._num_joints}.'
-            f' Got {inital_joint_configuration}')
+            f' Got {initial_joint_configuration}'
+        )
 
-    inital_joint_configuration = inital_joint_configuration or np.zeros(
-        self._num_joints)
+    initial_joint_configuration = initial_joint_configuration or np.zeros(
+        self._num_joints
+    )
 
     nullspace_jnt_qpos_min_err = np.inf
     sol_qpos = None
     success = False
-
     # Each iteration of this loop attempts to solve the inverse kinematics.
     # If a solution is found, it is compared to previous solutions.
     for attempt in range(num_attempts):
 
       # Use the user provided joint configuration for the first attempt.
       if attempt == 0:
-        self._joints_binding.qpos[:] = inital_joint_configuration
+        self._joints_binding.qpos[:] = initial_joint_configuration
       else:
         # Randomize the initial joint configuration so that the IK can find
         # different solutions.
-        qpos_new = np.random.uniform(
-            self._joints_binding.range[:, 0], self._joints_binding.range[:, 1])
+        qpos_new = random_state.uniform(
+            self._joints_binding.range[:, 0], self._joints_binding.range[:, 1]
+        )
         self._joints_binding.qpos[:] = qpos_new
 
       # Solve the IK.
@@ -437,11 +443,11 @@ class IkSolver():
 def _get_element_type(element: _MjcfElement):
   """Returns the MuJoCo enum corresponding to the element type."""
   if element.tag == 'body':
-    return mjtObj.mjOBJ_BODY
+    return enums.mjtObj.mjOBJ_BODY
   elif element.tag == 'geom':
-    return mjtObj.mjOBJ_GEOM
+    return enums.mjtObj.mjOBJ_GEOM
   elif element.tag == 'site':
-    return mjtObj.mjOBJ_SITE
+    return enums.mjtObj.mjOBJ_SITE
   else:
     raise ValueError('Element must be a MuJoCo body, geom, or site. Got '
                      f'[{element.tag}].')
@@ -478,15 +484,15 @@ def _compute_twist(init_pose: geometry.Pose,
   orientation as the world frame.
 
   Args:
-    init_pose: The inital pose.
+    init_pose: The initial pose.
     ref_pose: The target pose that we want to reach.
     linear_velocity_gain: Scales the linear velocity. The value should be
       between 0 and 1. A value of 0 corresponds to not moving. A value of 1
-      corresponds to moving from the inital pose to the target pose in a
-      single timestep.
+      corresponds to moving from the initial pose to the target pose in a single
+      timestep.
     angular_velocity_gain: Scales the angualr velocity. The value should be
       between 0 and 1. A value of 0 corresponds to not rotating. A value of 1
-      corresponds to rotating from the inital pose to the target pose in a
+      corresponds to rotating from the initial pose to the target pose in a
       single timestep.
     control_timestep_seconds: Duration of the control timestep. The outputed
       twist is intended to be used over that duration.

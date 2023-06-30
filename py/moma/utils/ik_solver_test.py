@@ -36,7 +36,6 @@ class IkSolverTest(parameterized.TestCase):
       ('sawyer_with_gripper', True), ('sawyer_without_gripper', False),)
   def test_ik_solver_with_pose(self, with_gripper):
     # Seed for randomness to prevent flaky tests.
-    np.random.seed(42)
     rng = np.random.RandomState(42)
 
     # Change the ik site depending if the gripper is attached or not.
@@ -68,8 +67,13 @@ class IkSolverTest(parameterized.TestCase):
       # Check that we can solve the problem and that the solution is within
       # the joint ranges.
       qpos_sol = solver.solve(
-          ref_pose, linear_tol=_LINEAR_TOL, angular_tol=_ANGULAR_TOL,
-          early_stop=True, stop_on_first_successful_attempt=True)
+          ref_pose,
+          linear_tol=_LINEAR_TOL,
+          angular_tol=_ANGULAR_TOL,
+          early_stop=True,
+          stop_on_first_successful_attempt=True,
+          random_state=rng,
+      )
       self.assertIsNotNone(qpos_sol)
       min_range = solver._joints_binding.range[:, 0]
       max_range = solver._joints_binding.range[:, 1]
@@ -94,7 +98,6 @@ class IkSolverTest(parameterized.TestCase):
     correct qpos is returned.
     """
     # Seed for randomness to prevent flaky tests.
-    np.random.seed(42)
     rng = np.random.RandomState(42)
 
     arm = sawyer.Sawyer()
@@ -117,7 +120,7 @@ class IkSolverTest(parameterized.TestCase):
       ref_pose = geometry.Pose(position, quaternion)
 
       # Check that a solution has been found
-      qpos_sol = solver.solve(ref_pose)
+      qpos_sol = solver.solve(ref_pose, random_state=rng)
       self.assertIsNotNone(qpos_sol)
 
       # Check if the final attempt joint configuration is a solution.
@@ -143,16 +146,20 @@ class IkSolverTest(parameterized.TestCase):
 
   def test_raises_when_nullspace_reference_wrong_length(self):
     # Change the ik site depending if the gripper is attached or not.
+    rng = np.random.RandomState(42)
     arm = sawyer.Sawyer()
     solver = ik_solver.IkSolver(
         arm.mjcf_model, arm.joints, arm.wrist_site)
     ref_pose = geometry.Pose([0., 0., 0.], [1., 0., 0., 0.])
     wrong_nullspace_ref = np.asarray([0., 0., 0.])
     with self.assertRaises(ValueError):
-      solver.solve(ref_pose, nullspace_reference=wrong_nullspace_ref)
+      solver.solve(
+          ref_pose, nullspace_reference=wrong_nullspace_ref, random_state=rng
+      )
 
   def test_raises_when_initial_joint_confiugration_wrong_length(self):
     # Change the ik site depending if the gripper is attached or not.
+    rng = np.random.RandomState(42)
     arm = sawyer.Sawyer()
     solver = ik_solver.IkSolver(
         arm.mjcf_model, arm.joints, arm.wrist_site)
@@ -161,15 +168,18 @@ class IkSolverTest(parameterized.TestCase):
     with self.assertRaises(ValueError):
       solver.solve(
           ref_pose,
-          inital_joint_configuration=wrong_initial_joint_configuration)
+          initial_joint_configuration=wrong_initial_joint_configuration,
+          random_state=rng,
+      )
 
   def test_return_none_when_passing_impossible_target(self):
     # Change the ik site depending if the gripper is attached or not.
+    rng = np.random.RandomState(42)
     arm = sawyer.Sawyer()
     solver = ik_solver.IkSolver(
         arm.mjcf_model, arm.joints, arm.wrist_site)
     ref_pose = geometry.Pose([3., 3., 3.], [1., 0., 0., 0.])
-    qpos_sol = solver.solve(ref_pose)
+    qpos_sol = solver.solve(ref_pose, random_state=rng)
     self.assertIsNone(qpos_sol)
 
 

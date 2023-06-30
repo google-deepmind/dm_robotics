@@ -149,8 +149,11 @@ def _populate_prop_initializer(task_props: Sequence[prop.Prop],
   """Populates components with prop pose initializers."""
   prop_pose = pose_distribution.ConstantPoseDistribution(
       np.array([0.2, 0.2, 0.06, 0., 0., 0.]))
+  def position_prop(physics, pos, quat, random_state):
+    del random_state
+    task_props[0].set_pose(physics, pos, quat)
   components.prop_initializer = entity_initializer.PoseInitializer(
-      initializer_fn=task_props[0].set_pose, pose_sampler=prop_pose.sample_pose)
+      initializer_fn=position_prop, pose_sampler=prop_pose.sample_pose)
 
 
 def _build_arena(name: Text) -> composer.Arena:

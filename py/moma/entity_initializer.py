@@ -62,14 +62,16 @@ class PoseInitializer(base_initializer.Initializer):
     pose_sampler: A function that will provide a new pos and quat on each
       invocation, to pass to the `initializer_fn`.
   """
-  initializer_fn: Callable[[mjcf.Physics, np.ndarray, np.ndarray], None]
+  initializer_fn: Callable[
+      [mjcf.Physics, np.ndarray, np.ndarray, np.random.RandomState], None
+  ]
   pose_sampler: Callable[[np.random.RandomState, geometry.Physics],
                          Tuple[np.ndarray, np.ndarray]]
 
   def __call__(self, physics: mjcf.Physics,
                random_state: np.random.RandomState) -> bool:
     pos, quat = self.pose_sampler(random_state, mujoco_physics.wrap(physics))
-    self.initializer_fn(physics, pos, quat)
+    self.initializer_fn(physics, pos, quat, random_state)
     return True
 
 

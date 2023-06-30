@@ -100,8 +100,13 @@ class Robot(abc.ABC, Generic[Arm, Gripper]):
     pass
 
   @abc.abstractmethod
-  def position_gripper(self, physics: mjcf.Physics, position: np.ndarray,
-                       quaternion: np.ndarray):
+  def position_gripper(
+      self,
+      physics: mjcf.Physics,
+      position: np.ndarray,
+      quaternion: np.ndarray,
+      random_state: Optional[np.random.RandomState],
+  ):
     """Moves the gripper ik point position to the (pos, quat) pose tuple."""
 
   @abc.abstractmethod
@@ -201,11 +206,14 @@ class StandardRobot(Generic[Arm, Gripper], Robot[Arm, Gripper]):
   def arm_frame(self):
     return traversal_utils.get_attachment_frame(self._arm.mjcf_model)
 
-  def position_gripper(self,
-                       physics: mjcf.Physics,
-                       position: np.ndarray,
-                       quaternion: np.ndarray,
-                       settle_physics: bool = False):
+  def position_gripper(
+      self,
+      physics: mjcf.Physics,
+      position: np.ndarray,
+      quaternion: np.ndarray,
+      random_state: Optional[np.random.RandomState] = None,
+      settle_physics: bool = False,
+  ):
     """Moves the gripper ik point position to the (pos, quat) pose tuple.
 
     Args:
@@ -214,6 +222,8 @@ class StandardRobot(Generic[Arm, Gripper], Robot[Arm, Gripper]):
         frame.
       quaternion: The quaternion (wxyz) giving the desired orientation of the
         gripper in the world frame.
+      random_state: Random state to enable a deterministic position of the
+        gripper.
       settle_physics: If True, will step the physics simulation until the arm
         joints has velocity and acceleration below a certain threshold.
 
@@ -224,11 +234,13 @@ class StandardRobot(Generic[Arm, Gripper], Robot[Arm, Gripper]):
     # Initialize the ik solver. We create a new version of the solver at every
     # solve because there is no guarantee that the mjcf_model has not been
     # modified.
+    random_state = random_state or np.random.RandomState()
     mjcf_model = self._arm.mjcf_model.root_model
     solver = ik_solver.IkSolver(
         mjcf_model, self._arm.joints, self._gripper_ik_site)
-
-    qpos = solver.solve(ref_pose=geometry.Pose(position, quaternion))
+    qpos = solver.solve(
+        ref_pose=geometry.Pose(position, quaternion), random_state=random_state
+    )
 
     if qpos is None:
       if self.gripper_effector is not None:
