@@ -313,7 +313,7 @@ class RgbObjectParameters:
       for k, v in param_dict.items():
         params_min[k] = min(params_min[k], v)
         params_max[k] = max(params_max[k], v)
-    return (params_min, params_max)
+    return (params_min, params_max)  # pytype: disable=bad-return-type
 
   def __init__(self,
                rgb_version: PropsVersion = V1_3,
