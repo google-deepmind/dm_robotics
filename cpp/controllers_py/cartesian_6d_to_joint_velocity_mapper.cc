@@ -121,6 +121,14 @@ Attributes:
     Ignored if `enable_joint_acceleration_limits` is false.
   enable_collision_avoidance: (`bool`) whether to enable active collision
     avoidance.
+  use_minimum_distance_contacts_only: ('bool') if true, it will only create one
+    inequality constraint per geom pair, corresponding to the MuJoCo contact
+    with the minimum distance. Otherwise, it will create one inequality
+    constraint for each of the MuJoCo contacts detected per geom pair.
+    Ignored if `enable_collision_avoidance` is `false`. In problems where many
+    geoms are avoiding each other, setting this option to `true` will
+    considerably speed up solve times, but the solution is more likely to
+    result in penetration at high speeds.
   collision_avoidance_normal_velocity_scale: (`float`) value between (0, 1] that
     defines how fast each geom is allowed to move towards another in each
     iteration. Values lower than 1 are safer but may make the geoms move
@@ -400,6 +408,11 @@ class PyCartesian6dToJointVelocityMapperParameters {
   PYBIND_CARTESIAN_MAPPER_PARAMETERS_PROPERTY(enable_collision_avoidance,
                                               GetEnableCollisionAvoidance,
                                               SetEnableCollisionAvoidance)
+
+  // `use_minimum_distance_contacts_only' property.
+  PYBIND_CARTESIAN_MAPPER_PARAMETERS_PROPERTY(
+      use_minimum_distance_contacts_only, GetUseMinimumDistanceContactsOnly,
+      SetUseMinimumDistanceContactsOnly)
 
   // `collision_avoidance_normal_velocity_scale` property.
   PYBIND_CARTESIAN_MAPPER_PARAMETERS_PROPERTY(
@@ -716,6 +729,11 @@ PYBIND11_MODULE(cartesian_6d_to_joint_velocity_mapper, m) {
                         GetEnableCollisionAvoidance,
                     &PyCartesian6dToJointVelocityMapperParameters::
                         SetEnableCollisionAvoidance)
+      .def_property("use_minimum_distance_contacts_only",
+                    &PyCartesian6dToJointVelocityMapperParameters::
+                        GetUseMinimumDistanceContactsOnly,
+                    &PyCartesian6dToJointVelocityMapperParameters::
+                        SetUseMinimumDistanceContactsOnly)
       .def_property("collision_avoidance_normal_velocity_scale",
                     &PyCartesian6dToJointVelocityMapperParameters::
                         GetCollisionAvoidanceNormalVelocityScale,

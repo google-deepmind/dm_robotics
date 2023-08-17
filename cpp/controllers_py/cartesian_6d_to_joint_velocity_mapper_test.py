@@ -111,6 +111,7 @@ class Cartesian6DToJointVelocityMapperTest(absltest.TestCase):
         "remove_joint_acceleration_limits_if_in_conflict",
         "joint_acceleration_magnitude_limits",
         "enable_collision_avoidance",
+        "use_minimum_distance_contacts_only",
         "collision_avoidance_normal_velocity_scale",
         "minimum_distance_from_collisions",
         "collision_detection_distance",
