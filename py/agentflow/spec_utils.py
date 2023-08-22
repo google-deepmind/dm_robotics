@@ -235,7 +235,9 @@ def merge_specs(spec_list: Sequence[specs.BoundedArray]):
 
   # Filter out no-op specs with no actuators.
   spec_list = [spec for spec in spec_list if spec.shape and spec.shape[0]]
-  dtype = np.find_common_type([spec.dtype for spec in spec_list], [])
+  dtype = None
+  if spec_list:
+    dtype = np.result_type(*[spec.dtype for spec in spec_list])
 
   num_actions = 0
   name = ''

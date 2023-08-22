@@ -302,9 +302,9 @@ class CompositeActionSpace(core.ActionSpace[specs.BoundedArray]):
     maximums = [spec.maximum for spec in sub_specs]
 
     if sub_specs:
-      spec_dtype = np.find_common_type([spec.dtype for spec in sub_specs], [])
-      min_dtype = np.find_common_type([lim.dtype for lim in minimums], [])
-      max_dtype = np.find_common_type([lim.dtype for lim in maximums], [])
+      spec_dtype = np.result_type(*[spec.dtype for spec in sub_specs])
+      min_dtype = np.result_type(*[lim.dtype for lim in minimums])
+      max_dtype = np.result_type(*[lim.dtype for lim in maximums])
       minimum = np.concatenate(minimums).astype(min_dtype)
       maximum = np.concatenate(maximums).astype(max_dtype)
     else:
