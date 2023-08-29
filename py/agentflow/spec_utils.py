@@ -278,8 +278,7 @@ def merge_primitives(values: Sequence[np.ndarray],
   # Ignore Nones.
   shape = values[0].shape
   dtype = values[0].dtype
-  result = np.ndarray(shape=shape, dtype=dtype)
-  result.fill(np.nan)
+  result = np.full(shape=shape, fill_value=np.nan, dtype=dtype)
 
   if len(shape) != 1:
     raise ValueError('Not implemented for multi-dimensional arrays')
