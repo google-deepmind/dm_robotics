@@ -60,7 +60,6 @@ using MjCopyDataFunc = mjData*(mjData*, const mjModel*, const mjData*);
 using MjResetDataFunc = void(const mjModel*, mjData*);
 using MjResetDataDebugFunc = void(const mjModel*, mjData*, unsigned char);
 using MjResetDataKeyframeFunc = void(const mjModel*, mjData*, int);
-using MjStackAllocFunc = mjtNum(mjData*, int);
 using MjDeleteDataFunc = void(mjData*);
 using MjResetCallbacksFunc = void();
 using MjSetConstFunc = void(mjModel*, mjData*);
@@ -405,7 +404,6 @@ class MjLib {
   MjResetDataFunc* const mj_resetData;                      // NOLINT
   MjResetDataDebugFunc* const mj_resetDataDebug;            // NOLINT
   MjResetDataKeyframeFunc* const mj_resetDataKeyframe;      // NOLINT
-  MjStackAllocFunc* const mj_stackAlloc;                    // NOLINT
   MjDeleteDataFunc* const mj_deleteData;                    // NOLINT
   MjResetCallbacksFunc* const mj_resetCallbacks;            // NOLINT
   MjSetConstFunc* const mj_setConst;                        // NOLINT

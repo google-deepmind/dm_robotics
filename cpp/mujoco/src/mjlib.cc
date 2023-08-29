@@ -104,7 +104,6 @@ MjLib::MjLib(const std::string& libmujoco_path, int dlopen_flags)
       INIT_WITH_DLSYM(mj_resetData),
       INIT_WITH_DLSYM(mj_resetDataDebug),
       INIT_WITH_DLSYM(mj_resetDataKeyframe),
-      INIT_WITH_DLSYM(mj_stackAlloc),
       INIT_WITH_DLSYM(mj_deleteData),
       INIT_WITH_DLSYM(mj_resetCallbacks),
       INIT_WITH_DLSYM(mj_setConst),
