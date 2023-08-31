@@ -79,7 +79,7 @@ class MeshProp(prop.Prop):
           raise ValueError(f'Unsupported object extension: {extension}')
       else:  # TODO(b/195733842): add tests.
         meshes, faces = mesh_source
-        for vertices, face in zip(meshes, faces):
+        for vertices, face in zip(meshes, faces):  # pytype: disable=wrong-arg-types
           self._mjcf_root.asset.add(
               'mesh', name=name, scale=self._size, vertex=vertices, face=face)
         mesh_idx += 1
