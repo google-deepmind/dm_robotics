@@ -139,6 +139,24 @@ class CompositeActionSpaceTest(absltest.TestCase):
     self.assertEqual(composite.spec().shape, (0,))
     composite.spec().validate(np.asarray([], dtype=np.float32))
 
+  def test_zero_sized_space(self):
+    # Testing two action spaces that project to values that are adjacent in
+    # the output value and that cover the entire output value
+    outer_spec = self._create_spec("a_1", "a_2", "b_1", "b_2")
+    primitive_1 = action_spaces.prefix_slicer(outer_spec, "a_")
+    primitive_2 = action_spaces.prefix_slicer(outer_spec, "EMPTY")
+    primitive_3 = action_spaces.prefix_slicer(outer_spec, "b_")
+    composite = action_spaces.CompositeActionSpace(
+        [primitive_1, primitive_2, primitive_3])
+
+    self.assertEqual(outer_spec, composite.spec())
+    self.assertEqual(outer_spec.name, composite.spec().name)
+
+    # The composite spec is the two sub specs in order, so project should be
+    # an identity - the output should be the input.
+    value = testing_functions.valid_value(composite.spec())
+    np.testing.assert_array_almost_equal(composite.project(value), value)
+
   def test_with_fixed_space(self):
     # Testing two action spaces that project to values that are adjacent in
     # the output value and that cover the entire output value

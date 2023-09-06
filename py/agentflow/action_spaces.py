@@ -95,7 +95,7 @@ def prefix_slicer(
 
   Raises:
     ValueError: If a non-primitive spec is given or the names in the spec don't
-      split as expected. Or if the names in the spec don't contain
+      split as expected.
   """
   # Special case an empty input spec.
   if np.prod(spec.shape) == 0:
@@ -110,13 +110,6 @@ def prefix_slicer(
   if len(names) != spec.shape[0]:
     raise ValueError('Expected {} names, got {}.  Name: {}'.format(
         spec.shape[0], len(names), names))
-
-  if indices.count(True) == 0:
-    raise ValueError(
-        f'None of the names in the action spec countained the prefix "{prefix}"'
-        f' Got names: {names}. You might have misnamed the action spec of '
-        'certain effectors.'
-    )
 
   if isinstance(spec, specs.DiscreteArray):
     raise ValueError('Support for DiscreteArray not implemented, yet.')
