@@ -596,7 +596,7 @@ class StackObservations(tsp.TimestepPreprocessor):
   def __init__(
       self,
       obs_to_stack: Sequence[str],
-      stack_depth: np.integer,
+      stack_depth: int,
       *,
       add_leading_dim: bool = False,
       override_obs: bool = True,
@@ -627,7 +627,7 @@ class StackObservations(tsp.TimestepPreprocessor):
     """
     super().__init__(validation_frequency)
     self._obs_to_stack: FrozenSet[str] = frozenset(obs_to_stack)
-    self._stack_depth = stack_depth  # type: np.integer
+    self._stack_depth = stack_depth
     self._add_leading_dim = add_leading_dim
     self._stacks = {
         name: collections.deque(maxlen=self._stack_depth)  # pytype: disable=wrong-arg-types  # numpy-scalars
