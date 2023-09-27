@@ -684,7 +684,7 @@ class PrefixSlicerTest(absltest.TestCase):
     np.testing.assert_array_almost_equal(
         np.asarray([1.0, 2.0]), action_space.project(np.asarray([1.0, 2.0])))
 
-  def test_NoneMatch(self):
+  def test_NoneMatchRaisesError(self):
     spec = specs.BoundedArray(
         shape=(2,),
         dtype=np.float32,
@@ -692,18 +692,8 @@ class PrefixSlicerTest(absltest.TestCase):
         maximum=np.asarray([11.0, 22.0]),
         name='h1\th2')
 
-    action_space = action_spaces.prefix_slicer(spec, prefix='m.$')
-    expected_spec = specs.BoundedArray(
-        shape=(0,),
-        dtype=np.float32,
-        minimum=np.asarray([]),
-        maximum=np.asarray([]),
-        name='')
-
-    spec_utils.verify_specs_equal_bounded(expected_spec, action_space.spec())
-
-    np.testing.assert_array_almost_equal(
-        np.asarray([np.nan, np.nan]), action_space.project(np.asarray([])))
+    with self.assertRaises(ValueError):
+      action_spaces.prefix_slicer(spec, prefix='m.$')
 
   def test_Defaulting(self):
     spec = specs.BoundedArray(
