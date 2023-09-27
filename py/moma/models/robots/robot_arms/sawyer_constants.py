@@ -16,6 +16,8 @@
 
 import enum
 import os
+from dm_robotics.transformations import transformations
+import numpy as np
 
 
 # Available actuation methods available for the Sawyer.
@@ -65,3 +67,31 @@ _RETHINK_ASSETS_PATH = (os.path.join(os.path.dirname(__file__), '..',  '..', 've
 
 SAWYER_XML = os.path.join(_RETHINK_ASSETS_PATH, 'sawyer.xml')
 SAWYER_PEDESTAL_XML = os.path.join(_RETHINK_ASSETS_PATH, 'sawyer_pedestal.xml')
+
+# Point where opposing fingers meet when unobstructed. Corresponds to the offset
+# between the tcp/pose and the pinch/pose and should match the value
+# in sawyer_mjcf/sawyer_mjcf_base.py.
+
+WRIST_TO_PINCHSITE_RELATIVE = np.array([0.0, 0.0, 0.2012]).astype(np.float32)
+
+
+def tcp_pose_from_pinch_pose(pinch_pose: np.ndarray) -> np.ndarray:
+  """Compute tcp/pose from pinch/pose.
+
+  Args:
+    pinch_pose: Array with the pinch pose. It is sufficient to compute tcp/pose.
+
+  Returns:
+    An array corresponding to tcp/pose.
+  """
+
+  offset = -WRIST_TO_PINCHSITE_RELATIVE
+  quat = pinch_pose[..., 3:]
+
+  # Rotate the offset between tcp and pinch pose.
+  offset_rotated = transformations.quat_rotate(quat=quat, vec=offset)
+  # Add the pinch pose to the offset to get the tcp position.
+  tcp_pose = pinch_pose[..., :3] + offset_rotated
+  # Get the full tcp pose. Tcp and pinch have the same orientation.
+  tcp_pose = np.concatenate((tcp_pose, pinch_pose[..., 3:]), axis=-1)
+  return tcp_pose
