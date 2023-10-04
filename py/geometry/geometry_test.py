@@ -240,13 +240,15 @@ class BaseImmutabiliyTest(parameterized.TestCase):
 
   def test_pose_property_cannot_set(self):
     pose = geometry.Pose(list(range(3)), list(range(4)))
-    with self.assertRaises(AttributeError) as expected:
+    with self.assertRaisesRegex(
+        AttributeError, "can't set attribute|object has no setter"
+    ):
       pose.position = list(range(10, 13, 1))
-    self.assertIn('can\'t set attribute', str(expected.exception))
 
-    with self.assertRaises(AttributeError) as expected:
+    with self.assertRaisesRegex(
+        AttributeError, "can't set attribute|object has no setter"
+    ):
       pose.quaternion = list(range(10, 14, 1))
-    self.assertIn('can\'t set attribute', str(expected.exception))
 
   def test_pose_property_cannot_setitem(self):
     pose = geometry.Pose(list(range(3)), list(range(4)))
