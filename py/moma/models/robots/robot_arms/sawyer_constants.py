@@ -94,4 +94,4 @@ def tcp_pose_from_pinch_pose(pinch_pose: np.ndarray) -> np.ndarray:
   tcp_pose = pinch_pose[..., :3] + offset_rotated
   # Get the full tcp pose. Tcp and pinch have the same orientation.
   tcp_pose = np.concatenate((tcp_pose, pinch_pose[..., 3:]), axis=-1)
-  return tcp_pose
+  return tcp_pose.astype(np.float32)
