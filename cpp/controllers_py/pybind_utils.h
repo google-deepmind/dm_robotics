@@ -24,18 +24,6 @@ namespace dm_robotics::internal {
 // Raises a `RuntimeError` exception in Python with the message `message`.
 void RaiseRuntimeErrorWithMessage(absl::string_view message);
 
-// Loads a new MjLib object and activates it via dm_control's Python
-// infrastructure. The user takes ownership of the allocated object. The
-// recommended usage is to use this through the static-in-a-function pattern to
-// instantiate a global singleton that is never deallocated.
-//
-// This is a helper-function for re-using the libmujoco.so and license file used
-// by dm_control. It must only be used if dm_control is available; it will
-// not work for binaries that are missing the symbols from the Python
-// interpreter that come bundled with dm_control, causing the program to
-// crash.
-const MjLib* LoadMjLibFromDmControl();
-
 // Extracts an mjModel pointer from a Python handle to a dm_control `MjModel`
 // object. Raises a `RuntimeError` exception in Python if it fails to extract
 // an mjModel object from the handle.

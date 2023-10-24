@@ -76,9 +76,6 @@ class Cartesian6dToJointVelocityMapper {
   // outlive any Cartesian6dToJointVelocityMapper instances created with this
   // object.
   struct Parameters {
-    // Pointer to an MjLib object.
-    const MjLib* lib;
-
     // Pointer to a MuJoCo model.
     const mjModel* model;
 

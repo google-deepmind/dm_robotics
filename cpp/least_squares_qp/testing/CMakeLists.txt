@@ -19,6 +19,7 @@ set(HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/include/dm_robotics/least_squares_qp/testing/matchers.h
 )
 add_library(dmr_lsqp_testing)
+set_target_properties(dmr_lsqp_testing PROPERTIES LINKER_LANGUAGE CXX)
 target_sources(dmr_lsqp_testing PUBLIC ${HDRS})
 target_include_directories(dmr_lsqp_core
   PUBLIC

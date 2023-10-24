@@ -25,7 +25,7 @@ namespace dm_robotics {
 namespace {
 
 TEST(MjlibTest, CanLoadMjLib) {
-  MjLib mjlib(kMujocoLibNoGlPath, RTLD_NOW);  // Load library.
+  MjLib mjlib("", RTLD_NOW);  // Load library.
 }
 
 }  // namespace

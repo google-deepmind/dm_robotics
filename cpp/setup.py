@@ -23,10 +23,12 @@ from setuptools import setup
 from setuptools.command.build_ext import build_ext
 
 
+PRE_DOWNLOADED_MUJOCO_TAR = "/deps/mujoco-3.0.0-linux-x86_64.tar.gz"
+
 PRE_DOWNLOADED_SOURCE_DIRS = {
-    "abseil-cpp": "/deps/abseil-cpp_215105818dfde3174fe799600bb0f3cae233d0bf",
-    "osqp-cpp": "/deps/osqp-cpp_8cd904e2b49c24dd41d11f8c6e0adb113dd5e26c",
-    "osqp": "/deps/osqp_f9fc23d3436e4b17dd2cb95f70cfa1f37d122c24",
+    "abseil-cpp": "/deps/abseil-cpp_c2435f8342c2d0ed8101cb43adfd605fdc52dca2",
+    "osqp-cpp": "/deps/osqp-cpp_43433736334d6b515ea4b0247156fea9e56c0d3f",
+    "osqp": "/deps/osqp_0baddd36bd57ec1cace0a52c6dd9663e8f16df0a",
     "pybind11": "/deps/pybind11_914c06fb252b6cc3727d0eedab6736e88a3fcb01",
     "googletest": "/deps/googletest_e2239ee6043f73722e7aa812a459f54a28552929"
 }
@@ -61,11 +63,13 @@ class CMakeBuild(build_ext):
     cmake_args = [
         "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={}".format(output_directory),
         "-DPYTHON_EXECUTABLE={}".format(sys.executable),
-        "-DDMR_PYTHON_VERSION={}.{}".format(sys.version_info.major,
-                                            sys.version_info.minor),
+        "-DDMR_PYTHON_VERSION={}.{}".format(
+            sys.version_info.major, sys.version_info.minor
+        ),
         "-DCMAKE_BUILD_TYPE={}".format(build_type),
         "-DDM_ROBOTICS_BUILD_TESTS=OFF",
         "-DDM_ROBOTICS_BUILD_WHEEL=True",
+        "-DDM_ROBOTICS_MUJOCO_TAR={}".format(PRE_DOWNLOADED_MUJOCO_TAR),
         "--log-level=VERBOSE",
     ]
 

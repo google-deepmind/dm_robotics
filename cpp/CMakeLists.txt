@@ -15,13 +15,14 @@
 cmake_minimum_required(VERSION 3.5)
 project(dm_robotics
   DESCRIPTION "DM Robotics"
-  VERSION 0.1
+  VERSION 0.2
 )
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+add_compile_options(-Wno-stringop-truncation)
 
 # To build a manylinux compatible wheel:
 # set DM_ROBOTICS_BUILD_WHEEL True
@@ -127,6 +128,8 @@ if (DM_ROBOTICS_BUILD_dmr_support
   OR DM_ROBOTICS_BUILD_dmr_controllers
   OR DM_ROBOTICS_BUILD_dmr_controllers_python
 )
+  set(ABSL_PROPAGATE_CXX_STD ON)
+  set(ABSL_BUILD_TESTING OFF)
   FindOrFetch(
     USE_SYSTEM_PACKAGE
       DM_ROBOTICS_USE_SYSTEM_absl
@@ -137,7 +140,7 @@ if (DM_ROBOTICS_BUILD_dmr_support
     GIT_REPO
       https://github.com/abseil/abseil-cpp.git
     GIT_TAG
-      lts_2021_11_02
+      c2435f8342c2d0ed8101cb43adfd605fdc52dca2
     TARGETS
       absl::span
       absl::hash
@@ -175,6 +178,25 @@ if (DM_ROBOTICS_BUILD_dmr_lsqp
   )
 endif()
 
+# MuJoco 3.0.0
+if (DM_ROBOTICS_MUJOCO_TAR)
+  message(STATUS "dm_robotics: MuJoCo TAR file specified at `${DM_ROBOTICS_MUJOCO_TAR}`.")
+else()
+  message(STATUS "dm_robotics: MuJoCo TAR file not specified. Downloading MuJoCo....")
+  file(DOWNLOAD https://github.com/google-deepmind/mujoco/releases/download/3.0.0/mujoco-3.0.0-linux-x86_64.tar.gz mujoco.tar.gz)
+  set(DM_ROBOTICS_MUJOCO_TAR mujoco.tar.gz)
+endif()
+file(ARCHIVE_EXTRACT INPUT ${DM_ROBOTICS_MUJOCO_TAR} DESTINATION mujoco_bin)
+message("Checking headers in ${CMAKE_CURRENT_BINARY_DIR}/mujoco_bin/mujoco-3.0.0/include/mujoco")
+file(GLOB_RECURSE MUJOCO_HEADERS RELATIVE "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/mujoco_bin/mujoco-3.0.0/include/mujoco/*.h")
+message("Mujoco headers: ${MUJOCO_HEADERS}")
+add_library(mujoco SHARED IMPORTED)
+set_target_properties(mujoco PROPERTIES
+             IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/mujoco_bin/mujoco-3.0.0/lib/libmujoco.so)
+set_target_properties(mujoco PROPERTIES PUBLIC_HEADER "${MUJOCO_HEADERS}"
+ INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/mujoco_bin/mujoco-3.0.0/include"
+)
+
 # osqp-cpp
 if (DM_ROBOTICS_BUILD_dmr_lsqp)
   # Deactivate OSQP tests.
@@ -190,7 +212,7 @@ if (DM_ROBOTICS_BUILD_dmr_lsqp)
     GIT_REPO
       https://github.com/google/osqp-cpp.git
     GIT_TAG
-      8cd904e2b49c24dd41d11f8c6e0adb113dd5e26c
+      43433736334d6b515ea4b0247156fea9e56c0d3f
     TARGETS
       osqp-cpp
   )

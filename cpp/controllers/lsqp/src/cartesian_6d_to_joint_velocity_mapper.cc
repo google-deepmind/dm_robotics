@@ -39,6 +39,11 @@
 namespace dm_robotics {
 namespace {
 
+const MjLib* MjLibInitializer() {
+  static const MjLib* const lib = new MjLib("", 0);
+  return lib;
+}
+
 // Constructs an LsqpStackOfTasksSolver::Parameters object from
 // a Cartesian6dToJointVelocityMapper::Parameters object.
 LsqpStackOfTasksSolver::Parameters ToLsqpParams(
@@ -77,7 +82,7 @@ LsqpStackOfTasksSolver::Parameters ToLsqpParams(
 Cartesian6dVelocityTask::Parameters ToCartesianVelocityParams(
     const Cartesian6dToJointVelocityMapper::Parameters& params) {
   Cartesian6dVelocityTask::Parameters output_params;
-  output_params.lib = params.lib;
+  output_params.lib = MjLibInitializer();
   output_params.model = params.model;
   output_params.joint_ids = params.joint_ids;
   output_params.object_type = params.object_type;
@@ -93,7 +98,7 @@ Cartesian6dVelocityDirectionTask::Parameters
 ToCartesianVelocityDirectionTaskParams(
     const Cartesian6dToJointVelocityMapper::Parameters& params) {
   Cartesian6dVelocityDirectionTask::Parameters output_params;
-  output_params.lib = params.lib;
+  output_params.lib = MjLibInitializer();
   output_params.model = params.model;
   output_params.joint_ids = params.joint_ids;
   output_params.object_type = params.object_type;
@@ -109,7 +114,7 @@ Cartesian6dVelocityDirectionConstraint::Parameters
 ToCartesianVelocityDirectionConstraintParams(
     const Cartesian6dToJointVelocityMapper::Parameters& params) {
   Cartesian6dVelocityDirectionConstraint::Parameters output_params;
-  output_params.lib = params.lib;
+  output_params.lib = MjLibInitializer();
   output_params.model = params.model;
   output_params.joint_ids = params.joint_ids;
   output_params.object_type = params.object_type;
@@ -124,7 +129,7 @@ ToCartesianVelocityDirectionConstraintParams(
 CollisionAvoidanceConstraint::Parameters ToCollisionAvoidanceParams(
     const Cartesian6dToJointVelocityMapper::Parameters& params) {
   CollisionAvoidanceConstraint::Parameters output_params;
-  output_params.lib = params.lib;
+  output_params.lib = MjLibInitializer();
   output_params.model = params.model;
   output_params.use_minimum_distance_contacts_only =
       params.use_minimum_distance_contacts_only;
@@ -157,7 +162,7 @@ CollisionAvoidanceConstraint::Parameters ToCollisionAvoidanceParams(
   // for most robot environments, as joint limits are such that parent-children
   // cannot collide.
   output_params.geom_pairs = CollisionPairsToGeomIdPairs(
-      *params.lib, *params.model, params.collision_pairs, false, false);
+      *MjLibInitializer(), *params.model, params.collision_pairs, false, false);
   return output_params;
 }
 
@@ -286,10 +291,8 @@ absl::Status ValidateGeomGroup(const MjLib& lib, const mjModel& model,
 
 absl::Status Cartesian6dToJointVelocityMapper::ValidateParameters(
     const Parameters& params) {
-  if (params.lib == nullptr) {
-    return absl::InvalidArgumentError(
-        "ValidateParameters: `lib` cannot be null.");
-  }
+  const MjLib* lib = MjLibInitializer();
+
   if (params.model == nullptr) {
     return absl::InvalidArgumentError(
         "ValidateParameters: `model` cannot be null.");
@@ -322,16 +325,15 @@ absl::Status Cartesian6dToJointVelocityMapper::ValidateParameters(
     return absl::InvalidArgumentError(absl::Substitute(
         "ValidateParameters: Objects of type [$0] are not supported. Only "
         "bodies, geoms, and sites are supported.",
-        params.lib->mju_type2Str(params.object_type)));
+        lib->mju_type2Str(params.object_type)));
 
-  bool is_object_found =
-      params.lib->mj_name2id(params.model, params.object_type,
-                             params.object_name.c_str()) >= 0;
+  bool is_object_found = lib->mj_name2id(params.model, params.object_type,
+                                         params.object_name.c_str()) >= 0;
   if (!is_object_found)
     return absl::NotFoundError(absl::Substitute(
         "ValidateParameters: Could not find MuJoCo object with name [$0] and "
         "type [$1] in the provided model.",
-        params.object_name, params.lib->mju_type2Str(params.object_type)));
+        params.object_name, lib->mju_type2Str(params.object_type)));
 
   if (params.integration_timestep <= absl::ZeroDuration()) {
     return absl::InvalidArgumentError(
@@ -362,9 +364,9 @@ absl::Status Cartesian6dToJointVelocityMapper::ValidateParameters(
 
   for (const auto& collision_pair : params.collision_pairs) {
     RETURN_IF_ERROR(
-        ValidateGeomGroup(*params.lib, *params.model, collision_pair.first));
+        ValidateGeomGroup(*lib, *params.model, collision_pair.first));
     RETURN_IF_ERROR(
-        ValidateGeomGroup(*params.lib, *params.model, collision_pair.second));
+        ValidateGeomGroup(*lib, *params.model, collision_pair.second));
   }
 
   if (params.cartesian_velocity_direction_task_weight < 0.0) {
@@ -406,7 +408,7 @@ absl::Status Cartesian6dToJointVelocityMapper::ValidateParameters(
 
 Cartesian6dToJointVelocityMapper::Cartesian6dToJointVelocityMapper(
     const Parameters& params)
-    : lib_(*DieIfNull(params.lib)),
+    : lib_(*DieIfNull(MjLibInitializer())),
       model_(*DieIfNull(params.model)),
       data_(lib_.mj_makeData(&model_), lib_.mj_deleteData),
       joint_dof_ids_(JointIdsToDofIds(model_, params.joint_ids)),

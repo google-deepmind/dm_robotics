@@ -22,6 +22,7 @@
 #include "absl/strings/substitute.h"
 #include "absl/types/span.h"
 #include "dm_robotics/least_squares_qp/core/utils.h"
+#include "dm_robotics/mujoco/mjlib.h"
 #include "pybind_utils.h"  // controller
 #include "pybind11/chrono.h"  // pybind
 #include "pybind11/pybind11.h"  // pybind
@@ -271,13 +272,6 @@ Args:
 using PybindGeomGroup = std::vector<std::string>;
 using PybindCollisionPair = std::pair<PybindGeomGroup, PybindGeomGroup>;
 
-// A global singleton instance of MjLib that is loaded via dm_control's
-// Python infrastructure.
-const MjLib& MjLibInitializer() {
-  static const MjLib* const lib = internal::LoadMjLibFromDmControl();
-  return *lib;
-}
-
 // Converts a non-ok `status` into a Python exception.
 //
 // Internal comment.
@@ -291,11 +285,8 @@ void RaiseIfNotOk(const absl::Status& status) {
 // is alive.
 class PyCartesian6dToJointVelocityMapperParameters {
  public:
-  // The MjLib object is initialized at construction time and never exposed in
-  // Python.
   PyCartesian6dToJointVelocityMapperParameters()
       : py_model_(py::cast(nullptr)) {
-    params_.lib = &MjLibInitializer();
     params_.model = nullptr;
   }
 

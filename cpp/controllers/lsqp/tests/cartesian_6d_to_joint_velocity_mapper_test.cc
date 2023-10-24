@@ -55,7 +55,6 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
 
   // Instantiate mapper and solve once.
   Cartesian6dToJointVelocityMapper::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.joint_ids = kJointIds;
   params.object_type = kObjectType;
@@ -114,7 +113,6 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
   // Shared parameters for optimization problem with and without nullspace
   // hierarchy.
   Cartesian6dToJointVelocityMapper::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.joint_ids = kJointIds;
   params.object_type = kObjectType;
@@ -220,7 +218,6 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
 
   // Instantiate mapper.
   Cartesian6dToJointVelocityMapper::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.joint_ids = kJointIds;
   params.object_type = kObjectType;
@@ -294,7 +291,6 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
 
   // Instantiate mapper and solve once.
   Cartesian6dToJointVelocityMapper::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.joint_ids = kJointIds;
   params.object_type = kObjectType;
@@ -402,7 +398,6 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
   const double kNullspaceProjectionSlack = 0.1 * kSolutionTolerance;
 
   Cartesian6dToJointVelocityMapper::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.joint_ids = kJointIds;
   params.object_type = kObjectType;
@@ -506,7 +501,6 @@ TEST_P(
   const double kNullspaceProjectionSlack = 0.1 * kSolutionTolerance;
 
   Cartesian6dToJointVelocityMapper::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.joint_ids = kJointIds;
   params.object_type = kObjectType;

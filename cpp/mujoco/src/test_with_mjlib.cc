@@ -18,7 +18,6 @@
 
 #include <string>
 
-// Internal file library include
 #include "dm_robotics/support/logging.h"
 #include "dm_robotics/support/status-matchers.h"
 #include "gmock/gmock.h"
@@ -31,14 +30,8 @@ namespace dm_robotics::testing {
 
 MjLib* TestWithMjLib::mjlib_ = nullptr;
 
-void TestWithMjLib::SetUpTestSuite() {
-  mjlib_ = new MjLib(
-      file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), kMujocoLibNoGlPath),
-      RTLD_NOW);
-}
+void TestWithMjLib::SetUpTestSuite() { mjlib_ = new MjLib("", RTLD_NOW); }
 
-void TestWithMjLib::TearDownTestSuite() {
-  delete mjlib_;
-}
+void TestWithMjLib::TearDownTestSuite() { delete mjlib_; }
 
 }  // namespace dm_robotics::testing
