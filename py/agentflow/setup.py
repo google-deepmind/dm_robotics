@@ -52,17 +52,21 @@ setuptools.setup(
         "dm_robotics.agentflow.rendering",
         "dm_robotics.agentflow.subtasks",
     ],
-    version="0.5.0",
+    version="0.6.0",
     license="Apache 2.0",
     author="DeepMind",
-    description="Tools for single-embodiment, multiple-task, Reinforcement Learning",
+    description=(
+        "Tools for single-embodiment, multiple-task, Reinforcement Learning"
+    ),
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/deepmind/dm_robotics/tree/main/py/agentflow",
     python_requires=">=3.7, <3.11",
     setup_requires=["wheel >= 0.31.0"],
-    install_requires=(_get_requirements("requirements.txt") +
-                      _get_requirements("requirements_external.txt")),
+    install_requires=(
+        _get_requirements("requirements.txt")
+        + _get_requirements("requirements_external.txt")
+    ),
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Programming Language :: Python :: 3",
