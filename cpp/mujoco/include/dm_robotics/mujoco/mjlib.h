@@ -19,11 +19,11 @@
 #include <string>
 
 // MuJoCo headers must be included in the same order as "mujoco.h".
-#include "mujoco/mjdata.h"  //NOLINT
-#include "mujoco/mjmodel.h"  //NOLINT
-#include "mujoco/mjrender.h"  //NOLINT
-#include "mujoco/mjui.h"  //NOLINT
-#include "mujoco/mjvisualize.h"  //NOLINT
+#include <mujoco/mjdata.h>  //NOLINT
+#include <mujoco/mjmodel.h>  //NOLINT
+#include <mujoco/mjrender.h>  //NOLINT
+#include <mujoco/mjui.h>  //NOLINT
+#include <mujoco/mjvisualize.h>  //NOLINT
 
 namespace dm_robotics {
 

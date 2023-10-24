@@ -112,7 +112,7 @@ const MjLib* LoadMjLibFromDmControlDynamically() {
 
 const MjLib* LoadMjLibFromDmControl() {
   py::gil_scoped_acquire gil;
-  return LoadMjLibFromDmControlDynamically();
+  return LoadMjLibFromDmControlStatically();  // Copybara changes to dynamic.
 }
 
 // Helper function for getting an mjModel object from a py::handle.

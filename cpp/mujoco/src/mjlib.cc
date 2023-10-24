@@ -34,7 +34,7 @@ using LibMujocoHandle = std::unique_ptr<void, LibMujocoHandleDeleter>;
 LibMujocoHandle OpenImpl(const char *path, int dlopen_flags) {
   dlerror();  // Clear error state before calling dlopen.
   void* handle = dlopen(path, dlopen_flags);
-  CHECK(handle != nullptr) << "dlopen '" << path << "' failed: " << dlerror();
+  CHECK_NE(handle, nullptr) << "dlopen '" << path << "' failed: " << dlerror();
 
   // Ensure we close the library with dlclose:
   LibMujocoHandle handle_with_close(handle);
@@ -49,7 +49,7 @@ LibMujocoHandle OpenImpl(const char *path, int dlopen_flags) {
 }
 
 LibMujocoHandle DlOpen(const std::string& path, int dlopen_flags) {
-  return OpenImpl(path.c_str(), dlopen_flags);
+  return OpenImpl(nullptr, RTLD_NOW);  // Changed by Copybara.
 }
 
 }  // namespace
@@ -63,14 +63,14 @@ struct MjLib::Impl {
 // We terminate the program if any of the symbol handles are null.
 #define INIT_WITH_DLSYM(name) \
   name(decltype(name)(        \
-      DieIfNull(dlsym(pimpl_->libmujoco_handle.get(), #name))))
+      ABSL_DIE_IF_NULL(dlsym(pimpl_->libmujoco_handle.get(), #name))))
 
 #define INIT_WITH_DLSYM_NULLABLE(name) \
   name(decltype(name)(dlsym(pimpl_->libmujoco_handle.get(), #name)))
 
 #define INIT_CALLBACK_WITH_DLSYM(name) \
   name(*(decltype(&name))(             \
-      DieIfNull(dlsym(pimpl_->libmujoco_handle.get(), #name))))
+      ABSL_DIE_IF_NULL(dlsym(pimpl_->libmujoco_handle.get(), #name))))
 
 MjLib::MjLib(const std::string& libmujoco_path, int dlopen_flags)
     : pimpl_(absl::make_unique<Impl>(libmujoco_path, dlopen_flags)),

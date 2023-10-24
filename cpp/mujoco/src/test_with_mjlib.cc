@@ -32,7 +32,9 @@ namespace dm_robotics::testing {
 MjLib* TestWithMjLib::mjlib_ = nullptr;
 
 void TestWithMjLib::SetUpTestSuite() {
-  mjlib_ = new MjLib(kMujocoLibNoGlPath, RTLD_NOW);  // Load MuJoCo.
+  mjlib_ = new MjLib(
+      file::JoinPath(absl::GetFlag(FLAGS_test_srcdir), kMujocoLibNoGlPath),
+      RTLD_NOW);
 }
 
 void TestWithMjLib::TearDownTestSuite() {
