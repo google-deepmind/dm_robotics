@@ -24,6 +24,7 @@ from absl import logging
 import dm_env
 from dm_env import specs
 import numpy as np
+import tree
 
 # Internal profiling
 
@@ -54,10 +55,30 @@ class TimeStepSpec(object):
   def discount_spec(self) -> specs.Array:
     return self._discount_spec
 
+  @classmethod
+  def from_timestep(cls, timestep: dm_env.TimeStep) -> 'TimeStepSpec':
+    """Returns a default TimeStepSpec from an actual timestep."""
+    def instance_to_spec(x: ...) -> specs.Array:
+      if hasattr(x, 'shape') and hasattr(x, 'dtype'):
+        return specs.Array(shape=x.shape, dtype=x.dtype)
+      elif isinstance(x, (bool, float, int, np.floating, np.integer)):
+        return specs.Array(shape=(), dtype=np.asarray(x).dtype)
+      elif isinstance(x, (str, bytes)):
+        return specs.StringArray(shape=(), string_type=str)
+      else:
+        raise ValueError('unsupported type: %s' % type(x))
+
+    obs_spec = tree.map_structure(instance_to_spec, timestep.observation)
+    reward_spec = tree.map_structure(instance_to_spec, timestep.reward)
+    discount_spec = tree.map_structure(instance_to_spec, timestep.discount)
+    return cls(
+        observation_spec=obs_spec,
+        reward_spec=reward_spec,
+        discount_spec=discount_spec,
+    )
+
   def validate(self, timestep: dm_env.TimeStep):
-    validate_observation(self.observation_spec, timestep.observation)
-    validate(self.reward_spec, timestep.reward)
-    validate(self.discount_spec, timestep.discount)
+    validate_timestep(self, timestep)
 
   def minimum(self) -> dm_env.TimeStep:
     """Return a valid timestep with all minimum values."""
