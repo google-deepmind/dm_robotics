@@ -69,11 +69,11 @@ class CMakeBuild(build_ext):
         "-DCMAKE_BUILD_TYPE={}".format(build_type),
         "-DDM_ROBOTICS_BUILD_TESTS=OFF",
         "-DDM_ROBOTICS_BUILD_WHEEL=True",
-        "-DDM_ROBOTICS_MUJOCO_TAR={}".format(PRE_DOWNLOADED_MUJOCO_TAR),
         "--log-level=VERBOSE",
     ]
 
     if use_preinstalled_libs:
+      cmake_args.append("-DDM_ROBOTICS_MUJOCO_TAR={}".format(PRE_DOWNLOADED_MUJOCO_TAR))
       cmake_args.append("-DFETCHCONTENT_FULLY_DISCONNECTED:BOOL=TRUE")
       cmake_args.append("-DDM_ROBOTICS_USE_SYSTEM_Eigen3:BOOL=TRUE")
 
