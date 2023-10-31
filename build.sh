@@ -68,33 +68,21 @@ cd "$root/cpp"
 $python_binary setup.py bdist_wheel  # Uses the CMAKE_EXE environment variable.
 ls "$root/cpp/dist"/dm_robotics_controllers*.whl  # Check that the wheel was built.
 
-# Remove wheel files we cannot load ourselves.
-# This is done in a python script.
-pushd "$root/cpp/dist"
-cat <<EOF >>can_load.py
-import sys
-from packaging.tags import sys_tags
-from packaging.utils import parse_wheel_filename
-
-_,_,_,tag = parse_wheel_filename(sys.argv[1])
-tags = [str(t) for t in tag]
-legal_tags = [str(t) for t in sys_tags()]
-for tag in tags:
-  if tag in legal_tags:
-    exit(0)
-exit(1)
-EOF
-
-
-for file in $(ls dm_robotics_controllers*.whl); do
-  if ! $python_binary can_load.py "$file"; then
-    rm "$file"
-  fi
-done
-
-# Remove the wheel-checking script itself.
-rm "can_load.py"
-popd
+# We get a linux_x86_64 wheel, auditwheel repair detects and re-tags it as a
+# manylinux wheel.
+if which auditwheel; then
+  pushd "$root/cpp/dist"
+  echo "Repairing dm_robotics_controllers wheel files."
+  echo "Before repairing wheel: "
+  ls .
+  auditwheel repair dm_robotics_controllers*.whl
+  rm dm_robotics_controllers*.whl
+  mv wheelhouse/* .
+  rm -r wheelhouse
+  echo "After repairing wheel: "
+  ls .
+  popd
+fi
 
 # Copy the wheel to the tox distshare directory.
 echo "Copying controllers package wheel file to Tox distshare folder"
