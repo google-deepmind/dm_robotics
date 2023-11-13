@@ -29,13 +29,12 @@ def exclude_bodies_based_on_contype_conaffinity(
     mjcf_model: mjcf.RootElement, exclude_exception_str: Optional[str] = None):
   """Adds a contact-exclude MJCF element for the body pairs described below.
 
+  NOTE: This is no longer necessary after version 3.0 of mujoco, and might be
+  detrimental to performance for scenes with a large number of non-colliding
+  bodies.
+
   A contact-exclude MJCF element is added for every body pair for which all of
-  their geoms do not pass the contype/conaffinity check. This ensures that the
-  contype/conaffinity filtering happens right after the broad-phase collision
-  detection mechanism, usually decreasing the amount of geoms that are checked
-  through MuJoCo's bounding sphere test. This may improve computation
-  significantly in cases where the broad-phase collision detection is
-  ineffective in pruning geoms.
+  their geoms do not pass the contype/conaffinity check.
 
   This should be called after mjcf_model has been finalized, to ensure that the
   body names in the exclude element match those of the compiled model.
