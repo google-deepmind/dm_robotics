@@ -156,6 +156,7 @@ class MeshProp(prop.Prop):
     ], [self._size[0] * 0.5, self._size[0] * 0.5, self._size[0] * 0.5]]
 
     if texture_file:
+      self._has_texture = True
       with open(texture_file, 'rb') as f:
         self._mjcf_root.asset.add(
             'texture',
@@ -164,6 +165,8 @@ class MeshProp(prop.Prop):
             file=mjcf.Asset(f.read(), '.png'))
         self._main_mat = self._mjcf_root.asset.add(
             'material', name='mat_texture', texture='tex_object')
+    else:
+      self._has_texture = False
 
     self._make_model()
 
@@ -180,22 +183,18 @@ class MeshProp(prop.Prop):
     for i in range(self._visual_mesh_count):
       geom_name = 'mesh_%s_%02d_visual' % (self.name, i)
       mesh_ref = 'mesh_visual_%s_%02d' % (self.name, i)
+      geom = self._add_geom(
+          name=geom_name,
+          type='mesh',
+          mesh=mesh_ref,
+          pos=self._pos,
+          dclass=self._visual_dclass,
+      )
       if self._color_to_replace_texture:
-        self._add_geom(  # 'color' is used for visual mesh.
-            name=geom_name,
-            type='mesh',
-            mesh=mesh_ref,
-            pos=self._pos,
-            dclass=self._visual_dclass,
-            rgba=self._color_to_replace_texture)
-      else:  # textured material will be used instead of color.
-        self._add_geom(
-            name=geom_name,
-            type='mesh',
-            mesh=mesh_ref,
-            pos=self._pos,
-            dclass=self._visual_dclass,
-            material='mat_texture')
+        geom.rgba = self._color_to_replace_texture
+      elif self._has_texture:
+        # textured material will be used instead of color.
+        geom.material = 'mat_texture'
 
     # make collision geoms
     for i in range(self._collision_mesh_count):

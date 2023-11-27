@@ -16,10 +16,12 @@
 import os
 from absl.testing import absltest
 from absl.testing import parameterized
+from dm_control import mjcf
+from dm_control.composer import arena
 from dm_robotics.manipulation.props import mesh_object
 import numpy as np
+from PIL import Image
 
-# Internal file import.
 # Internal resources import.
 
 _TEST_ASSETS_PATH = os.path.join(
@@ -28,16 +30,15 @@ _TEST_ASSETS_PATH = os.path.join(
 
 
 def _create_texture(img_size):
-  img = np.random.normal(loc=0, scale=1, size=img_size)
-  return img
+  img = np.random.randint(0, 255, size=img_size, dtype=np.uint8)
+  return Image.fromarray(img)
 
 
 def _create_texture_file(texture_filename):
   # create custom texture and save it.
-  img_size = [4, 4]
+  img_size = [4, 4, 3]
   texture = _create_texture(img_size=img_size)
-  with open(texture_filename, 'wb') as f:
-    f.write(texture)
+  texture.save(texture_filename, 'PNG')
 
 
 class MeshObjectTest(parameterized.TestCase):
@@ -48,6 +49,7 @@ class MeshObjectTest(parameterized.TestCase):
     prop = mesh_object.MeshProp(name=prop_name, visual_meshes=[mesh_file])
     self.assertEqual(prop.name, prop_name)
     self.assertEmpty(prop.textures)
+    _compile_prop(prop)
 
   def test_create_with_custom_texture(self):
     mesh_file = os.path.join(_TEST_ASSETS_PATH, 'octahedron.obj')
@@ -70,6 +72,19 @@ class MeshObjectTest(parameterized.TestCase):
     texture_2 = prop_2.textures[0]
     self.assertNotEmpty(texture_2)
     self.assertSequenceEqual(texture_1, texture_2)
+
+    for p in [prop_1, prop_2]:
+      _compile_prop(p)
+
+
+def _compile_prop(prop: mesh_object.MeshProp):
+  # Create an empty arena, otherwise the entity becomes the worldbody and
+  # has no inertial properties.
+  empty_arena = arena.Arena()
+  empty_arena.attach(prop)
+
+  # Compile the model.
+  return mjcf.Physics.from_mjcf_model(empty_arena.mjcf_model)
 
 
 if __name__ == '__main__':
