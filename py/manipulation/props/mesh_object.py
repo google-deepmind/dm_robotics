@@ -147,9 +147,14 @@ class MeshProp(prop.Prop):
     self._collision_dclass.geom.solref = (.004, 1)
     self._collision_dclass.geom.condim = 6
     self._collision_dclass.geom.friction = _DEFAULT_FRICTION
-    if not masses:
-      self._collision_dclass.geom.mass = 0.2 / self._collision_mesh_count
-    self._masses = masses
+    # Masses should be assigned to the visual mesh, which is used to compute
+    # moment of inertia and center of mass, and can handle non-convexity.
+    self._collision_dclass.geom.mass = 0
+    self._masses = (
+        masses
+        if masses
+        else [0.2 / self._visual_mesh_count] * self._visual_mesh_count
+    )
 
     self._bbox_coords_axisp = [[
         -self._size[0] * 0.5, -self._size[0] * 0.5, -self._size[0] * 0.5
@@ -188,6 +193,7 @@ class MeshProp(prop.Prop):
           type='mesh',
           mesh=mesh_ref,
           pos=self._pos,
+          mass=self._masses[i],
           dclass=self._visual_dclass,
       )
       if self._color_to_replace_texture:
@@ -198,14 +204,12 @@ class MeshProp(prop.Prop):
 
     # make collision geoms
     for i in range(self._collision_mesh_count):
-      geom = self._add_geom(
+      self._add_geom(
           name='mesh_%s_%02d_collision' % (self.name, i),
           type='mesh',
           mesh='mesh_collision_%s_%02d' % (self.name, i),
           pos=self._pos,
           dclass=self._collision_dclass)
-      if self._masses:
-        geom.mass = self._masses[i]
 
     if self._mjcf_model_export_dir:
       mjcf.export_with_assets(self.mjcf_model, self._mjcf_model_export_dir)
