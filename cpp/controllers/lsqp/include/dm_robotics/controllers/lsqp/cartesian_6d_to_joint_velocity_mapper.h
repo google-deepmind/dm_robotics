@@ -366,7 +366,7 @@ class Cartesian6dToJointVelocityMapper {
   // * The internal solver was unable to find a valid solution to the nullspace
   //   optimization problem, and `return_error_on_nullspace_failure` is `true`.
   // * The internal solver found a solution to the optimization problem(s), but
-  //   but the computed velocities violate the constraints defined by the user.
+  //   the computed velocities violate the constraints defined by the user.
   //   This may happen if, for example, MuJoCo collision detection was not
   //   accurate or if errors due to the local Jacobian linearization about the
   //   current configuration cause the computed velocities to violate the
