@@ -103,6 +103,8 @@ FindOrFetch(
 # Python Bindings
 set(SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/cartesian_6d_to_joint_velocity_mapper.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/cartesian_6d_to_joint_velocity_mapper_python_helpers.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/cartesian_6d_to_joint_velocity_mapper_python_helpers.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/pybind_utils.h
   ${CMAKE_CURRENT_SOURCE_DIR}/pybind_utils.cc
 )
