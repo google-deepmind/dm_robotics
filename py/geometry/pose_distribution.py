@@ -14,6 +14,7 @@
 """A module for sampling prop and robot pose distributions."""
 
 import abc
+import copy
 from typing import Callable, Optional, Sequence, Tuple, Union
 from dm_robotics.geometry import geometry
 from dm_robotics.transformations import transformations as tr
@@ -233,17 +234,25 @@ class LambdaPoseDistribution(PoseDistribution):
 class WeightedDiscretePoseDistribution(PoseDistribution):
   """A distribution of a fixed number of poses each with a relative probability."""
 
-  def __init__(self, weighted_poses: Sequence[Tuple[float, np.ndarray]]):
+  def __init__(
+      self,
+      poses: Sequence[Tuple[np.ndarray, np.ndarray]],
+      weights: Sequence[float],
+  ):
     """Constructor.
 
     Args:
-      weighted_poses: a list of tuples of (probability, pose). The probability
-        is relative (i.e. does not need to be normalized), and the pose 6D array
-        composed of 3D pose and 3D euler angle.
+      poses: A sequence of (pos, quat). Quats are in [w, i, j, k] order.
+      weights: A sequence of floats representing unnormalized probability of
+        each pose.
     """
     super().__init__()
-    self._poses = [pose for _, pose in weighted_poses]
-    self._weights = np.array([weight for weight, _ in weighted_poses])
+    if len(poses) != len(weights):
+      raise ValueError('Must pass equal-length weights and poses, but '
+                       f'len(poses) is {len(poses)} and len(weights) is '
+                       f'{len(weights)}')
+    self._poses = copy.deepcopy(poses)
+    self._weights = np.array(weights, dtype=np.float32)
     self._weights /= np.sum(self._weights)
 
   def sample_pose(
@@ -252,10 +261,8 @@ class WeightedDiscretePoseDistribution(PoseDistribution):
       physics: Optional[geometry.Physics] = None
   ) -> Tuple[np.ndarray, np.ndarray]:
     del physics
-    chosen = random_state.choice(self._poses, p=self._weights)
-    pos = chosen[:3]
-    quat = tr.euler_to_quat(chosen[3:], ordering='XYZ')
-    return pos, quat
+    chosen_idx = random_state.choice(range(len(self._poses)), p=self._weights)
+    return self._poses[chosen_idx]
 
   def mean_pose(
       self,
@@ -264,11 +271,7 @@ class WeightedDiscretePoseDistribution(PoseDistribution):
     del physics
     # Note: this returns the mode, not the mean.
     ml_pose_idx = np.argmax(self._weights)
-    ml_pose = self._poses[ml_pose_idx]
-    pos = ml_pose[:3]
-    quat = tr.euler_to_quat(ml_pose[3:], ordering='XYZ')
-
-    return pos, quat
+    return self._poses[ml_pose_idx]
 
 
 class UniformPoseDistribution(PoseDistribution):
@@ -483,6 +486,7 @@ def _sample_with_limits(random_state: np.random.RandomState,
     raise ValueError('Invalid sd {}'.format(sd))
   samp = random_state.normal(scale=sd)
   i = 0
+  bad_idxs = None
   while i < max_steps:
     bad_idxs = np.logical_or(samp < -(sd * clip_sd), samp > (sd * clip_sd))
     if np.any(bad_idxs):
