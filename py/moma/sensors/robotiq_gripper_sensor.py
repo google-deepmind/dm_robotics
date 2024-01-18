@@ -41,41 +41,49 @@ class RobotiqGripperSensor(robotiq_gripper_observations.RobotiqGripperSensor):
     self._name = name
     self._observables = None
 
-  def initialize_for_task(self, control_timestep_seconds: float,
-                          physics_timestep_seconds: float,
-                          physics_steps_per_control_step: int):
-
+  def initialize_for_task(
+      self,
+      control_timestep_seconds: float,
+      physics_timestep_seconds: float,
+      physics_steps_per_control_step: int,
+  ):
     def velocity_from_positions(cur_prev_positions):
       return cur_prev_positions[1] - cur_prev_positions[0]
 
     observations = robotiq_gripper_observations.Observations
     self._observables = {
-        self.get_obs_key(observations.POS):
-            observable.Generic(
-                self._pos,
-                # Convert the raw joint pos to a sensor output.
-                corruptor=self._gripper.convert_position),
-        self.get_obs_key(observations.VEL):
-            observable.Generic(
-                self._pos,
-                buffer_size=2,
-                update_interval=physics_steps_per_control_step,
-                corruptor=self._gripper.convert_position,
-                aggregator=velocity_from_positions),
+        self.get_obs_key(observations.POS): observable.Generic(
+            self._pos,
+            # Convert the raw joint pos to a sensor output.
+            corruptor=self._gripper.convert_position,
+        ),
+        self.get_obs_key(observations.VEL): observable.Generic(
+            self._pos,
+            buffer_size=2,
+            update_interval=physics_steps_per_control_step,
+            corruptor=self._gripper.convert_position,
+            aggregator=velocity_from_positions,
+        ),
         self.get_obs_key(observations.GRASP): observable.Generic(self._grasp),
-        self.get_obs_key(observations.HEALTH_STATUS):
-            observable.Generic(self.health_status),
+        self.get_obs_key(observations.HEALTH_STATUS): observable.Generic(
+            self.health_status
+        ),
     }
 
     for obs in self._observables.values():
       obs.enabled = True
 
-  def initialize_episode(self, physics: mjcf.Physics,
-                         random_state: np.random.RandomState) -> None:
+  def initialize_episode(
+      self, physics: mjcf.Physics, random_state: np.random.RandomState
+  ) -> None:
     pass
 
   @property
   def observables(self) -> Dict[str, observable.Observable]:
+    if self._observables is None:
+      raise ValueError(
+          'Observables are not initialized. Call initialize_for_task first.'
+      )
     return self._observables
 
   @property

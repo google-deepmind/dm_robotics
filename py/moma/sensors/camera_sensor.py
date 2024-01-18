@@ -218,13 +218,21 @@ class CameraImageSensor(moma_sensor.Sensor[ImageObservations]):
         img_shape=(self._cfg.height, self._cfg.width), fovy=self._cfg.fovy)
 
   def _camera_rgb(self, physics: mjcf.Physics) -> np.ndarray:
-    return np.atleast_3d(self._camera.render(depth=False, segmentation=False))
+    return np.atleast_3d(
+        self._checked_camera.render(depth=False, segmentation=False)
+    )
 
   def _camera_depth(self, physics: mjcf.Physics) -> np.ndarray:
-    return np.atleast_3d(self._camera.render(depth=True))
+    return np.atleast_3d(self._checked_camera.render(depth=True))
 
   def _camera_segmentation(self, physics: mjcf.Physics) -> np.ndarray:
-    return np.atleast_3d(self._camera.render(segmentation=True))
+    return np.atleast_3d(self._checked_camera.render(segmentation=True))
+
+  @property
+  def _checked_camera(self) -> mujoco.Camera:
+    if self._camera is None:
+      raise ValueError('_camera has not been initialized.')
+    return self._camera
 
   def _create_camera(self, physics: mjcf.Physics) -> None:
     self._camera = mujoco.Camera(
