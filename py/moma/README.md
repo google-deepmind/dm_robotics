@@ -141,7 +141,7 @@ the tutorial linked at the top.
 
 <!--internal doc marker-->
 
-[Composer library]: https://deepmind.com/research/publications/dm-control-Software-and-Tasks-for-Continuous-Control
+[Composer library]: https://deepmind.google/discover/blog/dm-control-software-and-tasks-for-continuous-control/
 [`dm_control`]: https://github.com/deepmind/dm_control/tree/master
 [Sensors]: https://github.com/deepmind/dm_robotics/tree/main/py/moma/sensor.py
 [`sensors`]: https://github.com/deepmind/dm_robotics/tree/main/py/moma/sensors/
