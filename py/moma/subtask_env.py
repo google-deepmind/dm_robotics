@@ -210,6 +210,9 @@ class SubTaskEnvironment(dm_env.Environment):
       ef.set_control(self.physics, e_cmd)
 
   def _find_effector_indices(self, ef: effector.Effector) -> List[bool]:
+    if self._effectors_action_spec is None:
+      raise ValueError('Cannot find effector indices without action spec.')
+
     actuator_names = self._effectors_action_spec.name.split('\t')
     prefix_expr = re.compile(ef.prefix)
     return [re.match(prefix_expr, name) is not None for name in actuator_names]
