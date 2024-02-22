@@ -17,6 +17,7 @@ import dataclasses
 import threading
 from typing import Optional
 
+from absl import flags
 from absl import logging
 import numpy as np
 import rospy
@@ -27,7 +28,23 @@ import cv_bridge
 from std_msgs import msg as std_msgs
 
 
-_INITIAL_MESSAGE_TIMEOUT = 10.0
+_POINT_HANDLER_INITIAL_MESSAGE_TIMEOUT = flags.DEFINE_float(
+    name="point_handler_initial_message_timeout",
+    default=10.0,
+    help=(
+        "The timeout in seconds for receiving the first message on a node for a"
+        " point handler (blob triangulation)."
+    ),
+)
+
+_IMAGE_HANDLER_INITIAL_MESSAGE_TIMEOUT = flags.DEFINE_float(
+    name="image_handler_initial_message_timeout",
+    default=300.0,
+    help=(
+        "The timeout in seconds for receiving the first message on a node for"
+        " an image handler (blob detector)."
+    ),
+)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -129,6 +146,10 @@ class ImageHandler:
       topic: The topic to subscribe to.
       encoding: The desired encoding of the image.
       queue_size: The queue size to use.
+
+    Raises:
+      TimeoutError: If the first message is not received within the given
+      timeout window.
     """
     self._encoding = encoding
     self._bridge = cv_bridge.CvBridge()
@@ -141,7 +162,18 @@ class ImageHandler:
         tcp_nodelay=True,
     )
     logging.info("Waiting for the first message on topic %s", topic)
-    rospy.wait_for_message(topic, sensor_msgs.Image)
+    try:
+      rospy.wait_for_message(
+          topic,
+          sensor_msgs.Image,
+          timeout=_IMAGE_HANDLER_INITIAL_MESSAGE_TIMEOUT.value,
+      )
+    except rospy.exceptions.ROSException as ros_exception:
+      raise TimeoutError(
+          "Timed out waiting"
+          f" {_IMAGE_HANDLER_INITIAL_MESSAGE_TIMEOUT.value} seconds",
+          f"to receive a message from topic: {topic}",
+      ) from ros_exception
 
   def close(self) -> None:
     """Gently cleans up ImageHandler and closes ROS topics."""
@@ -247,6 +279,10 @@ class PointHandler:
       max_attempts: maximum number of times to wait for an initial message
         before aborting with an exception. If non-positive or zero, keep
         retrying indefinitely.
+
+    Raises:
+      TimeoutError: If the first message is not received within the given
+      timeout window and maximum number of attempts.
     """
     self._lock = threading.Condition(threading.RLock())
     self._subscriber = rospy.Subscriber(
@@ -256,16 +292,18 @@ class PointHandler:
         queue_size=queue_size,
         tcp_nodelay=True)
     logging.info("Waiting for the first message on topic %s", topic)
-    self._wait_for_message(topic, max_attempts or 0)
+    self._wait_for_message(topic, max_attempts or 1)
 
   def _wait_for_message(self, topic: str, max_attempts: int) -> None:
     """Wait for first message and repeatedly print warning."""
     attempts = 0
-    while max_attempts < 1 or attempts < max_attempts:
+    while attempts < max_attempts:
       attempts += 1
       try:
         rospy.wait_for_message(
-            topic, geometry_msgs.PointStamped, timeout=_INITIAL_MESSAGE_TIMEOUT
+            topic,
+            geometry_msgs.PointStamped,
+            timeout=_POINT_HANDLER_INITIAL_MESSAGE_TIMEOUT.value,
         )
         return
       except rospy.exceptions.ROSException:
@@ -277,7 +315,7 @@ class PointHandler:
             ),
             topic,
         )
-    raise IOError(
+    raise TimeoutError(
         f"Did not receive a message on topic {topic} after {max_attempts}"
         " attempts."
     )
