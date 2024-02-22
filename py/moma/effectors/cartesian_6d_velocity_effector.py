@@ -500,6 +500,11 @@ class Cartesian6dVelocityEffector(effector.Effector):
       # Note that we need to make sure that the joint velocities are in the same
       # order as the joints sequence, which may be different from that the QP
       # returns, i.e. in ascending order.
+      if self._qp_mapper is None:
+        raise ValueError(
+            '_compute_joint_velocities: qp_mapper is None. Must call '
+            'after_compile() before calling set_control().'
+        )
       joint_velocities[self._joints_argsort] = np.array(
           self._qp_mapper.compute_joint_velocities(physics.data,
                                                    cartesian_6d_target.tolist(),
