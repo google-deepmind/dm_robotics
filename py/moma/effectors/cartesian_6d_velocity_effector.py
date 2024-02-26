@@ -293,6 +293,14 @@ class CollisionParams:
       large value will cause collisions to be detected early, but may incur high
       computational costs. A negative value will cause the geoms to be detected
       only after they penetrate by the specified amount.
+    use_minimum_distance_contacts_only: (optional) if true, it will only create
+      one inequality constraint per geom pair, corresponding to the MuJoCo
+      contact with the minimum distance. Otherwise, it will create one
+      inequality constraint for each of the MuJoCo contacts detected per geom
+      pair. In problems where many geoms are avoiding each other, setting this
+      option to `true` will considerably speed up solve times, but the solution
+      is more likely to result in penetration at high speeds. Ignored if
+      `enable_collision_avoidance` is `false`.
   """
 
   collision_pairs: Optional[Sequence[Tuple[Sequence[str],
@@ -300,11 +308,15 @@ class CollisionParams:
   collision_avoidance_normal_velocity_scale: float = 0.85
   minimum_distance_from_collisions: float = 0.05
   collision_detection_distance: float = 0.5
+  use_minimum_distance_contacts_only: bool = False
 
   def set_qp_params(self, qp_params: _CartesianVelocityMapperParams):
     """Configures `qp_params` with the CollisionParams fields."""
     if self.collision_pairs:
       qp_params.enable_collision_avoidance = True
+      qp_params.use_minimum_distance_contacts_only = (
+          self.use_minimum_distance_contacts_only
+      )
       qp_params.collision_avoidance_normal_velocity_scale = (
           self.collision_avoidance_normal_velocity_scale)
       qp_params.minimum_distance_from_collisions = (
