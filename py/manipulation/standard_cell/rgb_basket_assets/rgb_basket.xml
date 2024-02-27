@@ -1,6 +1,5 @@
 <mujoco model="standard_basket">
     <compiler angle="radian" />
-    <size njmax="500" nconmax="100" />
     <asset>
       <texture name="skybox" type="skybox" builtin="gradient" rgb1="0.7 0.7 0.7" rgb2="0.9 0.9 0.9" width="100" height="100"/>
         <mesh name="lasercut_basket_part_1__3default" file="lasercut_basket_part_1__3default.stl" />
