@@ -103,12 +103,12 @@ class ModelParams:
   joints: Sequence[_MjcfElement]
   control_frame: Optional[geometry.Frame] = None
 
-  def set_qp_params(self, mjcf_model: mjcf.RootElement,
-                    qp_params: _CartesianVelocityMapperParams):
-    xml_string = mjcf_model.to_xml_string()
-    assets = mjcf_model.get_assets()
-    qp_params.model = mujoco.wrapper.MjModel.from_xml_string(
-        xml_string, assets=assets)
+  def set_qp_params(
+      self,
+      mj_model: mujoco.wrapper.MjModel,
+      qp_params: _CartesianVelocityMapperParams,
+  ):
+    qp_params.model = mj_model
     qp_params.joint_ids = _get_joint_ids(qp_params.model, self.joints)
     qp_params.object_type = _get_element_type(self.element)
     qp_params.object_name = self.element.full_identifier
@@ -338,7 +338,8 @@ class Cartesian6dVelocityEffector(effector.Effector):
                control_params: ControlParams,
                collision_params: Optional[CollisionParams] = None,
                log_nullspace_failure_warnings: bool = False,
-               use_adaptive_qp_step_size: bool = False):
+               use_adaptive_qp_step_size: bool = False,
+               compile_mjcf: bool = True):
     """Initializes a QP-based 6D Cartesian velocity effector.
 
     Args:
@@ -359,6 +360,12 @@ class Cartesian6dVelocityEffector(effector.Effector):
         adaptive step size when solving the resultant QP problem. Note that
         setting this to true can greatly speed up the computation time, but the
         solution will no longer be numerically deterministic.
+      compile_mjcf: if true, it will compile an MjModel from the MJCF during
+        the `after_compile` stage. If false, it will re-use the `MjModel` in the
+        `mjcf.Physics` object passed during the `after_compile` stage. Should
+        only be set to false if the `MjModel` within the `mjcf.Physics` is
+        guaranteed to be finalized and constant before and after `after_compile`
+        is called.
     """
     self._effector_prefix = f'{robot_name}_twist'
     self._joint_velocity_effector = joint_velocity_effector
@@ -369,6 +376,7 @@ class Cartesian6dVelocityEffector(effector.Effector):
     self._control_frame = model_params.control_frame
     self._log_nullspace_failure_warnings = log_nullspace_failure_warnings
     self._use_adaptive_step_size = use_adaptive_qp_step_size
+    self._compile_mjcf = compile_mjcf
 
     # These are created in after_compose, once the mjcf_model is finalized.
     self._qp_mapper = None
@@ -381,7 +389,16 @@ class Cartesian6dVelocityEffector(effector.Effector):
     # Construct the QP-based mapper.
     qp_params = _CartesianVelocityMapperParams()
 
-    self._model_params.set_qp_params(mjcf_model, qp_params)
+    if self._compile_mjcf:
+      xml_string = mjcf_model.to_xml_string()
+      assets = mjcf_model.get_assets()
+      mj_model = mujoco.wrapper.MjModel.from_xml_string(
+          xml_string, assets=assets
+      )
+    else:
+      mj_model = physics.model
+    self._model_params.set_qp_params(mj_model, qp_params)
+
     self._control_params.set_qp_params(qp_params)
     if self._collision_params:
       self._collision_params.set_qp_params(qp_params)
