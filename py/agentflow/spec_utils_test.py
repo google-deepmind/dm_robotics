@@ -33,6 +33,7 @@ random_observation_spec = testing_functions.random_observation_spec
 random_discount_spec = testing_functions.random_discount_spec
 random_reward_spec = testing_functions.random_reward_spec
 random_timestep_spec = testing_functions.random_timestep_spec
+random_timestep = testing_functions.random_timestep
 valid_value = testing_functions.valid_value
 
 
@@ -809,6 +810,45 @@ class TimeStepSpecTest(parameterized.TestCase):
     for key in expected_maximum_obs:
       assert_fn(maximum_timestep.observation[key],
                 expected_maximum_obs[key])
+
+  @parameterized.parameters(
+      ({'obs': 1}, specs.Array, (), np.int64),
+      ({'obs': np.int16(3)}, specs.Array, (), np.int16),
+      ({'obs': np.int32(3)}, specs.Array, (), np.int32),
+      ({'obs': 1.0}, specs.Array, (), np.float64),
+      ({'obs': np.float32(3.0)}, specs.Array, (), np.float32),
+      ({'obs': True}, specs.Array, (), bool),
+      ({'obs': 'some instructions'}, specs.StringArray, (), str),
+  )
+  def test_from_timestep(
+      self, obs, expected_spec_type, expected_shape, expected_dtype
+  ):
+    # This tests for the following:
+    # - Numpy arrays go to specs.Array with proper shape and dtype
+    # - int, bool, float all go to specs.Array with shape () and correct dtype
+    # - bytes and str go to specs.StringArray with shape () (variable length)
+    # - In all cases the timestep validates correctly on the generated spec
+    ts = random_timestep(observation=obs)
+    ts_spec = spec_utils.TimeStepSpec.from_timestep(timestep=ts)
+    self.assertIsInstance(ts_spec.observation_spec['obs'], expected_spec_type)
+    self.assertEqual(ts_spec.observation_spec['obs'].shape, expected_shape)
+    if isinstance(ts_spec.observation_spec['obs'], specs.StringArray):
+      actual_dtype = ts_spec.observation_spec['obs'].string_type
+    else:
+      actual_dtype = ts_spec.observation_spec['obs'].dtype
+    self.assertEqual(actual_dtype, expected_dtype)
+    ts_spec.validate(ts)
+
+  def test_from_timestep_random(self):
+    # Test `from_timestep` on some randomly-generated timesteps.
+    # Note: at time of writing, `TimeStepSpec.from_timestep` does support nested
+    #   input obserations (e.g. dict-of-dicts), but `TimeStepSpec.validate` does
+    #   not support validating nested types.
+    for _ in range(5):
+      obs = valid_value(random_observation_spec())
+      ts = random_timestep(observation=obs)
+      ts_spec = spec_utils.TimeStepSpec.from_timestep(timestep=ts)
+      ts_spec.validate(ts)
 
 
 if __name__ == '__main__':

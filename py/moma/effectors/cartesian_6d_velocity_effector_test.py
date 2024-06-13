@@ -28,32 +28,45 @@ import numpy as np
 
 
 @parameterized.named_parameters(
-    ('use_adaptive_step_size', True),
-    ('do_not_use_adaptive_step_size', False),
+    ('adaptive_compile', True, True),
+    ('adaptive_nocompile', True, False),
+    ('noadaptive_compile', False, True),
+    ('noadaptive_nocompile', False, False),
 )
 class Cartesian6dVelocityEffectorTest(parameterized.TestCase):
 
-  def test_setting_control(self, use_adaptive_qp_step_size):
+  def test_setting_control(
+      self,
+      use_adaptive_qp_step_size,
+      compile_mjcf,
+  ):
     arm = sawyer.Sawyer(with_pedestal=False)
     joints = arm.joints
     element = arm.wrist_site
     physics = mjcf.Physics.from_mjcf_model(arm.mjcf_model)
     sawyer_effector = arm_effector.ArmEffector(
-        arm=arm, action_range_override=None, robot_name='sawyer')
+        arm=arm, action_range_override=None, robot_name='sawyer'
+    )
 
-    cartesian_effector = cartesian_6d_velocity_effector.Cartesian6dVelocityEffector(
-        'robot0',
-        sawyer_effector,
-        cartesian_6d_velocity_effector.ModelParams(element, joints),
-        cartesian_6d_velocity_effector.ControlParams(
-            control_timestep_seconds=1.0, nullspace_gain=0.0),
-        use_adaptive_qp_step_size=use_adaptive_qp_step_size)
+    cartesian_effector = (
+        cartesian_6d_velocity_effector.Cartesian6dVelocityEffector(
+            'robot0',
+            sawyer_effector,
+            cartesian_6d_velocity_effector.ModelParams(element, joints),
+            cartesian_6d_velocity_effector.ControlParams(
+                control_timestep_seconds=1.0, nullspace_gain=0.0
+            ),
+            use_adaptive_qp_step_size=use_adaptive_qp_step_size,
+            compile_mjcf=compile_mjcf,
+        )
+    )
     cartesian_effector.after_compile(arm.mjcf_model, physics)
 
     # Set a Cartesian command that can be tracked at the initial Sawyer
     # configuration, and step physics.
-    cartesian_command = np.array([0.0, 0.0, 0.0, 0.0, 0.5, 0.0],
-                                 dtype=np.float32)
+    cartesian_command = np.array(
+        [0.0, 0.0, 0.0, 0.0, 0.5, 0.0], dtype=np.float32
+    )
     # Let the actuators to catch-up to the requested velocity, after which the
     # resultant Cartesian velocity should be within expected tolerances.
     for _ in range(300):
@@ -69,47 +82,63 @@ class Cartesian6dVelocityEffectorTest(parameterized.TestCase):
       physics.step()
 
       twist = physics.data.object_velocity(
-          element.full_identifier, 'site', local_frame=False)
+          element.full_identifier, 'site', local_frame=False
+      )
       np.testing.assert_allclose(twist[0], cartesian_command[:3], atol=5e-2)
       np.testing.assert_allclose(twist[1], cartesian_command[3:], atol=5e-2)
 
-  def test_control_frame(self, use_adaptive_qp_step_size):
+  def test_control_frame(
+      self,
+      use_adaptive_qp_step_size,
+      compile_mjcf,
+  ):
     arm = sawyer.Sawyer(with_pedestal=False)
     joints = arm.joints
     element = arm.wrist_site
     physics = mjcf.Physics.from_mjcf_model(arm.mjcf_model)
     sawyer_effector = arm_effector.ArmEffector(
-        arm=arm, action_range_override=None, robot_name='sawyer')
+        arm=arm, action_range_override=None, robot_name='sawyer'
+    )
 
     # Run the test 10 times with random poses.
     np.random.seed(42)
     for _ in range(10):
       control_frame = geometry.PoseStamped(
-          pose=geometry.Pose.from_poseuler(np.random.rand(6)), frame=element)
-      cartesian_effector = cartesian_6d_velocity_effector.Cartesian6dVelocityEffector(
-          'robot0',
-          sawyer_effector,
-          cartesian_6d_velocity_effector.ModelParams(element, joints,
-                                                     control_frame),
-          cartesian_6d_velocity_effector.ControlParams(
-              control_timestep_seconds=1.0,
-              max_lin_vel=10.0,
-              max_rot_vel=10.0,
-              nullspace_gain=0.0),
-          use_adaptive_qp_step_size=use_adaptive_qp_step_size)
+          pose=geometry.Pose.from_poseuler(np.random.rand(6)), frame=element
+      )
+      cartesian_effector = (
+          cartesian_6d_velocity_effector.Cartesian6dVelocityEffector(
+              'robot0',
+              sawyer_effector,
+              cartesian_6d_velocity_effector.ModelParams(
+                  element, joints, control_frame
+              ),
+              cartesian_6d_velocity_effector.ControlParams(
+                  control_timestep_seconds=1.0,
+                  max_lin_vel=10.0,
+                  max_rot_vel=10.0,
+                  nullspace_gain=0.0,
+              ),
+              use_adaptive_qp_step_size=use_adaptive_qp_step_size,
+              compile_mjcf=compile_mjcf,
+          )
+      )
       cartesian_effector.after_compile(arm.mjcf_model, physics)
 
       # Create a cartesian command stamped on the control frame, and compute the
       # expected 6D target that is passed to the mapper.
-      cartesian_command = np.array([0.3, 0.1, -0.2, 0.4, 0.2, 0.5],
-                                   dtype=np.float32)
+      cartesian_command = np.array(
+          [0.3, 0.1, -0.2, 0.4, 0.2, 0.5], dtype=np.float32
+      )
       stamped_command = geometry.TwistStamped(cartesian_command, control_frame)
       qp_frame = geometry.HybridPoseStamped(
           pose=None,
           frame=element,
-          quaternion_override=geometry.PoseStamped(None, None))
+          quaternion_override=geometry.PoseStamped(None, None),
+      )
       cartesian_6d_target = stamped_command.get_relative_twist(
-          qp_frame, mujoco_physics.wrap(physics)).full
+          qp_frame, mujoco_physics.wrap(physics)
+      ).full
 
       # Wrap the `_compute_joint_velocities` function and ensure that it is
       # called with a Cartesian 6D velocity expressed about the element's
@@ -117,7 +146,8 @@ class Cartesian6dVelocityEffectorTest(parameterized.TestCase):
       with mock.patch.object(
           cartesian_6d_velocity_effector.Cartesian6dVelocityEffector,
           '_compute_joint_velocities',
-          wraps=cartesian_effector._compute_joint_velocities) as mock_fn:
+          wraps=cartesian_effector._compute_joint_velocities,
+      ) as mock_fn:
         cartesian_effector.set_control(physics, cartesian_command)
 
         # We test the input Cartesian 6D target with a very low tolerance
@@ -127,17 +157,21 @@ class Cartesian6dVelocityEffectorTest(parameterized.TestCase):
         args_kwargs = mock_fn.call_args[1]
         self.assertEqual(args_kwargs['physics'], physics)
         np.testing.assert_allclose(
-            args_kwargs['cartesian_6d_target'],
-            cartesian_6d_target,
-            atol=1.0e-7)
+            args_kwargs['cartesian_6d_target'], cartesian_6d_target, atol=1.0e-7
+        )
 
-  def test_joint_velocity_limits(self, use_adaptive_qp_step_size):
+  def test_joint_velocity_limits(
+      self,
+      use_adaptive_qp_step_size,
+      compile_mjcf,
+  ):
     arm = sawyer.Sawyer(with_pedestal=False)
     joints = arm.joints
     element = arm.wrist_site
     physics = mjcf.Physics.from_mjcf_model(arm.mjcf_model)
     sawyer_effector = arm_effector.ArmEffector(
-        arm=arm, action_range_override=None, robot_name='sawyer')
+        arm=arm, action_range_override=None, robot_name='sawyer'
+    )
 
     joint_vel_limits = np.ones(7) * 1e-2
     cartesian_effector = (
@@ -150,8 +184,12 @@ class Cartesian6dVelocityEffectorTest(parameterized.TestCase):
                 nullspace_gain=0.0,
                 max_lin_vel=1e3,
                 max_rot_vel=1e3,
-                joint_velocity_limits=joint_vel_limits),
-            use_adaptive_qp_step_size=use_adaptive_qp_step_size))
+                joint_velocity_limits=joint_vel_limits,
+            ),
+            use_adaptive_qp_step_size=use_adaptive_qp_step_size,
+            compile_mjcf=compile_mjcf,
+        )
+    )
     cartesian_effector.after_compile(arm.mjcf_model, physics)
 
     # Set a very large Cartesian command, and ensure that joint velocity limits
@@ -164,14 +202,19 @@ class Cartesian6dVelocityEffectorTest(parameterized.TestCase):
       self.assertTrue(np.less_equal(joint_vel_ctrls, joint_vel_limits).all())
       physics.step()
 
-  def test_limiting_to_workspace(self, use_adaptive_qp_step_size):
+  def test_limiting_to_workspace(
+      self,
+      use_adaptive_qp_step_size,
+      compile_mjcf,
+  ):
     arm = sawyer.Sawyer(with_pedestal=False)
     joints = arm.joints
     element = arm.wrist_site
     physics = mjcf.Physics.from_mjcf_model(arm.mjcf_model)
     effector_6d = test_utils.SpyEffectorWithControlFrame(element, dofs=6)
     sawyer_effector = arm_effector.ArmEffector(
-        arm=arm, action_range_override=None, robot_name='sawyer')
+        arm=arm, action_range_override=None, robot_name='sawyer'
+    )
 
     joint_vel_limits = np.ones(7) * 1e-2
     cartesian_effector = (
@@ -184,11 +227,16 @@ class Cartesian6dVelocityEffectorTest(parameterized.TestCase):
                 nullspace_gain=0.0,
                 max_lin_vel=1e3,
                 max_rot_vel=1e3,
-                joint_velocity_limits=joint_vel_limits),
-            use_adaptive_qp_step_size=use_adaptive_qp_step_size))
+                joint_velocity_limits=joint_vel_limits,
+            ),
+            use_adaptive_qp_step_size=use_adaptive_qp_step_size,
+            compile_mjcf=compile_mjcf,
+        )
+    )
     cartesian_effector.after_compile(arm.mjcf_model, physics)
     arm.set_joint_angles(
-        physics, joint_angles=test_utils.SAFE_SAWYER_JOINTS_POS)
+        physics, joint_angles=test_utils.SAFE_SAWYER_JOINTS_POS
+    )
     # Propagate the changes to the rest of the physics.
     physics.step()
 
@@ -197,41 +245,48 @@ class Cartesian6dVelocityEffectorTest(parameterized.TestCase):
     # valid.
     min_workspace_limits = np.array([0.0, -0.5, 0.0])
     max_workspace_limits = np.array([0.9, 0.5, 0.5])
-    effector_with_limits = (
-        cartesian_6d_velocity_effector.limit_to_workspace(
-            effector_6d, arm.wrist_site, min_workspace_limits,
-            max_workspace_limits))
+    effector_with_limits = cartesian_6d_velocity_effector.limit_to_workspace(
+        effector_6d, arm.wrist_site, min_workspace_limits, max_workspace_limits
+    )
     effector_with_limits.set_control(physics, command=np.ones(6) * 0.1)
     np.testing.assert_allclose(
-        effector_6d.previous_action, [0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+        effector_6d.previous_action,
+        [0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
         atol=1e-3,
-        rtol=0.0)
+        rtol=0.0,
+    )
 
     # The arm is pointing down in front of the base. Create a
     # workspace where the X position is in bounds, but Y and Z are out
     # of bounds.
     min_workspace_limits = np.array([0.0, -0.9, 0.5])
     max_workspace_limits = np.array([0.9, -0.5, 0.9])
-    effector_with_limits = (
-        cartesian_6d_velocity_effector.limit_to_workspace(
-            effector_6d, arm.wrist_site, min_workspace_limits,
-            max_workspace_limits))
+    effector_with_limits = cartesian_6d_velocity_effector.limit_to_workspace(
+        effector_6d, arm.wrist_site, min_workspace_limits, max_workspace_limits
+    )
     # The action should only affect DOFs that are out of bounds and
     # are moving away from where they should.
     effector_with_limits.set_control(physics, command=np.ones(6) * 0.1)
     np.testing.assert_allclose(
-        effector_6d.previous_action, [0.1, 0.0, 0.1, 0.1, 0.1, 0.1],
+        effector_6d.previous_action,
+        [0.1, 0.0, 0.1, 0.1, 0.1, 0.1],
         atol=1e-3,
-        rtol=0.0)
+        rtol=0.0,
+    )
 
-  def test_limiting_orientation_to_workspace(self, use_adaptive_qp_step_size):
+  def test_limiting_orientation_to_workspace(
+      self,
+      use_adaptive_qp_step_size,
+      compile_mjcf,
+  ):
     arm = sawyer.Sawyer(with_pedestal=False)
     joints = arm.joints
     element = arm.wrist_site
     physics = mjcf.Physics.from_mjcf_model(arm.mjcf_model)
     effector_6d = test_utils.SpyEffectorWithControlFrame(element, dofs=6)
     sawyer_effector = arm_effector.ArmEffector(
-        arm=arm, action_range_override=None, robot_name='sawyer')
+        arm=arm, action_range_override=None, robot_name='sawyer'
+    )
 
     joint_vel_limits = np.ones(7) * 1e-2
     cartesian_effector = (
@@ -244,11 +299,16 @@ class Cartesian6dVelocityEffectorTest(parameterized.TestCase):
                 nullspace_gain=0.0,
                 max_lin_vel=1e3,
                 max_rot_vel=1e3,
-                joint_velocity_limits=joint_vel_limits),
-            use_adaptive_qp_step_size=use_adaptive_qp_step_size))
+                joint_velocity_limits=joint_vel_limits,
+            ),
+            use_adaptive_qp_step_size=use_adaptive_qp_step_size,
+            compile_mjcf=compile_mjcf,
+        )
+    )
     cartesian_effector.after_compile(arm.mjcf_model, physics)
     arm.set_joint_angles(
-        physics, joint_angles=test_utils.SAFE_SAWYER_JOINTS_POS)
+        physics, joint_angles=test_utils.SAFE_SAWYER_JOINTS_POS
+    )
     # Propagate the changes to the rest of the physics.
     physics.step()
 
@@ -257,40 +317,49 @@ class Cartesian6dVelocityEffectorTest(parameterized.TestCase):
     # valid.
     min_workspace_limits = np.array([0.0, -0.5, 0.0, 0.0, -np.pi, -np.pi])
     max_workspace_limits = np.array([0.9, 0.5, 0.5, 2 * np.pi, np.pi, np.pi])
-    effector_with_limits = (
-        cartesian_6d_velocity_effector.limit_to_workspace(
-            effector_6d, arm.wrist_site, min_workspace_limits,
-            max_workspace_limits))
+    effector_with_limits = cartesian_6d_velocity_effector.limit_to_workspace(
+        effector_6d, arm.wrist_site, min_workspace_limits, max_workspace_limits
+    )
     effector_with_limits.set_control(physics, command=np.ones(6) * 0.1)
     np.testing.assert_allclose(
-        effector_6d.previous_action, np.ones(6) * 0.1, atol=1e-3, rtol=0.0)
+        effector_6d.previous_action, np.ones(6) * 0.1, atol=1e-3, rtol=0.0
+    )
 
     # The arm is pointing down in front of the base (x_rot = np.pi). Create a
     # workspace where the Y and Z orientations are in bounds, but X is out of
     # bounds.
     arm.set_joint_angles(
-        physics, joint_angles=test_utils.SAFE_SAWYER_JOINTS_POS)
+        physics, joint_angles=test_utils.SAFE_SAWYER_JOINTS_POS
+    )
     # Propagate the changes to the rest of the physics.
     physics.step()
-    min_workspace_limits = np.array([0., -0.5, 0., -np.pi / 2, -np.pi, -np.pi])
+    min_workspace_limits = np.array(
+        [0.0, -0.5, 0.0, -np.pi / 2, -np.pi, -np.pi]
+    )
     max_workspace_limits = np.array([0.9, 0.5, 0.5, 0.0, np.pi, np.pi])
-    effector_with_limits = (
-        cartesian_6d_velocity_effector.limit_to_workspace(
-            effector_6d, arm.wrist_site, min_workspace_limits,
-            max_workspace_limits))
+    effector_with_limits = cartesian_6d_velocity_effector.limit_to_workspace(
+        effector_6d, arm.wrist_site, min_workspace_limits, max_workspace_limits
+    )
     # The action should only affect DOFs that are out of bounds and
     # are moving away from where they should.
     effector_with_limits.set_control(physics, command=np.ones(6) * 0.1)
     np.testing.assert_allclose(
-        effector_6d.previous_action, [0.1, 0.1, 0.1, 0., 0.1, 0.1],
+        effector_6d.previous_action,
+        [0.1, 0.1, 0.1, 0.0, 0.1, 0.1],
         atol=1e-3,
-        rtol=0.0)
+        rtol=0.0,
+    )
 
-  def test_collision_avoidance(self, use_adaptive_qp_step_size):
+  def test_collision_avoidance(
+      self,
+      use_adaptive_qp_step_size,
+      compile_mjcf,
+  ):
     # Add a sphere above the sawyer that it would collide with if it moves up.
     arm = sawyer.Sawyer(with_pedestal=False)
     obstacle = arm.mjcf_model.worldbody.add(
-        'geom', type='sphere', pos='0.7 0 0.8', size='0.3')
+        'geom', type='sphere', pos='0.7 0 0.8', size='0.3'
+    )
     move_up_cmd = np.array([0.0, 0.0, 0.5, 0.0, 0.0, 0.0], dtype=np.float32)
 
     # Make an effector without collision avoidance, and initialize a physics
@@ -301,30 +370,37 @@ class Cartesian6dVelocityEffectorTest(parameterized.TestCase):
         arm,
         None,
         use_adaptive_qp_step_size,
-        physics=unsafe_physics)
+        compile_mjcf=compile_mjcf,
+        physics=unsafe_physics,
+    )
 
     # Make an effector with collision avoidance, and initialize a physics object
     # to be used with this effector.
     collision_pairs = _self_collision(arm) + _collisions_between(arm, obstacle)
     collision_params = cartesian_6d_velocity_effector.CollisionParams(
-        collision_pairs)
+        collision_pairs
+    )
     safe_physics = mjcf.Physics.from_mjcf_model(arm.mjcf_model)
-    safe_effector = _create_cartesian_effector(safe_physics.model.opt.timestep,
-                                               arm, collision_params,
-                                               use_adaptive_qp_step_size,
-                                               safe_physics)
+    safe_effector = _create_cartesian_effector(
+        safe_physics.model.opt.timestep,
+        arm,
+        collision_params,
+        use_adaptive_qp_step_size,
+        compile_mjcf=compile_mjcf,
+        physics=safe_physics,
+    )
 
     # Assert the no-collision avoidance setup collides.
     # This should happen between iterations 250 & 300.
-    collided_per_step = _get_collisions_over_n_steps(300, unsafe_physics,
-                                                     unsafe_effector,
-                                                     move_up_cmd, arm)
+    collided_per_step = _get_collisions_over_n_steps(
+        300, unsafe_physics, unsafe_effector, move_up_cmd, arm
+    )
     self.assertTrue(all(collided_per_step[250:]))
 
     # Assert the collision avoidance setup never collides for the same command.
-    collided_per_step = _get_collisions_over_n_steps(1000, safe_physics,
-                                                     safe_effector, move_up_cmd,
-                                                     arm)
+    collided_per_step = _get_collisions_over_n_steps(
+        1000, safe_physics, safe_effector, move_up_cmd, arm
+    )
     self.assertFalse(any(collided_per_step))
 
 
@@ -335,8 +411,9 @@ def _compensate_gravity(physics, mjcf_model):
   bodies.xfrc_applied = -gravity * bodies.mass[..., None]
 
 
-def _step_and_check_collisions(physics, mjcf_model, cartesian_effector,
-                               cartesian_command):
+def _step_and_check_collisions(
+    physics, mjcf_model, cartesian_effector, cartesian_command
+):
   """Steps the physics with grav comp. Returns True if in collision."""
   _compensate_gravity(physics, mjcf_model)
   cartesian_effector.set_control(physics, cartesian_command)
@@ -352,7 +429,8 @@ def _get_collisions_over_n_steps(n, physics, effector, command, arm):
   collided_per_step = []
   for _ in range(n):
     collided_per_step.append(
-        _step_and_check_collisions(physics, arm.mjcf_model, effector, command))
+        _step_and_check_collisions(physics, arm.mjcf_model, effector, command)
+    )
   return collided_per_step
 
 
@@ -364,18 +442,32 @@ def _collisions_between(lhs, rhs: mjcf.Element):
   return [(lhs.collision_geom_group, [rhs.full_identifier])]
 
 
-def _create_cartesian_effector(timestep, arm, collision_params,
-                               use_adaptive_qp_step_size, physics):
+def _create_cartesian_effector(
+    timestep,
+    arm,
+    collision_params,
+    use_adaptive_qp_step_size,
+    compile_mjcf,
+    physics,
+):
   joint_effector = arm_effector.ArmEffector(
-      arm=arm, action_range_override=None, robot_name='sawyer')
-  cartesian_effector = cartesian_6d_velocity_effector.Cartesian6dVelocityEffector(
-      'robot0',
-      joint_effector,
-      cartesian_6d_velocity_effector.ModelParams(arm.wrist_site, arm.joints),
-      cartesian_6d_velocity_effector.ControlParams(
-          control_timestep_seconds=timestep, nullspace_gain=0.0),
-      collision_params,
-      use_adaptive_qp_step_size=use_adaptive_qp_step_size)
+      arm=arm, action_range_override=None, robot_name='sawyer'
+  )
+  cartesian_effector = (
+      cartesian_6d_velocity_effector.Cartesian6dVelocityEffector(
+          'robot0',
+          joint_effector,
+          cartesian_6d_velocity_effector.ModelParams(
+              arm.wrist_site, arm.joints
+          ),
+          cartesian_6d_velocity_effector.ControlParams(
+              control_timestep_seconds=timestep, nullspace_gain=0.0
+          ),
+          collision_params,
+          use_adaptive_qp_step_size=use_adaptive_qp_step_size,
+          compile_mjcf=compile_mjcf,
+      )
+  )
   cartesian_effector.after_compile(arm.mjcf_model, physics)
   return cartesian_effector
 

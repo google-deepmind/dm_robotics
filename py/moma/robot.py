@@ -28,6 +28,7 @@ from dm_robotics.moma import sensor as moma_sensor
 from dm_robotics.moma.models.end_effectors.robot_hands import robot_hand
 from dm_robotics.moma.models.robots.robot_arms import robot_arm
 from dm_robotics.moma.utils import ik_solver
+import mujoco
 import numpy as np
 
 Arm = TypeVar('Arm', bound=robot_arm.RobotArm)
@@ -283,21 +284,30 @@ class StandardRobot(Generic[Arm, Gripper], Robot[Arm, Gripper]):
     """
     self.arm.set_joint_angles(physics, joint_angles)
     if settle_physics:
-      # We let the simulation settle once the robot joints have been set. This
-      # is to ensure that the robot is not moving at the beginning of the
-      # episode.
+      # Disable gravity and actuation for the arm settling time
+      original_disableflags = physics.model.opt.disableflags
+      physics.model.opt.disableflags = (
+          original_disableflags
+          | mujoco.mjtDisableBit.mjDSBL_GRAVITY.value
+      )
       original_time = physics.data.time
-      joint_isolator = utils.JointStaticIsolator(physics, self.arm.joints)
-      joints_mj = physics.bind(self.arm.joints)
-      assert joints_mj is not None
-      while physics.data.time - original_time < max_settle_physics_time:
-        with joint_isolator:
-          physics.step()
-        max_qvel = np.max(np.abs(joints_mj.qvel))
-        max_qacc = np.max(np.abs(joints_mj.qacc))
-        if (max_qvel < max_qvel_tol) and (max_qacc < max_qacc_tol):
-          break
-      physics.data.time = original_time
+      try:
+        # We let the simulation settle once the robot joints have been set. This
+        # is to ensure that the robot is not moving at the beginning of the
+        # episode.
+        joint_isolator = utils.JointStaticIsolator(physics, self.arm.joints)
+        joints_mj = physics.bind(self.arm.joints)
+        assert joints_mj is not None
+        while physics.data.time - original_time < max_settle_physics_time:
+          with joint_isolator:
+            physics.step()
+          max_qvel = np.max(np.abs(joints_mj.qvel))
+          max_qacc = np.max(np.abs(joints_mj.qacc))
+          if (max_qvel < max_qvel_tol) and (max_qacc < max_qacc_tol):
+            break
+      finally:
+        physics.data.time = original_time
+        physics.model.opt.disableflags = original_disableflags
 
 
 def standard_compose(

@@ -116,6 +116,32 @@ class PoseDistributionTest(parameterized.TestCase):
       self.assertTrue(
           np.all(np.nonzero(axisangle_samp)[0] == np.nonzero(rot_sd)[0]))
 
+  def testWeightedDiscretePoseDistribution(self):
+    """Test weighted samples of a discrete set of poses."""
+    rs = np.random.RandomState(0)
+    base_dist = pose_distribution.UniformPoseDistribution(
+        np.ones(6) * -1, np.ones(6) * 1
+    )
+    poses = [base_dist.sample_pose(rs) for _ in range(3)]
+
+    dist = pose_distribution.WeightedDiscretePoseDistribution(poses, [1, 10, 0])
+    sampled_poses = [dist.sample_pose(rs) for _ in range(100)]
+
+    is_close = lambda a, b: np.allclose(np.concatenate(a), np.concatenate(b))
+    num_times_sampled = [
+        np.sum([is_close(o, p) for p in sampled_poses]) for o in poses
+    ]
+
+    # Poses 0 and 1 should be sampled with nonzero probability.
+    self.assertGreater(num_times_sampled[0], 0)
+    self.assertGreater(num_times_sampled[1], 0)
+
+    # Poses 2 should never be sampled.
+    self.assertEqual(num_times_sampled[2], 0)
+
+    # The second pose should be higher probability than the first.
+    self.assertGreater(num_times_sampled[1], num_times_sampled[0])
+
 
 if __name__ == '__main__':
   absltest.main()

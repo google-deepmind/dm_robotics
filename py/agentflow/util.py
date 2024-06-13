@@ -33,6 +33,13 @@ ANSI_COLORS = {
 }
 
 
+def log_warning(string, color=None):
+  if color is None or not sys.stderr.isatty():
+    logging.warning(string)
+  else:
+    logging.warning('%s%s%s', ANSI_COLORS[color], string, ANSI_COLORS['end'])
+
+
 def log_info(string, color=None):
   if color is None or not sys.stderr.isatty():
     logging.info(string)
@@ -48,21 +55,22 @@ def log_termination_reason(cur_option: core.Option,
     text = 'Option \"{}\" successful. {}'.format(cur_option.name,
                                                  option_result.termination_text)
     color = option_result.termination_color or 'green'
+    log_info(text, color)
 
   elif termination_reason == core.TerminationType.FAILURE:
     text = 'Option \"{}\" failed. {}'.format(cur_option.name,
                                              option_result.termination_text)
     color = option_result.termination_color or 'red'
+    log_warning(text, color)
 
   elif termination_reason == core.TerminationType.PREEMPTED:
     text = 'Option \"{}\" preempted. {}'.format(cur_option.name,
                                                 option_result.termination_text)
     color = option_result.termination_color or 'yellow'
+    log_warning(text, color)
 
   else:
     raise ValueError('Unknown exit code from subtask.')
-
-  log_info(text, color)
 
 
 if hasattr(contextlib, 'nullcontext'):

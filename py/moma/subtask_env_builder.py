@@ -17,6 +17,7 @@
 from typing import Optional, Sequence
 
 from dm_control import composer
+from dm_env import specs
 from dm_robotics import agentflow as af
 from dm_robotics.agentflow import spec_utils
 from dm_robotics.agentflow.preprocessors import timestep_preprocessor
@@ -48,7 +49,9 @@ class SubtaskEnvBuilder(object):
   def __init__(self):
     self._task = None  # type: Optional[base_task.BaseTask]
     self._base_env = None  # type: Optional[composer.Environment]
-    self._action_space = None  # type: Optional[af.ActionSpace]
+    self._action_space = (
+        None
+    )  # type: Optional[af.ActionSpace[specs.BoundedArray]]
     self._preprocessors = []  # timestep_preprocessor.TimestepPreprocessor
     self._reset_option = None  # type: Optional[moma_option.MomaOption]
     self._effectors = None  # type: Optional[Sequence[effector.Effector]]
@@ -129,6 +132,11 @@ class SubtaskEnvBuilder(object):
       raise ValueError(
           'Cannot build the subtask envrionment until the action space is set')
 
+    if self._task is None:
+      raise ValueError(
+          'Cannot build the subtask environment until the task is built'
+      )
+
     subtask = parameterized_subtask.ParameterizedSubTask(
         parent_spec=parent_spec,
         action_space=self._action_space,
@@ -158,6 +166,9 @@ class SubtaskEnvBuilder(object):
       ) -> moma_option.MomaOption:
     """Builds a no-op MoMa option."""
 
+    if self._task is None:
+      raise ValueError('Cannot build noop_reset_option until the task is built')
+
     parent_action_spec = self._task.effectors_action_spec(
         physics=env.physics, effectors=effectors)
     noop_action = spec_utils.zeros(parent_action_spec)
@@ -167,4 +178,3 @@ class SubtaskEnvBuilder(object):
         physics_getter=lambda: env.physics,
         effectors=effectors,
         delegate=delegate)
-

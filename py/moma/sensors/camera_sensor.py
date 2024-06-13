@@ -218,13 +218,21 @@ class CameraImageSensor(moma_sensor.Sensor[ImageObservations]):
         img_shape=(self._cfg.height, self._cfg.width), fovy=self._cfg.fovy)
 
   def _camera_rgb(self, physics: mjcf.Physics) -> np.ndarray:
-    return np.atleast_3d(self._camera.render(depth=False, segmentation=False))
+    return np.atleast_3d(
+        self._checked_camera.render(depth=False, segmentation=False)
+    )
 
   def _camera_depth(self, physics: mjcf.Physics) -> np.ndarray:
-    return np.atleast_3d(self._camera.render(depth=True))
+    return np.atleast_3d(self._checked_camera.render(depth=True))
 
   def _camera_segmentation(self, physics: mjcf.Physics) -> np.ndarray:
-    return np.atleast_3d(self._camera.render(segmentation=True))
+    return np.atleast_3d(self._checked_camera.render(segmentation=True))
+
+  @property
+  def _checked_camera(self) -> mujoco.Camera:
+    if self._camera is None:
+      raise ValueError('_camera has not been initialized.')
+    return self._camera
 
   def _create_camera(self, physics: mjcf.Physics) -> None:
     self._camera = mujoco.Camera(
@@ -340,5 +348,55 @@ def build_camera_sensors(
 
       camera_sensors.append(pose_sensor)
       camera_sensors.append(image_sensor)
+
+  return camera_sensors
+
+
+def build_camera_pose_sensors(
+    camera_configurations: Mapping[str, CameraConfig],
+    mjcf_root: mjcf.element.RootElement,
+    mjcf_full_identifiers: Optional[Mapping[str, str]] = None,
+    ) -> List[Union[CameraPoseSensor]]:
+  """Create the camera pose sensors for a list of cameras, without images.
+
+  Args:
+    camera_configurations: Configurations of the cameras. Maps from the camera
+      sensor name to the configuration of the camera.
+    mjcf_root: MJCf root element in which the cameras are present.
+    mjcf_full_identifiers: Mapping of the `camera_configurations`
+      sensor names to the full identifiers of the cameras used in the MJCF
+      model. If `None`, it is set as an identity mapping of
+      `camera_configurations` names.
+
+  Returns:
+    A list with a camera pose sensor for each camera.
+
+  Raise:
+    ValueError if the camera_configurations and mjcf_full_identifiers do not
+    have the same set of keys.
+  """
+  if mjcf_full_identifiers is None:
+    mjcf_full_identifiers = {
+        name: name for name in camera_configurations.keys()}
+
+  if mjcf_full_identifiers.keys() != camera_configurations.keys():
+    raise ValueError(
+        f'mjcf_full_identifiers: {mjcf_full_identifiers.keys()} and '
+        f'camera_configurations: {camera_configurations.keys()} '
+        'do not contain the same set of keys.')
+
+  camera_sensors = []
+  for name, identifier in mjcf_full_identifiers.items():
+    camera_prop = mjcf_root.find('camera', identifier)
+
+    all_cameras = [
+        elmt.full_identifier for elmt in mjcf_root.find_all('camera')]
+    if camera_prop is None:
+      logging.warning('Could not find camera with identifier %s '
+                      'in the workspace. Available cameras: %s. '
+                      'There will be no camera sensor for %s.',
+                      identifier, all_cameras, identifier)
+    else:
+      camera_sensors.append(CameraPoseSensor(camera_prop, name))
 
   return camera_sensors

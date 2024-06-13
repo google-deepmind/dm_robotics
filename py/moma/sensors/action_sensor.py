@@ -58,6 +58,10 @@ class SpyEffector(moma_effector.Effector):
     self._delegate_effector.close()
 
   @property
+  def delegate_effector(self) -> moma_effector.Effector:
+    return self._delegate_effector
+
+  @property
   def previous_action(self) -> Optional[np.ndarray]:
     return self._previous_action
 

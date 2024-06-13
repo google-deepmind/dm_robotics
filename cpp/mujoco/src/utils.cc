@@ -56,7 +56,7 @@ GetMujocoMaxContactsArray(bool is_multiccd) {
   max_contacts[mjGEOM_PLANE][mjGEOM_SPHERE] = 1;
   max_contacts[mjGEOM_PLANE][mjGEOM_CAPSULE] = 2;
   max_contacts[mjGEOM_PLANE][mjGEOM_ELLIPSOID] = 1;
-  max_contacts[mjGEOM_PLANE][mjGEOM_CYLINDER] = 3;
+  max_contacts[mjGEOM_PLANE][mjGEOM_CYLINDER] = 4;
   max_contacts[mjGEOM_PLANE][mjGEOM_BOX] = 4;
   max_contacts[mjGEOM_PLANE][mjGEOM_MESH] = 3;
 

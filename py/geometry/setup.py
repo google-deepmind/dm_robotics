@@ -45,7 +45,7 @@ setuptools.setup(
     name="dm_robotics-geometry",
     package_dir={"dm_robotics.geometry": ""},
     packages=["dm_robotics.geometry"],
-    version="0.6.0",
+    version="0.7.0",
     license="Apache 2.0",
     author="DeepMind",
     description=(

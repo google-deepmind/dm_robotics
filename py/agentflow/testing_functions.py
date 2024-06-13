@@ -28,8 +28,9 @@ import dm_env
 from dm_env import specs
 import dm_robotics.agentflow as af
 from dm_robotics.agentflow import spec_utils
-from dm_robotics.agentflow.decorators import overrides
+from dm_robotics.agentflow.decorators import overrides  # pylint: disable=g-importing-member
 import numpy as np
+
 
 Arg = NewType('Arg', Any)  # pylint: disable=invalid-name
 

@@ -923,6 +923,8 @@ class ImageCropper(object):
       self._y_offset = self._fraction_of_pixels(
           self._y_offset_relative, input_height - self._cropped_height)
 
+    assert self._cropped_width is not None
+    assert self._cropped_height is not None
     # Return the results to use outside this class.
     return (self._cropped_width, self._cropped_height)
 
