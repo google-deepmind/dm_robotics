@@ -1,4 +1,4 @@
 numpy >= 1.16.0
 dm_control == 1.0.15
-mujoco == 3.0.0
+mujoco == 3.1.6
 six >= 1.16.0

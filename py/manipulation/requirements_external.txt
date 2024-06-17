@@ -2,4 +2,4 @@ absl-py >= 0.9.0
 numpy >= 1.16.0
 typing-extensions >= 3.7.4
 dm_control == 1.0.15
-mujoco == 3.0.0
+mujoco == 3.1.6

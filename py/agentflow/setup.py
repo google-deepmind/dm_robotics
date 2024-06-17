@@ -52,7 +52,7 @@ setuptools.setup(
         "dm_robotics.agentflow.rendering",
         "dm_robotics.agentflow.subtasks",
     ],
-    version="0.7.0",
+    version="0.8.0",
     license="Apache 2.0",
     author="DeepMind",
     description=(

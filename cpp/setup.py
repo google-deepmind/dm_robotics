@@ -23,7 +23,7 @@ from setuptools import setup
 from setuptools.command.build_ext import build_ext
 
 
-PRE_DOWNLOADED_MUJOCO_TAR = "/deps/mujoco-3.0.0-linux-x86_64.tar.gz"
+PRE_DOWNLOADED_MUJOCO_TAR = "/deps/mujoco-3.1.6-linux-x86_64.tar.gz"
 
 PRE_DOWNLOADED_SOURCE_DIRS = {
     "abseil-cpp": "/deps/abseil-cpp_c2435f8342c2d0ed8101cb43adfd605fdc52dca2",
@@ -127,7 +127,7 @@ setup(
     name="dm_robotics-controllers",
     package_dir={"dm_robotics.controllers": ""},
     packages=["dm_robotics.controllers"],
-    version="0.7.0",
+    version="0.8.0",
     license="Apache 2.0",
     author="DeepMind",
     description="Python bindings for dm_robotics/cpp/controllers",
