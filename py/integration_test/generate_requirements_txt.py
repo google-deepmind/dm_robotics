@@ -28,5 +28,7 @@ _CURRENT_FILE_DIR = pathlib.Path(os.path.dirname(os.path.realpath(__file__)))
 
 if __name__ == '__main__':
   with open(_CURRENT_FILE_DIR / 'requirements.txt', 'w') as f:
-    for artifact in glob.glob('../dist/*'):
+    for artifact in glob.glob('../dist/*.zip'):
+      f.write(artifact + os.linesep)
+    for artifact in glob.glob('../dist/*manylinux2014_x86_64.whl'):
       f.write(artifact + os.linesep)
