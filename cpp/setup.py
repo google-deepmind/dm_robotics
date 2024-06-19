@@ -134,7 +134,7 @@ setup(
     long_description=open("controllers_py/README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/deepmind/dm_robotics/tree/main/cpp/controllers_py",
-    python_requires=">=3.7, <3.11",
+    python_requires=">=3.7, <3.13",
     setup_requires=["wheel >= 0.31.0"],
     classifiers=[
         "Development Status :: 5 - Production/Stable",

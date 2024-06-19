@@ -14,7 +14,7 @@
 
 """Robotiq 2-finger 85 adaptive gripper class."""
 
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 from dm_control import mjcf
 from dm_robotics.moma.models import types
@@ -33,8 +33,8 @@ _PAD_GEOM_NAMES = [
     'reinforced_right_fingertip_geom',
     'reinforced_left_fingertip_geom',
 ]
-_PAD_COLOR = (1., 1., 1., 1.)
-_POS_SCALE = 255.
+_PAD_COLOR = (1.0, 1.0, 1.0, 1.0)
+_POS_SCALE = 255.0
 _VELOCITY_CTRL_TOL = 2
 _DEFAULT_GRIPPER_FRICTION = (0.5, 0.1, 0.01)
 _LEGACY_GRIPPER_FRICTION = (1.5, 0.1, 0.001)
@@ -52,20 +52,23 @@ _LEGACY_GRIPPER_FRICTION = (1.5, 0.1, 0.001)
 # actuator is fully closed. Therefore we have the following equality:
 # gainprm[0] * 255 + x * 0.8 = 0
 # gainprm[0] = - bias[0] * 0.8 / 255
-_GAINPRM = (100. * 0.8 / 255, 0.0, 0.0)
+_GAINPRM = (100.0 * 0.8 / 255, 0.0, 0.0)
 _BIASPRM = (0.0, -100, 0.0)
 
-_BASE_COLLISION_KWARGS = [{
-    'name': 'base_CollisionGeom_1',
-    'type': 'cylinder',
-    'pos': '0 0 0.01',
-    'size': '0.04 0.024',
-}, {
-    'name': 'base_CollisionGeom_2',
-    'type': 'sphere',
-    'pos': '0 0 0.05',
-    'size': '0.045',
-}]
+_BASE_COLLISION_KWARGS = [
+    {
+        'name': 'base_CollisionGeom_1',
+        'type': 'cylinder',
+        'pos': '0 0 0.01',
+        'size': '0.04 0.024',
+    },
+    {
+        'name': 'base_CollisionGeom_2',
+        'type': 'sphere',
+        'pos': '0 0 0.05',
+        'size': '0.045',
+    },
+]
 _RIGHT_DRIVER_COLLISION_KWARGS = [{
     'name': 'right_driver_CollisionGeom',
     'type': 'capsule',
@@ -144,17 +147,19 @@ _COLLISION_GEOMS_DICT = {
 }
 
 
-class Robotiq2F85(robot_hand.RobotHand):
+class Robotiq2F85Mjcf:
   """Robotiq 2-finger 85 adaptive gripper."""
 
   _mjcf_root: mjcf.RootElement
 
-  def _build(self,
-             name: str = 'robotiq_2f85',
-             gainprm: Tuple[float, float, float] = _GAINPRM,
-             biasprm: Tuple[float, float, float] = _BIASPRM,
-             tcp_orientation: Optional[np.ndarray] = None,
-             use_realistic_friction: bool = True):
+  def __init__(
+      self,
+      name: str = 'robotiq_2f85',
+      gainprm: Tuple[float, float, float] = _GAINPRM,
+      biasprm: Tuple[float, float, float] = _BIASPRM,
+      tcp_orientation: Optional[np.ndarray] = None,
+      use_realistic_friction: bool = True,
+  ):
     """Initializes the Robotiq 2-finger 85 gripper.
 
     Args:
@@ -181,10 +186,12 @@ class Robotiq2F85(robot_hand.RobotHand):
           type='sphere',
           name='aligned_gripper_tcp',
           pos=consts.TCP_SITE_POS,
-          quat=tcp_orientation)
+          quat=tcp_orientation,
+      )
 
       self._tool_center_point = self.mjcf_model.find(
-          'site', 'aligned_gripper_tcp')
+          'site', 'aligned_gripper_tcp'
+      )
     else:
       self._tool_center_point = self._mjcf_root.find('site', _GRIPPER_SITE_NAME)
 
@@ -197,7 +204,8 @@ class Robotiq2F85(robot_hand.RobotHand):
 
     # Cache the limits for the finger joint.
     joint_min, joint_max = self._finger_actuator.tendon.joint[
-        0].joint.dclass.joint.range
+        0
+    ].joint.dclass.joint.range
     self._joint_offset = joint_min
     self._joint_scale = joint_max - joint_min
 
@@ -246,7 +254,8 @@ class Robotiq2F85(robot_hand.RobotHand):
           size=[0.007, 0.0021575, 0.005],
           type='box',
           rgba=[0.0, 0.0, 0.0, 0.0],
-          pos=[0.0, 0.0117, 0.03])
+          pos=[0.0, 0.0117, 0.03],
+      )
       pad.add(
           'geom',
           name=f'{side}_collision_box2',
@@ -254,12 +263,14 @@ class Robotiq2F85(robot_hand.RobotHand):
           size=[0.007, 0.0021575, 0.005],
           type='box',
           rgba=[0.0, 0.0, 0.0, 0.0],
-          pos=[0.0, 0.0117, 0.015])
+          pos=[0.0, 0.0117, 0.015],
+      )
 
   def _add_collision_geoms(self):
     """Add collision geoms use by the QP velocity controller for avoidance."""
     self._collision_geoms = models_utils.attach_collision_geoms(
-        self.mjcf_model, _COLLISION_GEOMS_DICT)
+        self.mjcf_model, _COLLISION_GEOMS_DICT
+    )
 
   def _color_pads(self) -> None:
     """Define the color for the gripper pads."""
@@ -267,17 +278,20 @@ class Robotiq2F85(robot_hand.RobotHand):
       geom = self._mjcf_root.find('geom', geom_name)
       geom.rgba = _PAD_COLOR
 
-  def _define_integrated_velocity_actuator(self,
-                                           gainprm: Tuple[float, float, float],
-                                           biasprm: Tuple[float, float, float]):
+  def _define_integrated_velocity_actuator(
+      self,
+      gainprm: Tuple[float, float, float],
+      biasprm: Tuple[float, float, float],
+  ):
     """Define integrated velocity actuator."""
     self._finger_actuator.ctrlrange = (-255.0, 255.0)
     self._finger_actuator.dyntype = 'integrator'
     self._finger_actuator.gainprm = gainprm
     self._finger_actuator.biasprm = biasprm
 
-  def initialize_episode(self, physics: mjcf.Physics,
-                         random_state: np.random.RandomState):
+  def initialize_episode(
+      self, physics: mjcf.Physics, random_state: np.random.RandomState
+  ):
     """Function called at the beginning of every episode."""
     del random_state  # Unused.
 
@@ -325,8 +339,9 @@ class Robotiq2F85(robot_hand.RobotHand):
     """Joint sensor of the hand."""
     return self._joint_sensor
 
-  def after_substep(self, physics: mjcf.Physics,
-                    random_state: np.random.RandomState) -> None:
+  def after_substep(
+      self, physics: mjcf.Physics, random_state: np.random.RandomState
+  ) -> None:
     """A callback which is executed after a simulation step.
 
     This function is necessary when using the integrated velocity mujoco
@@ -342,9 +357,8 @@ class Robotiq2F85(robot_hand.RobotHand):
     # Clip the actuator.act with the actuator limits.
     physics_actuators = models_utils.binding(physics, self.actuators)
     physics_actuators.act[:] = np.clip(
-        physics_actuators.act[:],
-        a_min=0.,
-        a_max=255.)
+        physics_actuators.act[:], a_min=0.0, a_max=255.0
+    )
 
   def convert_position(self, position, **unused_kwargs):
     """Converts raw joint position to sensor output."""
@@ -356,7 +370,8 @@ class Robotiq2F85(robot_hand.RobotHand):
     """Simulate the robot's gOBJ object detection flag."""
     # No grasp when no collision.
     collision_geoms_colliding = _are_all_collision_geoms_colliding(
-        physics, self.mjcf_model)
+        physics, self.mjcf_model
+    )
     if not collision_geoms_colliding:
       return consts.NO_GRASP
 
@@ -379,9 +394,11 @@ class Robotiq2F85(robot_hand.RobotHand):
     return collision_geom_group
 
 
-def _is_geom_in_collision(physics: mjcf.Physics,
-                          geom_name: str,
-                          geom_exceptions: Optional[List[str]] = None) -> bool:
+def _is_geom_in_collision(
+    physics: mjcf.Physics,
+    geom_name: str,
+    geom_exceptions: Optional[List[str]] = None,
+) -> bool:
   """Returns true if a geom is in collision in the physics object."""
   for contact in physics.data.contact:
     geom1_name = physics.model.id2name(contact.geom1, 'geom')
@@ -389,19 +406,39 @@ def _is_geom_in_collision(physics: mjcf.Physics,
     if contact.dist > 1e-8:
       continue
     if (geom1_name == geom_name and geom2_name not in geom_exceptions) or (
-        geom2_name == geom_name and geom1_name not in geom_exceptions):
+        geom2_name == geom_name and geom1_name not in geom_exceptions
+    ):
       return True
   return False
 
 
-def _are_all_collision_geoms_colliding(physics: mjcf.Physics,
-                                       mjcf_root: mjcf.RootElement) -> bool:
+def _are_all_collision_geoms_colliding(
+    physics: mjcf.Physics, mjcf_root: mjcf.RootElement
+) -> bool:
   """Returns true if the collision geoms in the model are colliding."""
   collision_geoms = [
-      mjcf_root.find('geom', name).full_identifier
-      for name in _PAD_GEOM_NAMES
+      mjcf_root.find('geom', name).full_identifier for name in _PAD_GEOM_NAMES
   ]
   return all([
       _is_geom_in_collision(physics, geom, collision_geoms)
       for geom in collision_geoms
   ])
+
+
+class Robotiq2F85(Robotiq2F85Mjcf, robot_hand.RobotHand):
+  """Robotiq 2-finger 85 adaptive gripper.
+
+  RobotHand depends on composer. Use Robotiq2F85Mjcf if importing composer is
+  problematic.
+  """
+
+  def __init__(self, *args, **kwargs):  # pylint: disable=super-init-not-called
+    # Do not call Robotiq2F85Mjcf.__init__ because this init will call _build
+    # below which will call Robotiq2F85Mjcf.__init__.
+    robot_hand.RobotHand.__init__(self, *args, **kwargs)
+
+  def _build(self, *args, **kwargs):
+    # This method is called during the composer.Entity init. Since it builds the
+    # MJCF model, we need to call the MJCF model init here. Do not change the
+    # ordering.
+    Robotiq2F85Mjcf.__init__(self, *args, **kwargs)

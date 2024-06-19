@@ -24,9 +24,8 @@ namespace dm_robotics {
 
 MjLib::MjLib(const std::string& libmujoco_path, int dlopen_flags)
     : MJLIB_INIT(mj_defaultVFS),
+      MJLIB_INIT(mj_addBufferVFS),
       MJLIB_INIT(mj_addFileVFS),
-      MJLIB_INIT(mj_makeEmptyFileVFS),
-      MJLIB_INIT(mj_findFileVFS),
       MJLIB_INIT(mj_deleteFileVFS),
       MJLIB_INIT(mj_deleteVFS),
       MJLIB_INIT(mj_saveLastXML),

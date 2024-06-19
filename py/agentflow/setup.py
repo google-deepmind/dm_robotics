@@ -61,7 +61,7 @@ setuptools.setup(
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/deepmind/dm_robotics/tree/main/py/agentflow",
-    python_requires=">=3.7, <3.11",
+    python_requires=">=3.7, <3.13",
     setup_requires=["wheel >= 0.31.0"],
     install_requires=(
         _get_requirements("requirements.txt")

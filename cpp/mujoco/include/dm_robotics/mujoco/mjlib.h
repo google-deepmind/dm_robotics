@@ -15,7 +15,6 @@
 #ifndef DM_ROBOTICS_MUJOCO_MJLIB_H_
 #define DM_ROBOTICS_MUJOCO_MJLIB_H_
 
-#include <memory>
 #include <string>
 
 #include <mujoco/mujoco.h>  //NOLINT
@@ -25,9 +24,8 @@ namespace dm_robotics {
 extern "C" {
 
 using MjDefaultVFSFunc = decltype(mj_defaultVFS);
+using MjAddBufferVFSFunc = decltype(mj_addBufferVFS);
 using MjAddFileVFSFunc = decltype(mj_addFileVFS);
-using MjMakeEmptyFileVFSFunc = decltype(mj_makeEmptyFileVFS);
-using MjFindFileVFSFunc = decltype(mj_findFileVFS);
 using MjDeleteFileVFSFunc = decltype(mj_deleteFileVFS);
 using MjDeleteVFSFunc = decltype(mj_deleteVFS);
 using MjLoadXmlFunc = decltype(mj_loadXML);
@@ -309,9 +307,8 @@ class MjLib {
   ~MjLib();
 
   MjDefaultVFSFunc* const mj_defaultVFS;                    // NOLINT
+  MjAddBufferVFSFunc* const mj_addBufferVFS;                // NOLINT
   MjAddFileVFSFunc* const mj_addFileVFS;                    // NOLINT
-  MjMakeEmptyFileVFSFunc* const mj_makeEmptyFileVFS;        // NOLINT
-  MjFindFileVFSFunc* const mj_findFileVFS;                  // NOLINT
   MjDeleteFileVFSFunc* const mj_deleteFileVFS;              // NOLINT
   MjDeleteVFSFunc* const mj_deleteVFS;                      // NOLINT
   MjSaveLastXMLFunc* const mj_saveLastXML;                  // NOLINT
