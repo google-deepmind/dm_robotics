@@ -37,7 +37,10 @@ def _parse_line(s):
 setuptools.setup(
     name="dm_robotics-transformations",
     package_dir={"dm_robotics.transformations": ""},
-    packages=["dm_robotics.transformations"],
+    packages=[
+        "dm_robotics.transformations",
+        "dm_robotics.transformations.jax_transformations",
+    ],
     version="0.8.1",
     license="Apache 2.0",
     author="DeepMind",

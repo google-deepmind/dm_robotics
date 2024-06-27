@@ -28,8 +28,7 @@ from typing import Any
 from absl.testing import absltest
 from absl.testing import parameterized
 from dm_robotics.transformations import transformations as np_tr
-from dm_robotics.transformations.jax import transformations as jax_tr
-
+from dm_robotics.transformations.jax_transformations import transformations as jax_tr
 import jax
 from jax import numpy as jnp
 import numpy as np
@@ -251,7 +250,10 @@ class TransformationsTest(parameterized.TestCase):
 
     # Verify it's a valid rotation too.
     should_be_identity = jnp.dot(
-        actual_output.T, actual_output, precision=jax.lax.Precision.HIGHEST)
+        actual_output.T,
+        actual_output,
+        precision=jax.lax.Precision.HIGHEST,
+    )
     self.assertAllClose(should_be_identity, jnp.eye(3), atol=atol)
 
   @parameterized.parameters(
