@@ -44,7 +44,11 @@ def _parse_line(s):
 setuptools.setup(
     name="dm_robotics-geometry",
     package_dir={"dm_robotics.geometry": ""},
-    packages=["dm_robotics.geometry"],
+    packages=[
+        "dm_robotics.geometry",
+        "dm_robotics.geometry.jax_geometry",
+        "dm_robotics.geometry.jax_geometry._impl"
+    ],
     version="0.8.1",
     license="Apache 2.0",
     author="DeepMind",
