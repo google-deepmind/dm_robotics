@@ -41,7 +41,7 @@ setuptools.setup(
         "dm_robotics.transformations",
         "dm_robotics.transformations.jax_transformations",
     ],
-    version="0.8.1",
+    version="0.8.2",
     license="Apache 2.0",
     author="DeepMind",
     description="A library for Rigid Body Transformations",

@@ -127,7 +127,7 @@ setup(
     name="dm_robotics-controllers",
     package_dir={"dm_robotics.controllers": ""},
     packages=["dm_robotics.controllers"],
-    version="0.8.1",
+    version="0.8.2",
     license="Apache 2.0",
     author="DeepMind",
     description="Python bindings for dm_robotics/cpp/controllers",
