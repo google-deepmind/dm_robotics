@@ -24,12 +24,14 @@
 #include "absl/container/btree_set.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/substitute.h"
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "dm_robotics/mujoco/mjlib.h"
 #include "dm_robotics/mujoco/types.h"
 #include "Eigen/Core"
+#include <mujoco/mujoco.h>  //NOLINT
 
 namespace dm_robotics {
 namespace {
@@ -111,24 +113,24 @@ constexpr std::array<std::array<int, mjNGEOMTYPES>, mjNGEOMTYPES>
 
 // Returns all geom names inside `model` as a single string with line endings
 // after each name.
-std::string GetAllGeomNames(const MjLib& lib, const mjModel& model) {
+std::string GetAllGeomNames(const mjModel& model) {
   std::string names;
   for (int i = 0; i < model.ngeom; i++) {
-    absl::StrAppend(&names, lib.mj_id2name(&model, mjOBJ_GEOM, i), "\n");
+    absl::StrAppend(&names, mj_id2name(&model, mjOBJ_GEOM, i), "\n");
   }
   return names;
 }
 
 // Converts a GeomGroup into a GeomIdGroup.
-GeomIdGroup NamedGroupToIdGroup(const MjLib& lib, const mjModel& model,
+GeomIdGroup NamedGroupToIdGroup(const mjModel& model,
                                 const GeomGroup& named_group) {
   GeomIdGroup id_group;
   for (const auto& geom_name : named_group) {
-    const int id = lib.mj_name2id(&model, mjOBJ_GEOM, geom_name.c_str());
+    const int id = mj_name2id(&model, mjOBJ_GEOM, geom_name.c_str());
     CHECK(id >= 0) << absl::Substitute(
         "NamedGroupToIdGroup: Geom with name [$0] does not exist in model. "
         "Please find the full list of geoms below:\n$1",
-        geom_name, GetAllGeomNames(lib, model));
+        geom_name, GetAllGeomNames(model));
     id_group.insert(id);
   }
   return id_group;
@@ -136,14 +138,11 @@ GeomIdGroup NamedGroupToIdGroup(const MjLib& lib, const mjModel& model,
 
 // Converts a CollisionPair into a CollisionIdPair.
 absl::btree_set<CollisionIdPair> NamedPairsToIdPairs(
-    const MjLib& lib, const mjModel& model,
-    const absl::btree_set<CollisionPair>& named_pairs) {
+    const mjModel& model, const absl::btree_set<CollisionPair>& named_pairs) {
   absl::btree_set<CollisionIdPair> id_pairs;
   for (const auto& named_pair : named_pairs) {
-    GeomIdGroup id_group_first =
-        NamedGroupToIdGroup(lib, model, named_pair.first);
-    GeomIdGroup id_group_second =
-        NamedGroupToIdGroup(lib, model, named_pair.second);
+    GeomIdGroup id_group_first = NamedGroupToIdGroup(model, named_pair.first);
+    GeomIdGroup id_group_second = NamedGroupToIdGroup(model, named_pair.second);
     id_pairs.emplace(std::move(id_group_first), std::move(id_group_second));
   }
   return id_pairs;
@@ -222,9 +221,8 @@ bool AreGeomBodiesParentChild(const mjModel& model, const int geom_id1,
 //
 // If true, other procedures are necessary to determine if the two geoms are
 // colliding. If false, we can assume that the objects are not colliding.
-bool AreBoundingSpheresInCollision(const MjLib& lib, const mjModel& model,
-                                   const mjData& data, const int geom1_id,
-                                   const int geom2_id,
+bool AreBoundingSpheresInCollision(const mjModel& model, const mjData& data,
+                                   const int geom1_id, const int geom2_id,
                                    const double collision_detection_distance) {
   // Note that in MuJoCo's implementation planes always have an rbound field of
   // 0.0, but this function always returns true in this case.
@@ -239,8 +237,8 @@ bool AreBoundingSpheresInCollision(const MjLib& lib, const mjModel& model,
   const double geom2_rbound = model.geom_rbound[geom2_id];
 
   // Compute the center-to-center distance.
-  const double geom_dist = lib.mju_dist3(&data.geom_xpos[3 * geom1_id],
-                                         &data.geom_xpos[3 * geom2_id]);
+  const double geom_dist =
+      mju_dist3(&data.geom_xpos[3 * geom1_id], &data.geom_xpos[3 * geom2_id]);
 
   // The distance between the spheres is computed by subtracting each of the
   // spheres radii from their center-to-center distance.
@@ -262,8 +260,8 @@ bool AreBoundingSpheresInCollision(const MjLib& lib, const mjModel& model,
 // - the geoms have invalid IDs;
 // - both geoms have the same ID;
 // - MuJoCo collision detection mechanism failed.
-int ComputeContactsBetweenGeoms(const MjLib& lib, const mjModel& model,
-                                const mjData& data, int geom1_id, int geom2_id,
+int ComputeContactsBetweenGeoms(const mjModel& model, const mjData& data,
+                                int geom1_id, int geom2_id,
                                 double collision_detection_distance,
                                 std::array<mjContact, mjMAXCONPAIR>* contacts) {
   // Ensure geom pair is valid.
@@ -289,11 +287,11 @@ int ComputeContactsBetweenGeoms(const MjLib& lib, const mjModel& model,
   }
 
   int num_collisions;
-  if (!AreBoundingSpheresInCollision(lib, model, data, geom1_id, geom2_id,
+  if (!AreBoundingSpheresInCollision(model, data, geom1_id, geom2_id,
                                      collision_detection_distance)) {
     num_collisions = 0;
   } else {
-    num_collisions = lib.mjCOLLISIONFUNC[geom1_type][geom2_type](
+    num_collisions = mjCOLLISIONFUNC[geom1_type][geom2_type](
         &model, &data, contacts->data(), geom1_id, geom2_id,
         collision_detection_distance);
   }
@@ -304,8 +302,8 @@ int ComputeContactsBetweenGeoms(const MjLib& lib, const mjModel& model,
       "value [$0] when computing contacts between geom [$1] with ID "
       "[$2] and geom [$3] with ID [$4] with collision detection "
       "distance [$5].",
-      num_collisions, lib.mj_id2name(&model, mjOBJ_GEOM, geom1_id), geom1_id,
-      lib.mj_id2name(&model, mjOBJ_GEOM, geom2_id), geom2_id,
+      num_collisions, mj_id2name(&model, mjOBJ_GEOM, geom1_id), geom1_id,
+      mj_id2name(&model, mjOBJ_GEOM, geom2_id), geom2_id,
       collision_detection_distance);
 
   // Check-fail if there are more contacts than the maximum allowed for the geom
@@ -419,7 +417,7 @@ absl::btree_set<std::pair<int, int>> CollisionPairsToGeomIdPairs(
     bool allow_parent_child_collisions, bool allow_worldbody_collisions) {
   // Loop for every pair of geom groups.
   absl::btree_set<std::pair<int, int>> geom_id_pairs;
-  for (const auto& id_pair : NamedPairsToIdPairs(lib, model, collision_pairs)) {
+  for (const auto& id_pair : NamedPairsToIdPairs(model, collision_pairs)) {
     // Look at every possible geom pair, and add to the list if they pass all
     // tests.
     for (const auto& geomid_a : id_pair.first) {
@@ -465,7 +463,7 @@ absl::StatusOr<int> ComputeContactsForGeomPairs(
   int contacts_counter = 0;
   for (auto [geom1_id, geom2_id] : geom_pairs) {
     const int num_collisions = ComputeContactsBetweenGeoms(
-        lib, model, data, geom1_id, geom2_id, collision_detection_distance,
+        model, data, geom1_id, geom2_id, collision_detection_distance,
         &contact_buffer);
 
     // Return if size is not enough.
@@ -544,7 +542,7 @@ absl::optional<mjContact> ComputeContactWithMinimumDistance(
     int geom2_id, double collision_detection_distance) {
   std::array<mjContact, mjMAXCONPAIR> contact_buffer;
   int num_collisions = ComputeContactsBetweenGeoms(
-      lib, model, data, geom1_id, geom2_id, collision_detection_distance,
+      model, data, geom1_id, geom2_id, collision_detection_distance,
       &contact_buffer);
 
   // If no collision are detected, do not return a value.
