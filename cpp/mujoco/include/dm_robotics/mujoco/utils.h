@@ -21,8 +21,8 @@
 #include "absl/status/statusor.h"
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
-#include "dm_robotics/mujoco/mjlib.h"
 #include "dm_robotics/mujoco/types.h"
+#include <mujoco/mujoco.h>  //NOLINT
 
 namespace dm_robotics {
 
@@ -90,7 +90,7 @@ int ComputeMaximumNumberOfContacts(
 //
 // CHECK-fails if any of the geom names in `collision_pairs` is invalid.
 absl::btree_set<std::pair<int, int>> CollisionPairsToGeomIdPairs(
-    const MjLib& lib, const mjModel& model,
+    const mjModel& model,
     const absl::btree_set<CollisionPair>& collision_pairs,
     bool allow_parent_child_collisions, bool allow_worldbody_collisions);
 
@@ -121,7 +121,7 @@ absl::btree_set<std::pair<int, int>> CollisionPairsToGeomIdPairs(
 // - both elements in any pair contain the same geom ID;
 // - MuJoCo failed to compute contacts for any geom pair.
 absl::StatusOr<int> ComputeContactsForGeomPairs(
-    const MjLib& lib, const mjModel& model, const mjData& data,
+    const mjModel& model, const mjData& data,
     const absl::btree_set<std::pair<int, int>>& geom_pairs,
     double collision_detection_distance, absl::Span<mjContact> contacts);
 
@@ -148,7 +148,7 @@ absl::StatusOr<int> ComputeContactsForGeomPairs(
 //
 // CHECK-fails if either the `jacobian_buffer` or the `jacobian` are not of the
 // correct size.
-void ComputeContactNormalJacobian(const MjLib& lib, const mjModel& model,
+void ComputeContactNormalJacobian(const mjModel& model,
                                   const mjData& data, const mjContact& contact,
                                   absl::Span<double> jacobian_buffer,
                                   absl::Span<double> jacobian);
@@ -170,7 +170,7 @@ void ComputeContactNormalJacobian(const MjLib& lib, const mjModel& model,
 // - both geom IDs are equal;
 // - MuJoCo failed to compute contacts for the provided geoms.
 absl::optional<mjContact> ComputeContactWithMinimumDistance(
-    const MjLib& lib, const mjModel& model, const mjData& data, int geom1_id,
+    const mjModel& model, const mjData& data, int geom1_id,
     int geom2_id, double collision_detection_distance);
 
 // Returns the minimum of the contact distances between two geoms detected by
@@ -187,7 +187,7 @@ absl::optional<mjContact> ComputeContactWithMinimumDistance(
 // - both geom IDs are equal;
 // - MuJoCo failed to compute contacts for the provided geoms.
 absl::optional<double> ComputeMinimumContactDistance(
-    const MjLib& lib, const mjModel& model, const mjData& data, int geom1_id,
+    const mjModel& model, const mjData& data, int geom1_id,
     int geom2_id, double collision_detection_distance);
 
 // Computes the [6 x model.nv] Jacobian that maps joint velocities to the
@@ -198,7 +198,7 @@ absl::optional<double> ComputeMinimumContactDistance(
 //
 // Only MuJoCo geoms, sites, and bodies are supported. (Precondition
 // violation may cause CHECK-failure.)
-void ComputeObject6dJacobian(const MjLib& lib, const mjModel& model,
+void ComputeObject6dJacobian(const mjModel& model,
                              const mjData& data, mjtObj object_type,
                              int object_id, absl::Span<double> jacobian);
 

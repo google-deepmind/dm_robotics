@@ -32,8 +32,8 @@
 #include "dm_robotics/least_squares_qp/common/identity_constraint_union.h"
 #include "dm_robotics/least_squares_qp/common/identity_task.h"
 #include "dm_robotics/least_squares_qp/core/lsqp_stack_of_tasks_solver.h"
-#include "dm_robotics/mujoco/mjlib.h"
 #include "dm_robotics/mujoco/types.h"
+#include <mujoco/mujoco.h>  //NOLINT
 
 namespace dm_robotics {
 
@@ -71,9 +71,9 @@ class Cartesian6dToJointVelocityMapper {
  public:
   // Initialization parameters for Cartesian6dToJointVelocityMapper.
   //
-  // The caller retains ownership of lib and model.
-  // It is the caller's responsibility to ensure the *lib and *model objects
-  // outlive any Cartesian6dToJointVelocityMapper instances created with this
+  // The caller retains ownership of `model`.
+  // It is the caller's responsibility to ensure the *model object
+  // outlives any `Cartesian6dToJointVelocityMapper` instances created with this
   // object.
   struct Parameters {
     // Pointer to a MuJoCo model.
@@ -389,7 +389,6 @@ class Cartesian6dToJointVelocityMapper {
       absl::Span<const double> target_6d_cartesian_velocity);
 
  private:
-  const MjLib& lib_;
   const mjModel& model_;
   std::unique_ptr<mjData, void (*)(mjData*)> data_;
   absl::btree_set<int> joint_dof_ids_;

@@ -17,15 +17,15 @@
 
 #include "absl/container/btree_set.h"
 #include "absl/types/span.h"
-#include "dm_robotics/mujoco/mjlib.h"
 #include "dm_robotics/mujoco/utils.h"
+#include <mujoco/mujoco.h>  //NOLINT
 
 namespace dm_robotics::testing {
 
 // Returns the Jacobian mapping the joint velocities to the object's 6D
 // Cartesian velocity, in column-major ordering.
 std::vector<double> ComputeObject6dJacobianForJoints(
-    const MjLib& lib, const mjModel& model, const mjData& data,
+    const mjModel& model, const mjData& data,
     mjtObj object_type, const std::string& object_name,
     const absl::btree_set<int>& joint_ids);
 
@@ -35,7 +35,7 @@ std::vector<double> ComputeObject6dJacobianForJoints(
 // Jacobian-based, can be compared with the expected tolerance, as MuJoCo's
 // native computation results in a slightly different value.
 std::array<double, 6> ComputeObjectCartesian6dVelocityWithJacobian(
-    const MjLib& lib, const mjModel& model, const mjData& data,
+    const mjModel& model, const mjData& data,
     const std::string& object_name, mjtObj object_type);
 
 // Sets a subset of the joint velocities of the MuJoCo humanoid. All other

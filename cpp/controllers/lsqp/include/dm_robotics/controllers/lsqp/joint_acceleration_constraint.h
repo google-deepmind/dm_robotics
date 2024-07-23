@@ -21,7 +21,7 @@
 #include "absl/time/time.h"
 #include "absl/types/span.h"
 #include "dm_robotics/least_squares_qp/common/identity_constraint.h"
-#include "dm_robotics/mujoco/mjlib.h"
+#include <mujoco/mujoco.h>  //NOLINT
 
 namespace dm_robotics {
 

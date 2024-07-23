@@ -22,6 +22,7 @@
 #include "dm_robotics/mujoco/test_with_mujoco_model.h"
 #include "dm_robotics/mujoco/utils.h"
 #include "Eigen/Core"
+#include <mujoco/mujoco.h>  //NOLINT
 
 namespace dm_robotics {
 namespace {
@@ -73,7 +74,7 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
   // Cartesian velocity.
   SetSubsetOfJointVelocities(*model_, kJointIds, solution, data_.get());
   Eigen::Vector<double, 6> realized_cartesian_6d_vel(
-      ComputeObjectCartesian6dVelocityWithJacobian(*mjlib_, *model_, *data_,
+      ComputeObjectCartesian6dVelocityWithJacobian(*model_, *data_,
                                                    kObjectName, kObjectType)
           .data());
   Eigen::Map<const Eigen::Vector<double, 6>> target_cartesian_6d_vel(
@@ -87,7 +88,7 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
   //   e_dual = W ||J^T J qvel - (xdot_target^T J)^T||_inf
   //   e_dual = W ||J^T xdot_target - J^T xdot_realized||_inf
   Eigen::MatrixXd jacobian = Eigen::Map<Eigen::MatrixXd>(
-      ComputeObject6dJacobianForJoints(*mjlib_, *model_, *data_, kObjectType,
+      ComputeObject6dJacobianForJoints(*model_, *data_, kObjectType,
                                        kObjectName, kJointIds)
           .data(),
       6, kJointIds.size());
@@ -140,7 +141,7 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
     no_nullspace_solution =
         std::vector<double>(solution.begin(), solution.end());
     no_nullspace_cartesian_vel = ComputeObjectCartesian6dVelocityWithJacobian(
-        *mjlib_, *model_, *data_, kObjectName, kObjectType);
+        *model_, *data_, kObjectName, kObjectType);
   }
 
   // Reuse the same parameters but add nullspace projection, and compute the
@@ -164,7 +165,7 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
 
   nullspace_solution = std::vector<double>(solution.begin(), solution.end());
   nullspace_cartesian_vel = ComputeObjectCartesian6dVelocityWithJacobian(
-      *mjlib_, *model_, *data_, kObjectName, kObjectType);
+      *model_, *data_, kObjectName, kObjectType);
 
   // The nullspace solution should be different than the no-nullspace solution.
   // For this problem, we computed the Euclidean distance of both solutions to
@@ -245,11 +246,11 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
   // and thus they can be anything.
   SetSubsetOfJointVelocities(*model_, kJointIds, solution, data_.get());
   Eigen::Vector<double, 6> realized_cartesian_6d_vel(
-      ComputeObjectCartesian6dVelocityWithJacobian(*mjlib_, *model_, *data_,
+      ComputeObjectCartesian6dVelocityWithJacobian(*model_, *data_,
                                                    kObjectName, kObjectType)
           .data());
   Eigen::MatrixXd jacobian_6d = Eigen::Map<Eigen::MatrixXd>(
-      ComputeObject6dJacobianForJoints(*mjlib_, *model_, *data_, kObjectType,
+      ComputeObject6dJacobianForJoints(*model_, *data_, kObjectType,
                                        kObjectName, kJointIds)
           .data(),
       6, kJointIds.size());
@@ -317,7 +318,7 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
     // Cartesian velocity.
     SetSubsetOfJointVelocities(*model_, kJointIds, solution, data_.get());
     const Eigen::Vector<double, 6> realized_cartesian_6d_vel(
-        ComputeObjectCartesian6dVelocityWithJacobian(*mjlib_, *model_, *data_,
+        ComputeObjectCartesian6dVelocityWithJacobian(*model_, *data_,
                                                      kObjectName, kObjectType)
             .data());
 
@@ -353,7 +354,7 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
     // Cartesian velocity.
     SetSubsetOfJointVelocities(*model_, kJointIds, solution, data_.get());
     const Eigen::Vector<double, 6> realized_cartesian_6d_vel(
-        ComputeObjectCartesian6dVelocityWithJacobian(*mjlib_, *model_, *data_,
+        ComputeObjectCartesian6dVelocityWithJacobian(*model_, *data_,
                                                      kObjectName, kObjectType)
             .data());
 
@@ -385,7 +386,7 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
   // Place the humanoid in a position where the left hand can collide with the
   // floor if it moves down.
   data_->qpos[2] = 0.3;
-  mjlib_->mj_fwdPosition(model_.get(), data_.get());
+  mj_fwdPosition(model_.get(), data_.get());
 
   // We make the left hand move down towards the plane.
   const std::string kObjectName = "left_hand";
@@ -439,11 +440,11 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
   // Convert to geom pairs and get geom IDs to query MuJoCo for collision
   // information.
   auto geom_pairs = CollisionPairsToGeomIdPairs(
-      *mjlib_, *model_, params.collision_pairs, false, false);
+      *model_, params.collision_pairs, false, false);
   int left_hand_id =
-      mjlib_->mj_name2id(model_.get(), mjtObj::mjOBJ_GEOM, "left_hand");
-  int floor_id = mjlib_->mj_name2id(model_.get(), mjtObj::mjOBJ_GEOM, "floor");
-  auto maybe_dist = ComputeMinimumContactDistance(*mjlib_, *model_, *data_,
+      mj_name2id(model_.get(), mjtObj::mjOBJ_GEOM, "left_hand");
+  int floor_id = mj_name2id(model_.get(), mjtObj::mjOBJ_GEOM, "floor");
+  auto maybe_dist = ComputeMinimumContactDistance(*model_, *data_,
                                                   left_hand_id, floor_id, 10.0);
   ASSERT_TRUE(maybe_dist.has_value());
   double left_hand_to_floor_dist = *maybe_dist;
@@ -457,14 +458,14 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
         absl::Span<const double> solution,
         mapper.ComputeJointVelocities(*data_, kTargetVelocity, nullspace_bias));
     SetSubsetOfJointVelocities(*model_, kJointIds, solution, data_.get());
-    mjlib_->mj_integratePos(model_.get(), data_->qpos, data_->qvel,
+    mj_integratePos(model_.get(), data_->qpos, data_->qvel,
                             absl::ToDoubleSeconds(params.integration_timestep));
-    mjlib_->mj_fwdPosition(model_.get(), data_.get());
+    mj_fwdPosition(model_.get(), data_.get());
 
     // Ensure the new distance always decreases from iteration to iteration,
     // until it settles.
     auto maybe_new_dist = ComputeMinimumContactDistance(
-        *mjlib_, *model_, *data_, left_hand_id, floor_id, 10.0);
+        *model_, *data_, left_hand_id, floor_id, 10.0);
     ASSERT_TRUE(maybe_new_dist.has_value());
     EXPECT_LE(*maybe_new_dist, std::max(0.006, left_hand_to_floor_dist));
     left_hand_to_floor_dist = *maybe_new_dist;
@@ -472,7 +473,7 @@ TEST_P(Cartesian6dToJointVelocityMapperTest,
     // Ensure no contacts are detected on the collision pairs.
     ASSERT_OK_AND_ASSIGN(
         int num_contacts,
-        ComputeContactsForGeomPairs(*mjlib_, *model_, *data_, geom_pairs,
+        ComputeContactsForGeomPairs(*model_, *data_, geom_pairs,
                                     params.minimum_distance_from_collisions,
                                     absl::Span<mjContact>()));
     EXPECT_EQ(num_contacts, 0);
@@ -488,7 +489,7 @@ TEST_P(
   // Place the humanoid in a position where the left hand can collide with the
   // floor if it moves down.
   data_->qpos[2] = 0.3;
-  mjlib_->mj_fwdPosition(model_.get(), data_.get());
+  mj_fwdPosition(model_.get(), data_.get());
 
   // We make the left hand move down towards the plane.
   const std::string kObjectName = "left_hand";
@@ -542,11 +543,11 @@ TEST_P(
   // Convert to geom pairs and get geom IDs to query MuJoCo for collision
   // information.
   auto geom_pairs = CollisionPairsToGeomIdPairs(
-      *mjlib_, *model_, params.collision_pairs, false, false);
+      *model_, params.collision_pairs, false, false);
   int left_hand_id =
-      mjlib_->mj_name2id(model_.get(), mjtObj::mjOBJ_GEOM, "left_hand");
-  int floor_id = mjlib_->mj_name2id(model_.get(), mjtObj::mjOBJ_GEOM, "floor");
-  auto maybe_dist = ComputeMinimumContactDistance(*mjlib_, *model_, *data_,
+      mj_name2id(model_.get(), mjtObj::mjOBJ_GEOM, "left_hand");
+  int floor_id = mj_name2id(model_.get(), mjtObj::mjOBJ_GEOM, "floor");
+  auto maybe_dist = ComputeMinimumContactDistance(*model_, *data_,
                                                   left_hand_id, floor_id, 10.0);
   ASSERT_TRUE(maybe_dist.has_value());
   double left_hand_to_floor_dist = *maybe_dist;
@@ -560,14 +561,14 @@ TEST_P(
         absl::Span<const double> solution,
         mapper.ComputeJointVelocities(*data_, kTargetVelocity, nullspace_bias));
     SetSubsetOfJointVelocities(*model_, kJointIds, solution, data_.get());
-    mjlib_->mj_integratePos(model_.get(), data_->qpos, data_->qvel,
+    mj_integratePos(model_.get(), data_->qpos, data_->qvel,
                             absl::ToDoubleSeconds(params.integration_timestep));
-    mjlib_->mj_fwdPosition(model_.get(), data_.get());
+    mj_fwdPosition(model_.get(), data_.get());
 
     // Ensure the new distance always decreases from iteration to iteration,
     // until it settles.
     auto maybe_new_dist = ComputeMinimumContactDistance(
-        *mjlib_, *model_, *data_, left_hand_id, floor_id, 10.0);
+        *model_, *data_, left_hand_id, floor_id, 10.0);
     ASSERT_TRUE(maybe_new_dist.has_value());
     EXPECT_LE(*maybe_new_dist, std::max(0.006, left_hand_to_floor_dist));
     left_hand_to_floor_dist = *maybe_new_dist;
@@ -575,7 +576,7 @@ TEST_P(
     // Ensure no contacts are detected on the collision pairs.
     ASSERT_OK_AND_ASSIGN(
         int num_contacts,
-        ComputeContactsForGeomPairs(*mjlib_, *model_, *data_, geom_pairs,
+        ComputeContactsForGeomPairs(*model_, *data_, geom_pairs,
                                     params.minimum_distance_from_collisions,
                                     absl::Span<mjContact>()));
     EXPECT_EQ(num_contacts, 0);

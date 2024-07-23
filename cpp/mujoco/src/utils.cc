@@ -28,7 +28,6 @@
 #include "absl/strings/substitute.h"
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
-#include "dm_robotics/mujoco/mjlib.h"
 #include "dm_robotics/mujoco/types.h"
 #include "Eigen/Core"
 #include <mujoco/mujoco.h>  //NOLINT
@@ -412,7 +411,7 @@ int ComputeMaximumNumberOfContacts(
 }
 
 absl::btree_set<std::pair<int, int>> CollisionPairsToGeomIdPairs(
-    const MjLib& lib, const mjModel& model,
+    const mjModel& model,
     const absl::btree_set<CollisionPair>& collision_pairs,
     bool allow_parent_child_collisions, bool allow_worldbody_collisions) {
   // Loop for every pair of geom groups.
@@ -453,7 +452,7 @@ absl::btree_set<std::pair<int, int>> CollisionPairsToGeomIdPairs(
 }
 
 absl::StatusOr<int> ComputeContactsForGeomPairs(
-    const MjLib& lib, const mjModel& model, const mjData& data,
+    const mjModel& model, const mjData& data,
     const absl::btree_set<std::pair<int, int>>& geom_pairs,
     double collision_detection_distance, absl::Span<mjContact> contacts) {
   // We make a buffer so that we can detect if we are out of memory and return
@@ -494,7 +493,7 @@ absl::StatusOr<int> ComputeContactsForGeomPairs(
   return contacts_counter;
 }
 
-void ComputeContactNormalJacobian(const MjLib& lib, const mjModel& model,
+void ComputeContactNormalJacobian(const mjModel& model,
                                   const mjData& data, const mjContact& contact,
                                   absl::Span<double> jacobian_buffer,
                                   absl::Span<double> jacobian) {
@@ -525,21 +524,21 @@ void ComputeContactNormalJacobian(const MjLib& lib, const mjModel& model,
 
   // Compute the Jacobian for the point in geom2, and project it into the
   // normal. Eigen's noalias is necessary to prevent dynamic memory allocation.
-  lib.mj_jac(&model, &data, jacobian_buffer_map.data(), nullptr,
+  mj_jac(&model, &data, jacobian_buffer_map.data(), nullptr,
              geom2_contact_pos.data(), geom2_body);
   jacobian_map.noalias() = normal_map.transpose() * jacobian_buffer_map;
 
   // Compute the Jacobian for the point in geom1, project it into the normal,
   // and subtract from the Jacobian for the point in geom2. This is the
   // resulting normal contact Jacobian.
-  lib.mj_jac(&model, &data, jacobian_buffer_map.data(), nullptr,
+  mj_jac(&model, &data, jacobian_buffer_map.data(), nullptr,
              geom1_contact_pos.data(), geom1_body);
   jacobian_map.noalias() -= normal_map.transpose() * jacobian_buffer_map;
 }
 
 absl::optional<mjContact> ComputeContactWithMinimumDistance(
-    const MjLib& lib, const mjModel& model, const mjData& data, int geom1_id,
-    int geom2_id, double collision_detection_distance) {
+    const mjModel& model, const mjData& data, int geom1_id, int geom2_id,
+    double collision_detection_distance) {
   std::array<mjContact, mjMAXCONPAIR> contact_buffer;
   int num_collisions = ComputeContactsBetweenGeoms(
       model, data, geom1_id, geom2_id, collision_detection_distance,
@@ -566,10 +565,10 @@ absl::optional<mjContact> ComputeContactWithMinimumDistance(
 }
 
 absl::optional<double> ComputeMinimumContactDistance(
-    const MjLib& lib, const mjModel& model, const mjData& data, int geom1_id,
+    const mjModel& model, const mjData& data, int geom1_id,
     int geom2_id, double collision_detection_distance) {
   absl::optional<mjContact> min_contact = ComputeContactWithMinimumDistance(
-      lib, model, data, geom1_id, geom2_id, collision_detection_distance);
+      model, data, geom1_id, geom2_id, collision_detection_distance);
   if (!min_contact.has_value()) {
     return absl::nullopt;
   }
@@ -577,27 +576,27 @@ absl::optional<double> ComputeMinimumContactDistance(
   return min_contact->dist;
 }
 
-void ComputeObject6dJacobian(const MjLib& lib, const mjModel& model,
+void ComputeObject6dJacobian(const mjModel& model,
                              const mjData& data, mjtObj object_type,
                              int object_id, absl::Span<double> jacobian) {
   switch (object_type) {
     case mjtObj::mjOBJ_BODY:
-      lib.mj_jacBody(&model, &data, &jacobian[0], &jacobian[3 * model.nv],
+      mj_jacBody(&model, &data, &jacobian[0], &jacobian[3 * model.nv],
                      object_id);
       break;
     case mjtObj::mjOBJ_GEOM:
-      lib.mj_jacGeom(&model, &data, &jacobian[0], &jacobian[3 * model.nv],
+      mj_jacGeom(&model, &data, &jacobian[0], &jacobian[3 * model.nv],
                      object_id);
       break;
     case mjtObj::mjOBJ_SITE:
-      lib.mj_jacSite(&model, &data, &jacobian[0], &jacobian[3 * model.nv],
+      mj_jacSite(&model, &data, &jacobian[0], &jacobian[3 * model.nv],
                      object_id);
       break;
     default:
       LOG(FATAL) << absl::Substitute(
           "Compute6dVelocityJacobian: Invalid object_type [$0]. Only bodies, "
           "geoms, and sites are supported.",
-          lib.mju_type2Str(object_type));
+          mju_type2Str(object_type));
   }
 }
 

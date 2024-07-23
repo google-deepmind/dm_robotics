@@ -7,7 +7,7 @@
 #include "absl/container/btree_set.h"
 #include "absl/types/span.h"
 #include "dm_robotics/least_squares_qp/core/lsqp_constraint.h"
-#include "dm_robotics/mujoco/mjlib.h"
+#include <mujoco/mujoco.h>  //NOLINT
 
 namespace dm_robotics {
 
@@ -32,12 +32,11 @@ class Cartesian6dVelocityDirectionConstraint : public LsqpConstraint {
   // The `enable_axis_constraint` parameter determines which components of the
   // velocity are constrained. At least one velocity component must be enabled.
   //
-  // The caller retains ownership of lib and model.
-  // It is the caller's responsibility to ensure that the *lib and *model
-  // objects outlive any Cartesian6dVelocityDirectionConstraint instances
-  // created with this object.
+  // The caller retains ownership of `model`.
+  // It is the caller's responsibility to ensure the *model object
+  // outlives any `Cartesian6dVelocityDirectionConstraint` instances created
+  // with this object.
   struct Parameters {
-    const MjLib* lib;
     const mjModel* model;
     absl::btree_set<int> joint_ids;
     mjtObj object_type;
@@ -89,7 +88,6 @@ class Cartesian6dVelocityDirectionConstraint : public LsqpConstraint {
   int GetBoundsLength() const override;
 
  private:
-  const MjLib& lib_;
   const mjModel& model_;
   mjtObj object_type_;
   int object_id_;

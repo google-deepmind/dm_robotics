@@ -270,9 +270,9 @@ TEST_F(UtilsTest, CollisionPairsToGeomIdPairsReturnsCorrectIds) {
       std::make_pair(waist_geoms, waist_geoms)};
 
   absl::btree_set<std::pair<int, int>> geom_id_pairs_parent_filter =
-      CollisionPairsToGeomIdPairs(*mjlib_, *model_, pairs, false, true);
+      CollisionPairsToGeomIdPairs(*model_, pairs, false, true);
   absl::btree_set<std::pair<int, int>> geom_id_pairs_no_parent_filter =
-      CollisionPairsToGeomIdPairs(*mjlib_, *model_, pairs, true, true);
+      CollisionPairsToGeomIdPairs(*model_, pairs, true, true);
 
   const int right_hand_id =
       mjlib_->mj_name2id(model_.get(), mjOBJ_GEOM, kRightHandGeomName);
@@ -321,12 +321,12 @@ TEST_F(UtilsTest, ComputeContactsForGeomPairsDetectsSameContactsAsMujoco) {
       std::make_pair(all_geoms, all_geoms)};
 
   absl::btree_set<std::pair<int, int>> geom_pairs = CollisionPairsToGeomIdPairs(
-      *mjlib_, *model_, collision_pairs, false, true);
+      *model_, collision_pairs, false, true);
 
   std::vector<mjContact> contacts(model_->nconmax > 0 ? model_->nconmax
                                                       : kDefaultNconmax);
   ASSERT_OK_AND_ASSIGN(int ncon, ComputeContactsForGeomPairs(
-                                     *mjlib_, *model_, *data_, geom_pairs, 0.0,
+                                     *model_, *data_, geom_pairs, 0.0,
                                      absl::MakeSpan(contacts)));
   EXPECT_EQ(ncon, data_->ncon);
 
@@ -383,7 +383,7 @@ TEST_F(UtilsTest, ComputeContactNormalJacobianIsSameAsMujoco) {
 
     // Compute the contact normal Jacobian manually.
     ComputeContactNormalJacobian(
-        *mjlib_, *model_, *custom_data_, custom_data_->contact[state_con_idx],
+        *model_, *custom_data_, custom_data_->contact[state_con_idx],
         absl::MakeSpan(jacobian_buffer), absl::MakeSpan(jacobian));
 
     // Ensure that both quantities are the same.
@@ -404,18 +404,18 @@ TEST_F(UtilsTest, ComputeContactWithMinimumDistanceFieldsMatchMujoco) {
       std::make_pair(all_geoms, all_geoms)};
 
   absl::btree_set<std::pair<int, int>> geom_pairs = CollisionPairsToGeomIdPairs(
-      *mjlib_, *model_, collision_pairs, false, true);
+      *model_, collision_pairs, false, true);
 
   std::vector<mjContact> contacts(model_->nconmax > 0 ? model_->nconmax
                                                       : kDefaultNconmax);
   ASSERT_OK_AND_ASSIGN(int ncon, ComputeContactsForGeomPairs(
-                                     *mjlib_, *model_, *data_, geom_pairs, 0.0,
+                                    *model_, *data_, geom_pairs, 0.0,
                                      absl::MakeSpan(contacts)));
 
   // Ensure that the computed contact matches the MuJoCo contact fields.
   for (const auto& pair : geom_pairs) {
     absl::optional<mjContact> maybe_contact = ComputeContactWithMinimumDistance(
-        *mjlib_, *model_, *data_, pair.first, pair.second, 0.0);
+        *model_, *data_, pair.first, pair.second, 0.0);
     const mjContact* min_dist_contact = GetMinimumDistanceContact(
         pair.first, pair.second, absl::MakeSpan(contacts.data(), ncon));
 
@@ -454,19 +454,19 @@ TEST_F(UtilsTest, ComputeMinimumContactDistanceReturnValueIsCorrect) {
       std::make_pair(all_geoms, all_geoms)};
 
   absl::btree_set<std::pair<int, int>> geom_pairs = CollisionPairsToGeomIdPairs(
-      *mjlib_, *model_, collision_pairs, false, true);
+      *model_, collision_pairs, false, true);
 
   std::vector<mjContact> contacts(model_->nconmax > 0 ? model_->nconmax
                                                       : kDefaultNconmax);
   ASSERT_OK_AND_ASSIGN(int ncon, ComputeContactsForGeomPairs(
-                                     *mjlib_, *model_, *data_, geom_pairs, 0.0,
+                                     *model_, *data_, geom_pairs, 0.0,
                                      absl::MakeSpan(contacts)));
 
   // Ensure that the minimum distance computed and the distance of the most
   // negative contact match for a given pair of geom IDs.
   for (const auto& pair : geom_pairs) {
     absl::optional<double> maybe_dist = ComputeMinimumContactDistance(
-        *mjlib_, *model_, *data_, pair.first, pair.second, 0.0);
+        *model_, *data_, pair.first, pair.second, 0.0);
     const mjContact* min_dist_contact = GetMinimumDistanceContact(
         pair.first, pair.second, absl::MakeSpan(contacts.data(), ncon));
 

@@ -15,14 +15,13 @@
 #include "dm_robotics/controllers/lsqp/cartesian_6d_velocity_task.h"
 
 #include <algorithm>
-#include <iterator>
 
 #include "dm_robotics/support/logging.h"
 #include "absl/strings/substitute.h"
 #include "absl/types/span.h"
-#include "dm_robotics/mujoco/mjlib.h"
 #include "dm_robotics/mujoco/utils.h"
 #include "Eigen/Core"
+#include <mujoco/mujoco.h>  //NOLINT
 
 namespace dm_robotics {
 namespace {
@@ -30,16 +29,16 @@ namespace {
 // Returns the ID of the MuJoCo object with object_type and object_name.
 //
 // Check-fails if such object does not exist.
-int GetObjectId(const MjLib& lib, const mjModel& model, mjtObj object_type,
+int GetObjectId(const mjModel& model, mjtObj object_type,
                 const std::string& object_name) {
   // Note: object_name must be a null-terminated string for the MuJoCo
   // interface, and we enforce this by having object_name be a reference to an
   // std::string.
-  int id = lib.mj_name2id(&model, object_type, object_name.c_str());
+  int id = mj_name2id(&model, object_type, object_name.c_str());
   CHECK(id >= 0) << absl::Substitute(
       "GetObjectId: Could not find MuJoCo object with name [$0] and type [$1] "
       "in the provided model.",
-      object_name, lib.mju_type2Str(object_type));
+      object_name, mju_type2Str(object_type));
   return id;
 }
 
@@ -69,11 +68,10 @@ void RowMajorJacobianToCoefficientMatrix(
 Cartesian6dVelocityTask::Cartesian6dVelocityTask(
     const Parameters& params, const mjData& data,
     absl::Span<const double> target_cartesian_velocity)
-    : lib_(*DieIfNull(params.lib)),
-      model_(*DieIfNull(params.model)),
+    : model_(*DieIfNull(params.model)),
       object_type_(params.object_type),
       object_id_(
-          GetObjectId(lib_, model_, params.object_type, params.object_name)),
+          GetObjectId(model_, params.object_type, params.object_name)),
       weighting_matrix_(params.weighting_matrix),
       joint_dof_ids_(JointIdsToDofIds(model_, params.joint_ids)),
       jacobian_buffer_(6 * model_.nv),
@@ -90,7 +88,7 @@ Cartesian6dVelocityTask::Cartesian6dVelocityTask(
       << absl::Substitute(
              "Cartesian6dVelocityTask: Objects of type [$0] are not supported. "
              "Only bodies, geoms, and sites are supported.",
-             lib_.mju_type2Str(object_type_));
+             mju_type2Str(object_type_));
 
   UpdateCoefficientsAndBias(data, target_cartesian_velocity);
 }
@@ -103,7 +101,7 @@ void Cartesian6dVelocityTask::UpdateCoefficientsAndBias(
       target_cartesian_velocity.size());
 
   // Compute un-weighted coefficient and bias.
-  ComputeObject6dJacobian(lib_, model_, data, object_type_, object_id_,
+  ComputeObject6dJacobian(model_, data, object_type_, object_id_,
                           absl::MakeSpan(jacobian_buffer_));
   RowMajorJacobianToCoefficientMatrix(model_, jacobian_buffer_, joint_dof_ids_,
                                       absl::MakeSpan(coefficient_matrix_));

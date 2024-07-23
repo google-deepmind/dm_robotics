@@ -21,7 +21,7 @@
 #include "absl/container/btree_set.h"
 #include "absl/types/span.h"
 #include "dm_robotics/least_squares_qp/core/lsqp_task.h"
-#include "dm_robotics/mujoco/mjlib.h"
+#include <mujoco/mujoco.h>  //NOLINT
 
 namespace dm_robotics {
 
@@ -48,12 +48,11 @@ class Cartesian6dVelocityTask : public LsqpTask {
   // where `W` is the weighting matrix; `C` is the coefficient matrix; `q_dot`
   // are the joint velocities; and `b` is the bias.
   //
-  // The caller retains ownership of lib and model.
-  // It is the caller's responsibility to ensure that the *lib and *model
-  // objects outlive any Cartesian6dVelocityTask instances created with this
-  // object.
+  // The caller retains ownership of `model`.
+  // It is the caller's responsibility to ensure the *model object
+  // outlives any `Cartesian6dVelocityTask` instances created
+  // with this object.
   struct Parameters {
-    const MjLib* lib;
     const mjModel* model;
     absl::btree_set<int> joint_ids;
     mjtObj object_type;
@@ -103,7 +102,6 @@ class Cartesian6dVelocityTask : public LsqpTask {
   int GetBiasLength() const override;
 
  private:
-  const MjLib& lib_;
   const mjModel& model_;
   mjtObj object_type_;
   int object_id_;

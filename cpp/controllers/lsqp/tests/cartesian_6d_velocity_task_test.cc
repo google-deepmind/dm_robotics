@@ -25,7 +25,7 @@
 #include "dm_robotics/least_squares_qp/testing/matchers.h"
 #include "dm_robotics/mujoco/defs.h"
 #include "dm_robotics/mujoco/test_with_mujoco_model.h"
-#include "dm_robotics/mujoco/utils.h"
+#include <mujoco/mujoco.h>  //NOLINT
 #include "Eigen/Core"
 
 namespace dm_robotics {
@@ -47,7 +47,6 @@ TEST_F(Cartesian6dVelocityTaskTest,
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
 
   Cartesian6dVelocityTask::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.joint_ids = kJointIds;
   params.object_type = kObjectType;
@@ -60,7 +59,7 @@ TEST_F(Cartesian6dVelocityTaskTest,
   EXPECT_THAT(task.GetBias(), Pointwise(DoubleEq(), kTargetVelocity));
   EXPECT_THAT(task.GetCoefficientMatrix(),
               Pointwise(DoubleEq(), ComputeObject6dJacobianForJoints(
-                                        *mjlib_, *model_, *data_, kObjectType,
+                                        *model_, *data_, kObjectType,
                                         kObjectName, kJointIds)));
 }
 
@@ -69,7 +68,6 @@ TEST_F(Cartesian6dVelocityTaskTest, DoesNotAllocateMemoryAfterConstruction) {
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
 
   Cartesian6dVelocityTask::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.joint_ids = kJointIds;
   params.object_type = kObjectType;
@@ -96,7 +94,6 @@ TEST_F(Cartesian6dVelocityTaskTest,
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
 
   Cartesian6dVelocityTask::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.joint_ids = kJointIds;
   params.object_type = kObjectType;

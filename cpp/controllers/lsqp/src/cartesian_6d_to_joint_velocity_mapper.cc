@@ -14,13 +14,26 @@
 
 #include "dm_robotics/controllers/lsqp/cartesian_6d_to_joint_velocity_mapper.h"
 
+#include <algorithm>
+#include <array>
+#include <cstdlib>
+#include <optional>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "dm_robotics/support/logging.h"
+#include "absl/container/btree_map.h"
 #include "absl/container/btree_set.h"
+#include "absl/memory/memory.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
+#include "absl/strings/str_cat.h"
 #include "absl/strings/substitute.h"
+#include "absl/time/time.h"
+#include "absl/types/optional.h"
 #include "absl/types/span.h"
+#include "dm_robotics/controllers/lsqp/cartesian_6d_velocity_direction_constraint.h"
 #include "dm_robotics/controllers/lsqp/cartesian_6d_velocity_direction_task.h"
 #include "dm_robotics/controllers/lsqp/cartesian_6d_velocity_task.h"
 #include "dm_robotics/controllers/lsqp/collision_avoidance_constraint.h"
@@ -31,18 +44,13 @@
 #include "dm_robotics/least_squares_qp/common/identity_task.h"
 #include "dm_robotics/least_squares_qp/common/minimize_norm_task.h"
 #include "dm_robotics/least_squares_qp/core/lsqp_stack_of_tasks_solver.h"
-#include "dm_robotics/mujoco/mjlib.h"
 #include "dm_robotics/mujoco/types.h"
 #include "dm_robotics/mujoco/utils.h"
+#include <mujoco/mujoco.h>  //NOLINT
 #include "dm_robotics/support/status_macros.h"
 
 namespace dm_robotics {
 namespace {
-
-const MjLib* MjLibInitializer() {
-  static const MjLib* const lib = new MjLib("", 0);
-  return lib;
-}
 
 // Constructs an LsqpStackOfTasksSolver::Parameters object from
 // a Cartesian6dToJointVelocityMapper::Parameters object.
@@ -82,7 +90,6 @@ LsqpStackOfTasksSolver::Parameters ToLsqpParams(
 Cartesian6dVelocityTask::Parameters ToCartesianVelocityParams(
     const Cartesian6dToJointVelocityMapper::Parameters& params) {
   Cartesian6dVelocityTask::Parameters output_params;
-  output_params.lib = MjLibInitializer();
   output_params.model = params.model;
   output_params.joint_ids = params.joint_ids;
   output_params.object_type = params.object_type;
@@ -98,7 +105,6 @@ Cartesian6dVelocityDirectionTask::Parameters
 ToCartesianVelocityDirectionTaskParams(
     const Cartesian6dToJointVelocityMapper::Parameters& params) {
   Cartesian6dVelocityDirectionTask::Parameters output_params;
-  output_params.lib = MjLibInitializer();
   output_params.model = params.model;
   output_params.joint_ids = params.joint_ids;
   output_params.object_type = params.object_type;
@@ -114,7 +120,6 @@ Cartesian6dVelocityDirectionConstraint::Parameters
 ToCartesianVelocityDirectionConstraintParams(
     const Cartesian6dToJointVelocityMapper::Parameters& params) {
   Cartesian6dVelocityDirectionConstraint::Parameters output_params;
-  output_params.lib = MjLibInitializer();
   output_params.model = params.model;
   output_params.joint_ids = params.joint_ids;
   output_params.object_type = params.object_type;
@@ -129,7 +134,6 @@ ToCartesianVelocityDirectionConstraintParams(
 CollisionAvoidanceConstraint::Parameters ToCollisionAvoidanceParams(
     const Cartesian6dToJointVelocityMapper::Parameters& params) {
   CollisionAvoidanceConstraint::Parameters output_params;
-  output_params.lib = MjLibInitializer();
   output_params.model = params.model;
   output_params.use_minimum_distance_contacts_only =
       params.use_minimum_distance_contacts_only;
@@ -162,7 +166,7 @@ CollisionAvoidanceConstraint::Parameters ToCollisionAvoidanceParams(
   // for most robot environments, as joint limits are such that parent-children
   // cannot collide.
   output_params.geom_pairs = CollisionPairsToGeomIdPairs(
-      *MjLibInitializer(), *params.model, params.collision_pairs, false, false);
+      *params.model, params.collision_pairs, false, false);
   return output_params;
 }
 
@@ -209,21 +213,19 @@ void ClipToBounds(absl::Span<const double> lower_bound,
 // detected, only the smallest distance is saved. If no contacts are detected,
 // no value will be set for that pair.
 void ComputeGeomPairDist(
-    const MjLib& lib, const mjModel& model, const mjData& data,
+    const mjModel& model, const mjData& data,
     double collision_detection_distance,
     absl::btree_map<std::pair<int, int>, absl::optional<double>>*
         geom_pair_dist) {
   for (auto& [pair, maybe_dist] : *geom_pair_dist) {
-    maybe_dist =
-        ComputeMinimumContactDistance(lib, model, data, pair.first, pair.second,
-                                      collision_detection_distance);
+    maybe_dist = ComputeMinimumContactDistance(
+        model, data, pair.first, pair.second, collision_detection_distance);
   }
 }
 
 // Integrates MuJoCo positions with an array of `joint_velocities`, ordered
 // according to the `joint_dof_ids` object.
-void IntegrateQpos(const MjLib& lib, const mjModel& model,
-                   absl::Duration integration_timestep,
+void IntegrateQpos(const mjModel& model, absl::Duration integration_timestep,
                    const absl::btree_set<int>& joint_dof_ids,
                    absl::Span<const double> joint_velocities, mjData* data) {
   int joint_velocity_idx = 0;
@@ -231,8 +233,8 @@ void IntegrateQpos(const MjLib& lib, const mjModel& model,
     data->qvel[dof_id] = joint_velocities[joint_velocity_idx];
     ++joint_velocity_idx;
   }
-  lib.mj_integratePos(&model, data->qpos, data->qvel,
-                      absl::ToDoubleSeconds(integration_timestep));
+  mj_integratePos(&model, data->qpos, data->qvel,
+                  absl::ToDoubleSeconds(integration_timestep));
 }
 
 // Returns true if penetration is increased for any geom pair, false otherwise.
@@ -272,11 +274,10 @@ bool IsPenetrationIncreased(
 }
 
 // Returns an OK status if all the geoms in `group` are valid geoms in `model`.
-absl::Status ValidateGeomGroup(const MjLib& lib, const mjModel& model,
-                               const GeomGroup& group) {
+absl::Status ValidateGeomGroup(const mjModel& model, const GeomGroup& group) {
   for (const auto& name : group) {
     bool is_name_found =
-        lib.mj_name2id(&model, mjtObj::mjOBJ_GEOM, name.c_str()) >= 0;
+        mj_name2id(&model, mjtObj::mjOBJ_GEOM, name.c_str()) >= 0;
     if (!is_name_found) {
       return absl::NotFoundError(
           absl::Substitute("ValidateGeomGroup: Could not find MuJoCo geom with "
@@ -291,7 +292,6 @@ absl::Status ValidateGeomGroup(const MjLib& lib, const mjModel& model,
 
 absl::Status Cartesian6dToJointVelocityMapper::ValidateParameters(
     const Parameters& params) {
-  const MjLib* lib = MjLibInitializer();
 
   if (params.model == nullptr) {
     return absl::InvalidArgumentError(
@@ -325,15 +325,15 @@ absl::Status Cartesian6dToJointVelocityMapper::ValidateParameters(
     return absl::InvalidArgumentError(absl::Substitute(
         "ValidateParameters: Objects of type [$0] are not supported. Only "
         "bodies, geoms, and sites are supported.",
-        lib->mju_type2Str(params.object_type)));
+        mju_type2Str(params.object_type)));
 
-  bool is_object_found = lib->mj_name2id(params.model, params.object_type,
-                                         params.object_name.c_str()) >= 0;
+  bool is_object_found = mj_name2id(params.model, params.object_type,
+                                    params.object_name.c_str()) >= 0;
   if (!is_object_found)
     return absl::NotFoundError(absl::Substitute(
         "ValidateParameters: Could not find MuJoCo object with name [$0] and "
         "type [$1] in the provided model.",
-        params.object_name, lib->mju_type2Str(params.object_type)));
+        params.object_name, mju_type2Str(params.object_type)));
 
   if (params.integration_timestep <= absl::ZeroDuration()) {
     return absl::InvalidArgumentError(
@@ -363,10 +363,8 @@ absl::Status Cartesian6dToJointVelocityMapper::ValidateParameters(
   }
 
   for (const auto& collision_pair : params.collision_pairs) {
-    RETURN_IF_ERROR(
-        ValidateGeomGroup(*lib, *params.model, collision_pair.first));
-    RETURN_IF_ERROR(
-        ValidateGeomGroup(*lib, *params.model, collision_pair.second));
+    RETURN_IF_ERROR(ValidateGeomGroup(*params.model, collision_pair.first));
+    RETURN_IF_ERROR(ValidateGeomGroup(*params.model, collision_pair.second));
   }
 
   if (params.cartesian_velocity_direction_task_weight < 0.0) {
@@ -408,9 +406,8 @@ absl::Status Cartesian6dToJointVelocityMapper::ValidateParameters(
 
 Cartesian6dToJointVelocityMapper::Cartesian6dToJointVelocityMapper(
     const Parameters& params)
-    : lib_(*DieIfNull(MjLibInitializer())),
-      model_(*DieIfNull(params.model)),
-      data_(lib_.mj_makeData(&model_), lib_.mj_deleteData),
+    : model_(*DieIfNull(params.model)),
+      data_(mj_makeData(&model_), mj_deleteData),
       joint_dof_ids_(JointIdsToDofIds(model_, params.joint_ids)),
       integration_timestep_(params.integration_timestep),
       clamp_nullspace_bias_to_feasible_space_(
@@ -436,7 +433,7 @@ Cartesian6dToJointVelocityMapper::Cartesian6dToJointVelocityMapper(
 
   // Ensure data is in a valid state.
   std::fill_n(data_->qvel, model_.nv, 0.0);
-  lib_.mj_fwdPosition(&model_, data_.get());
+  mj_fwdPosition(&model_, data_.get());
 
   // First hierarchy has the Cartesian velocity task and the regularization
   // task for singularity robustness. The weight for the Cartesian velocity task
@@ -610,8 +607,8 @@ Cartesian6dToJointVelocityMapper::ComputeJointVelocitiesImpl(
   // Update internal mjData and run necessary MuJoCo routines.
   std::copy_n(data.qpos, model_.nq, data_->qpos);
   std::copy_n(data.qvel, model_.nv, data_->qvel);
-  lib_.mj_kinematics(&model_, data_.get());
-  lib_.mj_comPos(&model_, data_.get());
+  mj_kinematics(&model_, data_.get());
+  mj_comPos(&model_, data_.get());
 
   // We update the constraints first, as we need to clip the nullspace bias to
   // the resulting kinematic constraint bounds.
@@ -784,13 +781,13 @@ absl::Status Cartesian6dToJointVelocityMapper::CheckSolutionValidity() {
   //     configuration;
   //   * MuJoCo's collision detection is sometimes flaky between certain geom
   //     types, and the computed normal distance/direction may be wrong.
-  ComputeGeomPairDist(lib_, model_, *data_, minimum_distance_from_collisions_,
+  ComputeGeomPairDist(model_, *data_, minimum_distance_from_collisions_,
                       &geom_pair_to_dist_curr_);
   std::fill_n(data_->qvel, model_.nv, 0.0);  // Assume everything else is fixed.
-  IntegrateQpos(lib_, model_, integration_timestep_, joint_dof_ids_, solution_,
+  IntegrateQpos(model_, integration_timestep_, joint_dof_ids_, solution_,
                 data_.get());
-  lib_.mj_kinematics(&model_, data_.get());
-  ComputeGeomPairDist(lib_, model_, *data_, minimum_distance_from_collisions_,
+  mj_kinematics(&model_, data_.get());
+  ComputeGeomPairDist(model_, *data_, minimum_distance_from_collisions_,
                       &geom_pair_to_dist_after_);
   std::pair<int, int> penetrating_pair;
   if (IsPenetrationIncreased(minimum_distance_from_collisions_,
@@ -819,8 +816,8 @@ absl::Status Cartesian6dToJointVelocityMapper::CheckSolutionValidity() {
         "with name [$1] decreased from a current value of [$2] to a value of "
         "[$3] after integration, with a user-defined minimum distance from "
         "collisions of [$4].",
-        lib_.mj_id2name(&model_, mjOBJ_GEOM, penetrating_pair.first),
-        lib_.mj_id2name(&model_, mjOBJ_GEOM, penetrating_pair.second),
+        mj_id2name(&model_, mjOBJ_GEOM, penetrating_pair.first),
+        mj_id2name(&model_, mjOBJ_GEOM, penetrating_pair.second),
         dist_before_msg, *geom_pair_to_dist_after_.at(penetrating_pair),
         minimum_distance_from_collisions_));
   }

@@ -21,17 +21,17 @@
 #include "absl/container/btree_set.h"
 #include "absl/strings/substitute.h"
 #include "absl/types/span.h"
-#include "dm_robotics/mujoco/mjlib.h"
 #include "dm_robotics/mujoco/utils.h"
 #include "Eigen/Core"
+#include <mujoco/mujoco.h>  //NOLINT
 
 namespace dm_robotics::testing {
 
 std::vector<double> ComputeObject6dJacobianForJoints(
-    const MjLib& lib, const mjModel& model, const mjData& data,
+    const mjModel& model, const mjData& data,
     mjtObj object_type, const std::string& object_name,
     const absl::btree_set<int>& joint_ids) {
-  int object_id = lib.mj_name2id(&model, object_type, object_name.c_str());
+  int object_id = mj_name2id(&model, object_type, object_name.c_str());
 
   // We need a vector of DoF IDs for indexing Eigen::MatrixXd.
   absl::btree_set<int> dof_ids = JointIdsToDofIds(model, joint_ids);
@@ -41,7 +41,7 @@ std::vector<double> ComputeObject6dJacobianForJoints(
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
       row_jacobian_buffer(6, model.nv);
   ComputeObject6dJacobian(
-      lib, model, data, object_type, object_id,
+      model, data, object_type, object_id,
       absl::MakeSpan(row_jacobian_buffer.data(), row_jacobian_buffer.size()));
   Eigen::MatrixXd col_jacobian_buffer = row_jacobian_buffer;
 
@@ -53,12 +53,12 @@ std::vector<double> ComputeObject6dJacobianForJoints(
 }
 
 std::array<double, 6> ComputeObjectCartesian6dVelocityWithJacobian(
-    const MjLib& lib, const mjModel& model, const mjData& data,
+    const mjModel& model, const mjData& data,
     const std::string& object_name, mjtObj object_type) {
   Eigen::Matrix<double, 6, Eigen::Dynamic, Eigen::RowMajor> jacobian(6,
                                                                      model.nv);
-  int object_id = lib.mj_name2id(&model, object_type, object_name.c_str());
-  ComputeObject6dJacobian(lib, model, data, object_type, object_id,
+  int object_id = mj_name2id(&model, object_type, object_name.c_str());
+  ComputeObject6dJacobian(model, data, object_type, object_id,
                           absl::MakeSpan(jacobian.data(), jacobian.size()));
 
   std::array<double, 6> cartesian_velocity;

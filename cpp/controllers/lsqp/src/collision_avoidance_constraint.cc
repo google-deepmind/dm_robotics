@@ -23,9 +23,9 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/substitute.h"
 #include "absl/types/span.h"
-#include "dm_robotics/mujoco/mjlib.h"
 #include "dm_robotics/mujoco/utils.h"
 #include "Eigen/Core"
+#include <mujoco/mujoco.h>  //NOLINT
 
 namespace dm_robotics {
 namespace {
@@ -46,7 +46,7 @@ void CopyContact(const mjContact& input, mjContact* output) {
 // `use_minimum_distance_contacts_only`, and thus we can guarantee that `buffer`
 // is big enough.
 absl::Span<const mjContact> ComputeContactsWithMinimumDistance(
-    const MjLib& lib, const mjModel& model, const mjData& data,
+    const mjModel& model, const mjData& data,
     absl::btree_set<std::pair<int, int>>& geom_pairs,
     const double collision_detection_distance, absl::Span<mjContact> buffer) {
   CHECK_GE(buffer.size(), geom_pairs.size()) << absl::Substitute(
@@ -58,8 +58,7 @@ absl::Span<const mjContact> ComputeContactsWithMinimumDistance(
   int num_contacts = 0;
   for (const auto& pair : geom_pairs) {
     absl::optional<mjContact> maybe_contact = ComputeContactWithMinimumDistance(
-        lib, model, data, pair.first, pair.second,
-        collision_detection_distance);
+        model, data, pair.first, pair.second, collision_detection_distance);
     if (maybe_contact.has_value()) {
       CopyContact(*maybe_contact, &buffer[num_contacts]);
       ++num_contacts;
@@ -76,11 +75,11 @@ absl::Span<const mjContact> ComputeContactsWithMinimumDistance(
 // Computes the contacts for the geom pairs using `buffer`, and returns a view
 // over the all contacts for the provided set of geom pairs.
 absl::Span<const mjContact> ComputeAllContacts(
-    const MjLib& lib, const mjModel& model, const mjData& data,
+    const mjModel& model, const mjData& data,
     absl::btree_set<std::pair<int, int>>& geom_pairs,
     const double collision_detection_distance, absl::Span<mjContact> buffer) {
   absl::StatusOr<int> num_contacts_or = ComputeContactsForGeomPairs(
-      lib, model, data, geom_pairs, collision_detection_distance, buffer);
+      model, data, geom_pairs, collision_detection_distance, buffer);
   CHECK_EQ(num_contacts_or.status(), absl::OkStatus()) << absl::Substitute(
       "ComputeAllContacts: Internal error [$0]. Please contact the developers.",
       num_contacts_or.status().ToString());
@@ -91,8 +90,7 @@ absl::Span<const mjContact> ComputeAllContacts(
 
 CollisionAvoidanceConstraint::CollisionAvoidanceConstraint(
     const Parameters& params, const mjData& data)
-    : lib_(*DieIfNull(params.lib)),
-      model_(*DieIfNull(params.model)),
+    : model_(*DieIfNull(params.model)),
       use_minimum_distance_contacts_only_(
           params.use_minimum_distance_contacts_only),
       collision_detection_distance_(params.collision_detection_distance),
@@ -135,10 +133,10 @@ void CollisionAvoidanceConstraint::UpdateCoefficientsAndBounds(
     const mjData& data) {
   if (use_minimum_distance_contacts_only_) {
     detected_contacts_ = ComputeContactsWithMinimumDistance(
-        lib_, model_, data, geom_pairs_, collision_detection_distance_,
+        model_, data, geom_pairs_, collision_detection_distance_,
         absl::MakeSpan(contacts_buffer_));
   } else {
-    detected_contacts_ = ComputeAllContacts(lib_, model_, data, geom_pairs_,
+    detected_contacts_ = ComputeAllContacts(model_, data, geom_pairs_,
                                             collision_detection_distance_,
                                             absl::MakeSpan(contacts_buffer_));
   }
@@ -169,7 +167,7 @@ void CollisionAvoidanceConstraint::UpdateCoefficientsAndBounds(
 
     // Compute Jacobian, and set constraint row. Note that Eigen::Map does not
     // support indexing with an array.
-    ComputeContactNormalJacobian(lib_, model_, data, contact,
+    ComputeContactNormalJacobian(model_, data, contact,
                                  absl::MakeSpan(linear_jacobian_buffer_),
                                  absl::MakeSpan(normal_jacobian_buffer_));
     Eigen::Map<Eigen::VectorXd> normal_jacobian_map(
@@ -193,8 +191,8 @@ std::string CollisionAvoidanceConstraint::GetContactDebugString(
     if (dist <= minimum_normal_distance_) {
       const int geom1_id = contact.geom1;
       const int geom2_id = contact.geom2;
-      const char* geom1_name = lib_.mj_id2name(&model_, mjOBJ_GEOM, geom1_id);
-      const char* geom2_name = lib_.mj_id2name(&model_, mjOBJ_GEOM, geom2_id);
+      const char* geom1_name = mj_id2name(&model_, mjOBJ_GEOM, geom1_id);
+      const char* geom2_name = mj_id2name(&model_, mjOBJ_GEOM, geom2_id);
       absl::StrAppend(&debug_string, "Geoms [", geom1_name, "] and [",
                       geom2_name, "] detected at a distance of [", dist,
                       "] of each other. This is lower than the defined "

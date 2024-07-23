@@ -13,19 +13,22 @@
 // limitations under the License.
 
 #include "dm_robotics/controllers/lsqp/collision_avoidance_constraint.h"
+#include <limits>
+#include <utility>
+#include <vector>
 
 #include "dm_robotics/support/status-matchers.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "absl/container/btree_set.h"
-#include "dm_robotics/least_squares_qp/common/identity_task.h"
-#include "dm_robotics/least_squares_qp/core/lsqp_stack_of_tasks_solver.h"
+#include "absl/types/optional.h"
+#include "absl/types/span.h"
 #include "dm_robotics/least_squares_qp/testing/matchers.h"
 #include "dm_robotics/mujoco/defs.h"
-#include "dm_robotics/mujoco/mjlib.h"
 #include "dm_robotics/mujoco/test_with_mujoco_model.h"
 #include "dm_robotics/mujoco/utils.h"
 #include "Eigen/Core"
+#include <mujoco/mujoco.h>  //NOLINT
 
 namespace dm_robotics {
 namespace {
@@ -54,7 +57,7 @@ absl::btree_set<std::pair<int, int>> GetAllGeomPairs(const mjModel& model) {
 // Returns the Jacobian mapping the joint velocities to the normal linear
 // velocity between both objects in a specified contact.
 Eigen::MatrixXd ComputeContactNormalJacobianForJoints(
-    const MjLib& lib, const mjModel& model, const mjData& data,
+    const mjModel& model, const mjData& data,
     const mjContact& contact, const absl::btree_set<int>& joint_ids) {
   // We need a vector of DoF IDs for indexing Eigen::VectorXd.
   absl::btree_set<int> dof_ids = JointIdsToDofIds(model, joint_ids);
@@ -66,7 +69,7 @@ Eigen::MatrixXd ComputeContactNormalJacobianForJoints(
   std::vector<double> jacobian_buffer(3 * model.nv);
   Eigen::MatrixXd jacobian(1, model.nv);
   ComputeContactNormalJacobian(
-      lib, model, data, contact, absl::MakeSpan(jacobian_buffer),
+      model, data, contact, absl::MakeSpan(jacobian_buffer),
       absl::MakeSpan(jacobian.data(), jacobian.size()));
 
   // Index the complete Jacobian to get a subset of joints.
@@ -92,7 +95,6 @@ TEST_P(CollisionAvoidanceConstraintWithParamsTest,
 
   // Initialize constraint.
   CollisionAvoidanceConstraint::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.use_minimum_distance_contacts_only =
       use_minimum_distance_contacts_only;
@@ -139,7 +141,6 @@ TEST_P(CollisionAvoidanceConstraintWithParamsTest,
 
   // Initialize constraint.
   CollisionAvoidanceConstraint::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.use_minimum_distance_contacts_only =
       use_minimum_distance_contacts_only;
@@ -162,7 +163,7 @@ TEST_P(CollisionAvoidanceConstraintWithParamsTest,
     for (const auto& pair : params.geom_pairs) {
       absl::optional<mjContact> maybe_contact =
           ComputeContactWithMinimumDistance(
-              *mjlib_, *model_, *data_, pair.first, pair.second,
+              *model_, *data_, pair.first, pair.second,
               params.collision_detection_distance);
       if (maybe_contact.has_value()) {
         ++num_contacts;
@@ -174,7 +175,7 @@ TEST_P(CollisionAvoidanceConstraintWithParamsTest,
     std::vector<mjContact> contacts(max_num_contacts);
     ASSERT_OK_AND_ASSIGN(
         num_contacts,
-        ComputeContactsForGeomPairs(*mjlib_, *model_, *data_, params.geom_pairs,
+        ComputeContactsForGeomPairs(*model_, *data_, params.geom_pairs,
                                     params.collision_detection_distance,
                                     absl::MakeSpan(contacts)));
   }
@@ -211,7 +212,6 @@ TEST_F(CollisionAvoidanceConstraintTest,
 
   // Initialize constraint.
   CollisionAvoidanceConstraint::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.use_minimum_distance_contacts_only = false;
   params.collision_detection_distance = 0.3;
@@ -230,7 +230,7 @@ TEST_F(CollisionAvoidanceConstraintTest,
   std::vector<mjContact> contacts(max_num_contacts);
   ASSERT_OK_AND_ASSIGN(
       int num_contacts,
-      ComputeContactsForGeomPairs(*mjlib_, *model_, *data_, params.geom_pairs,
+      ComputeContactsForGeomPairs(*model_, *data_, params.geom_pairs,
                                   params.collision_detection_distance,
                                   absl::MakeSpan(contacts)));
   ASSERT_NE(num_contacts, 0);
@@ -246,7 +246,7 @@ TEST_F(CollisionAvoidanceConstraintTest,
     // We don't expect but Jacobians to be exactly the same, but they should be
     // within a very tight tolerance of each other.
     Eigen::MatrixXd jacobian = ComputeContactNormalJacobianForJoints(
-        *mjlib_, *model_, *data_, contacts[i], params.joint_ids);
+        *model_, *data_, contacts[i], params.joint_ids);
     EXPECT_THAT(coefficient_matrix.row(i),
                 Pointwise(DoubleNear(1.0e-10), jacobian.row(0)));
   }
@@ -258,7 +258,6 @@ TEST_F(CollisionAvoidanceConstraintTest,
 
   // Initialize constraint.
   CollisionAvoidanceConstraint::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.use_minimum_distance_contacts_only = true;
   params.collision_detection_distance = 0.3;
@@ -281,11 +280,11 @@ TEST_F(CollisionAvoidanceConstraintTest,
   int contact_counter = 0;
   for (const auto& pair : params.geom_pairs) {
     absl::optional<mjContact> maybe_contact = ComputeContactWithMinimumDistance(
-        *mjlib_, *model_, *data_, pair.first, pair.second,
+        *model_, *data_, pair.first, pair.second,
         params.collision_detection_distance);
     if (maybe_contact.has_value()) {
       Eigen::MatrixXd jacobian = ComputeContactNormalJacobianForJoints(
-          *mjlib_, *model_, *data_, *maybe_contact, params.joint_ids);
+          *model_, *data_, *maybe_contact, params.joint_ids);
       EXPECT_THAT(coefficient_matrix.row(contact_counter),
                   Pointwise(DoubleNear(1.0e-10), jacobian.row(0)));
       ++contact_counter;

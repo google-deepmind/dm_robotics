@@ -27,6 +27,7 @@
 #include "dm_robotics/mujoco/test_with_mujoco_model.h"
 #include "dm_robotics/mujoco/utils.h"
 #include "Eigen/Core"
+#include <mujoco/mujoco.h>  //NOLINT
 
 namespace dm_robotics {
 namespace {
@@ -48,7 +49,6 @@ TEST_F(Cartesian6dVelocityDirectionTaskTest,
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
 
   Cartesian6dVelocityDirectionTask::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.joint_ids = kJointIds;
   params.object_type = kObjectType;
@@ -69,7 +69,7 @@ TEST_F(Cartesian6dVelocityDirectionTaskTest,
   // In this test we test for W = I.
   std::vector<double> expected_coefficients(6 * kJointIds.size());
   std::vector<double> jacobian = ComputeObject6dJacobianForJoints(
-      *mjlib_, *model_, *data_, kObjectType, kObjectName, kJointIds);
+      *model_, *data_, kObjectType, kObjectName, kJointIds);
   Eigen::Vector<double, 6> target_vel(kTargetVelocity.data());
   target_vel.normalize();
   Eigen::Map<Eigen::MatrixXd>(expected_coefficients.data(), 6,
@@ -87,7 +87,6 @@ TEST_F(Cartesian6dVelocityDirectionTaskTest,
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
 
   Cartesian6dVelocityDirectionTask::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.joint_ids = kJointIds;
   params.object_type = kObjectType;
@@ -114,7 +113,6 @@ TEST_F(Cartesian6dVelocityDirectionTaskTest,
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
 
   Cartesian6dVelocityDirectionTask::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.joint_ids = kJointIds;
   params.object_type = kObjectType;

@@ -7,9 +7,8 @@
 #include "dm_robotics/controllers/lsqp/test_utils.h"
 #include "dm_robotics/least_squares_qp/testing/matchers.h"
 #include "dm_robotics/mujoco/defs.h"
-#include "dm_robotics/mujoco/mjlib.h"
 #include "dm_robotics/mujoco/test_with_mujoco_model.h"
-#include "dm_robotics/mujoco/utils.h"
+#include <mujoco/mujoco.h>  //NOLINT
 #include "Eigen/Core"
 
 namespace dm_robotics {
@@ -36,7 +35,6 @@ TEST_F(Cartesian6dVelocityDirectionConstraintTest,
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
 
   Cartesian6dVelocityDirectionConstraint::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.joint_ids = kJointIds;
   params.object_type = kObjectType;
@@ -72,7 +70,6 @@ TEST_P(Cartesian6dVelocityDirectionConstraintParametricTest,
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
 
   Cartesian6dVelocityDirectionConstraint::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.joint_ids = kJointIds;
   params.object_type = kObjectType;
@@ -100,7 +97,7 @@ TEST_P(Cartesian6dVelocityDirectionConstraintParametricTest,
   //   C = v_d^T J
   // where v_d is the target velocity direction.
   std::vector<double> jacobian_vec = ComputeObject6dJacobianForJoints(
-      *mjlib_, *model_, *data_, kObjectType, kObjectName, kJointIds);
+      *model_, *data_, kObjectType, kObjectName, kJointIds);
   const Eigen::MatrixXd jacobian = Eigen::Map<const Eigen::MatrixXd>(
       jacobian_vec.data(), 6, kJointIds.size());
   const Eigen::Vector<double, 6> target_vel(kTargetVelocity.data());

@@ -29,7 +29,7 @@
 #include "dm_robotics/least_squares_qp/common/identity_task.h"
 #include "dm_robotics/least_squares_qp/core/lsqp_stack_of_tasks_solver.h"
 #include "dm_robotics/mujoco/defs.h"
-#include "dm_robotics/mujoco/mjlib.h"
+#include <mujoco/mujoco.h>  //NOLINT
 #include "dm_robotics/mujoco/test_with_mujoco_model.h"
 #include "dm_robotics/mujoco/utils.h"
 #include "Eigen/Core"
@@ -129,7 +129,6 @@ TEST_F(IdentityTaskAndCollisionAvoidanceIntegrationTest,
   constexpr double kIntegrationTimestepSeconds = 1.0;
 
   CollisionAvoidanceConstraint::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.collision_detection_distance = 0.3;
   params.minimum_normal_distance = 0.05;
@@ -203,9 +202,9 @@ TEST_F(IdentityTaskAndCollisionAvoidanceIntegrationTest,
       data_->qvel[dof_adr] = solution[joint_id_idx];
       ++joint_id_idx;
     }
-    mjlib_->mj_integratePos(model_.get(), data_->qpos, data_->qvel,
+    mj_integratePos(model_.get(), data_->qpos, data_->qvel,
                             kIntegrationTimestepSeconds);
-    mjlib_->mj_fwdPosition(model_.get(), data_.get());
+    mj_fwdPosition(model_.get(), data_.get());
     EXPECT_EQ(data_->ncon, 0);
   }
 }
@@ -219,7 +218,6 @@ TEST_P(ParameterizedCartesian6dVelocityTaskTest,
 
   auto [kObjectName, kObjectType, kTargetVelocity, kJointIds] = GetParam();
   Cartesian6dVelocityTask::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.joint_ids = kJointIds;
   params.object_type = kObjectType;
@@ -248,7 +246,7 @@ TEST_P(ParameterizedCartesian6dVelocityTaskTest,
   // Cartesian velocity.
   SetSubsetOfJointVelocities(*model_, kJointIds, solution, data_.get());
   Eigen::Vector<double, 6> realized_cartesian_6d_vel(
-      ComputeObjectCartesian6dVelocityWithJacobian(*mjlib_, *model_, *data_,
+      ComputeObjectCartesian6dVelocityWithJacobian(*model_, *data_,
                                                    kObjectName, kObjectType)
           .data());
   Eigen::Map<Eigen::Vector<double, 6>> target_cartesian_6d_vel(
@@ -262,7 +260,7 @@ TEST_P(ParameterizedCartesian6dVelocityTaskTest,
   //   e_dual = W ||J^T J qvel - (xdot_target^T J)^T||_inf
   //   e_dual = W ||J^T xdot_target - J^T xdot_realized||_inf
   Eigen::MatrixXd jacobian = Eigen::Map<Eigen::MatrixXd>(
-      ComputeObject6dJacobianForJoints(*mjlib_, *model_, *data_, kObjectType,
+      ComputeObject6dJacobianForJoints(*model_, *data_, kObjectType,
                                        kObjectName, kJointIds)
           .data(),
       6, kJointIds.size());
@@ -281,7 +279,6 @@ TEST_P(ParameterizedCartesian6dVelocityTaskTest,
 
   auto [kObjectName, kObjectType, kTargetVelocity, kJointIds] = GetParam();
   Cartesian6dVelocityTask::Parameters params;
-  params.lib = mjlib_;
   params.model = model_.get();
   params.joint_ids = kJointIds;
   params.object_type = kObjectType;
@@ -315,7 +312,7 @@ TEST_P(ParameterizedCartesian6dVelocityTaskTest,
   // Cartesian velocity.
   SetSubsetOfJointVelocities(*model_, kJointIds, solution, data_.get());
   Eigen::Vector<double, 6> realized_cartesian_6d_vel(
-      ComputeObjectCartesian6dVelocityWithJacobian(*mjlib_, *model_, *data_,
+      ComputeObjectCartesian6dVelocityWithJacobian(*model_, *data_,
                                                    kObjectName, kObjectType)
           .data());
 
@@ -327,7 +324,7 @@ TEST_P(ParameterizedCartesian6dVelocityTaskTest,
   //   e_dual = W ||J^T J qvel - (xdot_target^T J)^T||_inf
   //   e_dual = W ||J^T xdot_target - J^T xdot_realized||_inf
   Eigen::MatrixXd jacobian = Eigen::Map<Eigen::MatrixXd>(
-      ComputeObject6dJacobianForJoints(*mjlib_, *model_, *data_, kObjectType,
+      ComputeObject6dJacobianForJoints(*model_, *data_, kObjectType,
                                        kObjectName, kJointIds)
           .data(),
       6, kJointIds.size());
