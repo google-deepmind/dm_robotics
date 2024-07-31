@@ -24,16 +24,16 @@ namespace dm_robotics::internal {
 // Raises a `RuntimeError` exception in Python with the message `message`.
 void RaiseRuntimeErrorWithMessage(absl::string_view message);
 
-// Extracts an mjModel pointer from a Python handle to a dm_control `MjModel`
-// object. Raises a `RuntimeError` exception in Python if it fails to extract
-// an mjModel object from the handle.
+// Extracts an mjModel pointer from a Python handle to a mujoco or dm_control
+// `MjModel` object. Raises a `RuntimeError` exception in Python if it fails to
+// extract an mjModel object from the handle.
 //
 // Note that this does not increment the reference count.
 const mjModel* GetmjModelOrRaise(pybind11::handle obj);
 
-// Extracts an mjData pointer from a Python handle to a dm_control `MjData`
-// object. Raises a `RuntimeError` exception in Python if it fails to extract
-// an mjData object from the handle.
+// Extracts an mjData pointer from a Python handle to a mujoco or dm_control
+// `MjData` object. Raises a `RuntimeError` exception in Python if it fails to
+// extract an mjData object from the handle.
 //
 // Note that this does not increment the reference count.
 const mjData* GetmjDataOrRaise(pybind11::handle obj);

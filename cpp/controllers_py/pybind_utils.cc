@@ -18,6 +18,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include <cstdint>
 #include <string>
 
 #include "dm_robotics/support/logging.h"
@@ -30,44 +31,29 @@ namespace {
 
 namespace py = pybind11;
 
-constexpr char kDmControlMjModelClassName[] = "MjModel";
-constexpr char kDmControlMjDataClassName[] = "MjData";
+constexpr char kMjModelClassName[] = "MjModel";
+constexpr char kMjDataClassName[] = "MjData";
 
-// Returns a ctypes module for use through pybind.
-py::module GetCtypesModule() {
-  static PyObject* const ctypes_module_ptr = []() -> PyObject* {
-    py::module ctypes_module = py::module::import("ctypes");
-    PyObject* ctypes_module_ptr = ctypes_module.ptr();
-    Py_XINCREF(ctypes_module_ptr);
-    return ctypes_module_ptr;
-  }();
-  return py::reinterpret_borrow<py::module>(ctypes_module_ptr);
-}
-
-// Returns a pointer to the underlying object pointed to by `ctypes_obj`.
-// Note that does not increment the reference count.
+// Returns a pointer to the underlying C object pointed to by
+// `handle`. Note that this does not increment the reference count.
 template <class T>
-T* GetPointer(py::handle mjwrapper_object) {
-  return reinterpret_cast<T*>(
-      mjwrapper_object.attr("_address").cast<std::uintptr_t>());
+T* GetPointer(py::handle handle) {
+  return reinterpret_cast<T*>(handle.attr("_address").cast<std::uintptr_t>());
 }
 
-// Returns a pointer to a MuJoCo mjModel or mjData from the dm_control wrappers
-// around these objects. The dm_control wrappers are such that the `ptr`
-// attributes return a ctypes object bound to underlying MuJoCo native type.
+// Returns a pointer to a MuJoCo mjModel or mjData.
 //
-// Raises a `RuntimeError` exception in Python if the handle does not contain a
-// `ptr` attribute.
+// Supports objects from either the `dm_control` library or the `mujoco`
+// library.
 template <class T>
-T* GetMujocoPointerFromDmControlWrapperHandle(py::handle dm_control_wrapper) {
-  if (!py::hasattr(dm_control_wrapper, "ptr")) {
-    RaiseRuntimeErrorWithMessage(
-        "GetMujocoPointerFromDmControlWrapperHandle: handle does not have a "
-        "`ptr` attribute. This function assumes that dm_control wrappers "
-        "around mjModel and mjData contain a `ptr` attribute with the MuJoCo "
-        "native type.");
+T* GetMujocoPointer(py::handle mujoco_obj) {
+  // If it has a `ptr` attribute, assume it is a `dm_control` object.
+  if (py::hasattr(mujoco_obj, "ptr")) {
+    return GetPointer<T>(mujoco_obj.attr("ptr"));
   }
-  return GetPointer<T>(dm_control_wrapper.attr("ptr"));
+
+  // Otherwise, assume it's a `mujoco` object.
+  return GetPointer<T>(mujoco_obj);
 }
 
 }  // namespace
@@ -81,26 +67,26 @@ void RaiseRuntimeErrorWithMessage(absl::string_view message) {
 const mjModel* GetmjModelOrRaise(py::handle obj) {
   const std::string class_name =
       obj.attr("__class__").attr("__name__").cast<std::string>();
-  if (class_name != kDmControlMjModelClassName) {
+  if (class_name != kMjModelClassName) {
     RaiseRuntimeErrorWithMessage(absl::Substitute(
         "GetmjModelOrRaise: the class name of the argument [$0] does not match "
-        "the expected dm_control type name for mjModel [$1].",
-        class_name, kDmControlMjModelClassName));
+        "the expected type name for mjModel [$1].",
+        class_name, kMjModelClassName));
   }
-  return GetMujocoPointerFromDmControlWrapperHandle<mjModel>(obj);
+  return GetMujocoPointer<mjModel>(obj);
 }
 
 // Helper function for getting an mjData object from a py::handle.
 const mjData* GetmjDataOrRaise(py::handle obj) {
   const std::string class_name =
       obj.attr("__class__").attr("__name__").cast<std::string>();
-  if (class_name != kDmControlMjDataClassName) {
+  if (class_name != kMjDataClassName) {
     RaiseRuntimeErrorWithMessage(absl::Substitute(
         "GetmjDataOrRaise: the class name of the argument [$0] does not match "
-        "the expected dm_control type name for mjData [$1].",
-        class_name, kDmControlMjDataClassName));
+        "the expected type name for mjData [$1].",
+        class_name, kMjDataClassName));
   }
-  return GetMujocoPointerFromDmControlWrapperHandle<mjData>(obj);
+  return GetMujocoPointer<mjData>(obj);
 }
 
 }  // namespace dm_robotics::internal
