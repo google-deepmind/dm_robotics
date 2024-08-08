@@ -965,6 +965,23 @@ class StackObservationsTest(parameterized.TestCase):
     np.testing.assert_allclose(input_pos, output_pos)
     np.testing.assert_allclose(expected_output_pos.shape, output_shape)
 
+  def test_missing_observation(self):
+    # Generate the input spec.
+    input_obs_spec = {
+        'position': specs.Array(shape=(10,), dtype=np.float32, name='position'),
+    }
+    input_spec = _build_unit_timestep_spec(
+        observation_spec=input_obs_spec)
+
+    # Ask for an observation that doesn't exist.
+    preprocessor = observation_transforms.StackObservations(
+        obs_to_stack=['velocity'], stack_depth=2
+    )
+
+    # Preprocessor should fail, and tell you what observation is available.
+    with self.assertRaisesRegex(ValueError, '(?s).*velocity.*position.*'):
+      preprocessor.setup_io_spec(input_spec)
+
 
 class UnstackObservationsTest(parameterized.TestCase):
 

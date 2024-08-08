@@ -682,6 +682,18 @@ class StackObservations(tsp.TimestepPreprocessor):
   @overrides(tsp.TimestepPreprocessor)
   def _output_spec(
       self, input_spec: spec_utils.TimeStepSpec) -> spec_utils.TimeStepSpec:
+    # Check that all observations to stack are present in the input spec.
+    missing_observations = set(self._obs_to_stack) - set(
+        input_spec.observation_spec.keys()
+    )
+    if missing_observations:
+      all_observations = '\n'.join(input_spec.observation_spec.keys())
+      raise ValueError(
+          'Some observations to stack are not present in the observation'
+          f' spec: {missing_observations}.\n'
+          f'Available:\n{all_observations}'
+      )
+
     if self._override_obs:
       processed_obs_spec = {
           k: self._maybe_process_spec(k, v)
