@@ -23,6 +23,7 @@ set(SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/src/collision_avoidance_constraint.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/joint_acceleration_constraint.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/joint_position_limit_constraint.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/joint_velocity_filter.cc
 )
 set(HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/include/dm_robotics/controllers/lsqp/cartesian_6d_to_joint_velocity_mapper.h
@@ -32,6 +33,7 @@ set(HDRS
   ${CMAKE_CURRENT_SOURCE_DIR}/include/dm_robotics/controllers/lsqp/collision_avoidance_constraint.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/dm_robotics/controllers/lsqp/joint_acceleration_constraint.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/dm_robotics/controllers/lsqp/joint_position_limit_constraint.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/dm_robotics/controllers/lsqp/joint_velocity_filter.h
 )
 add_library(dmr_controllers_lsqp)
 target_sources(dmr_controllers_lsqp PUBLIC ${HDRS} PRIVATE ${SRCS})
@@ -162,5 +164,11 @@ if(DM_ROBOTICS_BUILD_TESTS)
   AddDmrControllersLsqpTest(
     NAME dmr_controllers_lsqp_joint_position_limit_constraint_test
     SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/tests/joint_position_limit_constraint_test.cc
+  )
+
+  # Joint velocity filter test.
+  AddDmrControllersLsqpTest(
+    NAME dmr_controllers_lsqp_joint_velocity_filter_test
+    SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/tests/joint_velocity_filter_test.cc
   )
 endif()
