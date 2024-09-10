@@ -105,9 +105,14 @@ set(SRCS
   ${CMAKE_CURRENT_SOURCE_DIR}/cartesian_6d_to_joint_velocity_mapper.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/cartesian_6d_to_joint_velocity_mapper_python_helpers.h
   ${CMAKE_CURRENT_SOURCE_DIR}/cartesian_6d_to_joint_velocity_mapper_python_helpers.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/joint_velocity_filter.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/joint_velocity_filter_python_helpers.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/joint_velocity_filter_python_helpers.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/pybind_utils.h
   ${CMAKE_CURRENT_SOURCE_DIR}/pybind_utils.cc
 )
+
+# Cartesian 6d mapper
 pybind11_add_module(cartesian_6d_to_joint_velocity_mapper_pybind
   ${SRCS}
 )
@@ -120,6 +125,32 @@ target_include_directories(cartesian_6d_to_joint_velocity_mapper_pybind
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 target_link_libraries(cartesian_6d_to_joint_velocity_mapper_pybind
+  PRIVATE
+    absl::span
+    absl::hash
+    absl::btree
+    absl::flat_hash_map
+    absl::hashtablez_sampler
+    absl::strings
+    absl::status
+    dmr_mujoco
+    dmr_lsqp_core
+    dmr_controllers_lsqp
+)
+
+# Joint velocity mapper
+pybind11_add_module(joint_velocity_filter_pybind
+  ${SRCS}
+)
+set_target_properties(joint_velocity_filter_pybind
+  PROPERTIES
+    OUTPUT_NAME "joint_velocity_filter"
+)
+target_include_directories(joint_velocity_filter_pybind
+  PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+)
+target_link_libraries(joint_velocity_filter_pybind
   PRIVATE
     absl::span
     absl::hash
