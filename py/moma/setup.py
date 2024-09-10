@@ -13,6 +13,7 @@
 # limitations under the License.
 """Package building script."""
 
+import os
 import setuptools
 
 
@@ -40,6 +41,54 @@ def _parse_line(s):
   return requirement.strip()
 
 
+def _get_packages(top_dir, skip=None):
+  """Fetches recursive Python packages."""
+  prefix = "dm_robotics.moma."
+  packages = []
+  skip = skip or []
+  for root, _, _ in os.walk(top_dir):
+    should_skip = False
+    for skipped_root in skip:
+      if root.startswith(skipped_root):
+        should_skip = True
+        break
+    if should_skip:
+      continue
+    packages.append(prefix + root.replace("/", "."))
+  return packages
+
+
+vendor_packages = _get_packages("models/vendor")
+vendor_package_data = {pkg: ["*"] for pkg in vendor_packages}
+
+other_model_packages = _get_packages("models", skip=["models/vendor"])
+other_model_package_data = {pkg: ["*.xml"] for pkg in other_model_packages}
+
+
+def _get_subfolders(top_dir, skip=None):
+  """Recursively fetches folders."""
+  packages = []
+  skip = skip or []
+  for root, _, _ in os.walk(top_dir):
+    should_skip = False
+    for skipped_root in skip:
+      if root.startswith(skipped_root):
+        should_skip = True
+        break
+    if should_skip:
+      continue
+    packages.append(root)
+  return packages
+
+
+vendor_folders = _get_subfolders("models/vendor")
+other_model_folders = _get_subfolders("models", skip=["models/vendor"])
+
+
+def _add_file_path(folders, file_path):
+  return [os.path.join(folder, file_path) for folder in folders]
+
+
 setuptools.setup(
     name="dm_robotics-moma",
     package_dir={"dm_robotics.moma": ""},
@@ -56,6 +105,14 @@ setuptools.setup(
         "dm_robotics.moma.models.end_effectors.wrist_sensors",
         "dm_robotics.moma.models.robots.robot_arms",
     ],
+    package_data={
+        # Manually include all the files for meshes and XML files because in
+        # Python 3.12 onwards, the MANIFEST.in doesn't work.
+        "dm_robotics.moma": (
+            _add_file_path(vendor_folders, "*") +
+            _add_file_path(other_model_folders, "*.xml")
+        )
+    },
     version="0.8.2",
     license="Apache 2.0",
     author="DeepMind",

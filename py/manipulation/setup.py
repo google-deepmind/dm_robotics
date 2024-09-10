@@ -13,6 +13,7 @@
 # limitations under the License.
 """Package building script."""
 
+import os
 import setuptools
 
 
@@ -40,18 +41,54 @@ def _parse_line(s):
   return requirement.strip()
 
 
+def _get_subfolders(top_dir, skip=None):
+  """Recursively fetches folders."""
+  packages = []
+  skip = skip or []
+  for root, _, _ in os.walk(top_dir):
+    should_skip = False
+    for skipped_root in skip:
+      if root.startswith(skipped_root):
+        should_skip = True
+        break
+    if should_skip:
+      continue
+    packages.append(root)
+  return packages
+
+
+rgb_objects_folders = _get_subfolders("props/rgb_objects/assets")
+test_assets_folders = _get_subfolders("props/utils/test_assets")
+rgb_basket_folders = _get_subfolders("standard_cell/rgb_basket_assets")
+
+
+def _add_file_path(folders, file_path):
+  return [os.path.join(folder, file_path) for folder in folders]
+
+
 setuptools.setup(
     name="dm_robotics-manipulation",
     package_dir={"dm_robotics.manipulation": ""},
-    packages=[
-        "dm_robotics.manipulation",
-        "dm_robotics.manipulation.props",
-        "dm_robotics.manipulation.props.parametric_object",
-        "dm_robotics.manipulation.props.parametric_object.rgb_objects",
-        "dm_robotics.manipulation.props.rgb_objects",
-        "dm_robotics.manipulation.props.utils",
-        "dm_robotics.manipulation.standard_cell",
-    ],
+    packages=(
+        [
+            "dm_robotics.manipulation",
+            "dm_robotics.manipulation.props",
+            "dm_robotics.manipulation.props.parametric_object",
+            "dm_robotics.manipulation.props.parametric_object.rgb_objects",
+            "dm_robotics.manipulation.props.rgb_objects",
+            "dm_robotics.manipulation.props.utils",
+            "dm_robotics.manipulation.standard_cell",
+        ]
+    ),
+    package_data={
+        # Manually include all the files for meshes and XML files because in
+        # Python 3.12 onwards, the MANIFEST.in doesn't work.
+        "dm_robotics.manipulation": (
+            _add_file_path(rgb_objects_folders, "*") +
+            _add_file_path(test_assets_folders, "*") +
+            _add_file_path(rgb_basket_folders, "*")
+        )
+    },
     version="0.8.2",
     license="Apache 2.0",
     author="DeepMind",
