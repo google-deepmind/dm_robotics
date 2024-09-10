@@ -297,7 +297,7 @@ class CastObservable(observable.Observable):
     self._delegate = delegate
 
   @property
-  def array_spec(self) -> specs.Array:
+  def array_spec(self) -> Optional[specs.Array]:
     delegate_spec = self._delegate.array_spec
     if delegate_spec is None:
       return delegate_spec
