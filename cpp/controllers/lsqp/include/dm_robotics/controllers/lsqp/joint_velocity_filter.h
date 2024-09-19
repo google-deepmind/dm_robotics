@@ -56,7 +56,7 @@ namespace dm_robotics {
 //
 // This class requires an updated mjData object at every call to
 // `FilterJointVelocities`. It is the user's responsibility to ensure that the
-// mjData object has consistent and accurate `qpos` and `qvel` fields.
+// mjData object has a consistent and accurate `qpos` field.
 class JointVelocityFilter {
  public:
   // Initialization parameters for JointVelocityFilter.

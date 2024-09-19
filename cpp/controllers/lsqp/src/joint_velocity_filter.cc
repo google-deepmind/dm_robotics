@@ -391,7 +391,6 @@ JointVelocityFilter::FilterJointVelocities(
     absl::Span<const double> target_joint_velocities) {
   // Update internal mjData and run necessary MuJoCo routines.
   std::copy_n(data.qpos, model_.nq, data_->qpos);
-  std::copy_n(data.qvel, model_.nv, data_->qvel);
   mj_kinematics(&model_, data_.get());
   mj_comPos(&model_, data_.get());
 
