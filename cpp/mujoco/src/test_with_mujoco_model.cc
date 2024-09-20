@@ -18,12 +18,13 @@
 #include <string>
 
 // Internal file library include
-// Internal tools library include
 #include "dm_robotics/support/status-matchers.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+// Internal tools library include
 // Internal flag library include
 #include "absl/strings/string_view.h"
+#include <mujoco/mujoco.h>  //NOLINT
 
 namespace dm_robotics::testing {
 
@@ -35,8 +36,8 @@ void TestWithMujocoModel::LoadModelFromXmlPath(absl::string_view path_to_xml) {
   char mujoco_load_error[kMujocoErrorSize];
 
   std::string path(path_to_xml);
-  model_.reset(mjlib_->mj_loadXML(
-      path.c_str(), nullptr, mujoco_load_error, kMujocoErrorSize));
+  model_.reset(
+      mj_loadXML(path.c_str(), nullptr, mujoco_load_error, kMujocoErrorSize));
 
   ASSERT_NE(model_, nullptr)
       << "TestWithMujocoModel::LoadModelFromXmlPath: MuJoCo mj_loadXML failed "
@@ -44,11 +45,11 @@ void TestWithMujocoModel::LoadModelFromXmlPath(absl::string_view path_to_xml) {
       << mujoco_load_error;
 
   // Reset mjData to match the model.
-  data_.reset(mjlib_->mj_makeData(model_.get()));
+  data_.reset(mj_makeData(model_.get()));
   ASSERT_NE(data_, nullptr);
 
   // Ensure mjData fields are physically consistent.
-  mjlib_->mj_forward(model_.get(), data_.get());
+  mj_forward(model_.get(), data_.get());
 }
 
 }  // namespace dm_robotics::testing

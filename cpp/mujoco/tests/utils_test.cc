@@ -35,9 +35,9 @@
 #include "absl/types/optional.h"
 #include "absl/types/span.h"
 #include "dm_robotics/mujoco/defs.h"
-#include "dm_robotics/mujoco/mjlib.h"
 #include "dm_robotics/mujoco/test_with_mujoco_model.h"
 #include "dm_robotics/mujoco/types.h"
+#include <mujoco/mujoco.h>  //NOLINT
 
 namespace dm_robotics {
 namespace {
@@ -118,8 +118,7 @@ int JointTypeToQposSize(mjtJoint type) {
 // Note that the linear component of free joints never have limits in MuJoCo,
 // and thus we set it to (-1.0, 1.0) for simplicity and to still allow some
 // freedom during sampling.
-void SetRandomQpos(const MjLib& lib, const mjModel& model, absl::BitGenRef gen,
-                   mjData* data) {
+void SetRandomQpos(const mjModel& model, absl::BitGenRef gen, mjData* data) {
   for (int joint_id = 0; joint_id < model.njnt; ++joint_id) {
     const mjtJoint type = static_cast<mjtJoint>(model.jnt_type[joint_id]);
     int qpos_adr = model.jnt_qposadr[joint_id];
@@ -137,17 +136,17 @@ void SetRandomQpos(const MjLib& lib, const mjModel& model, absl::BitGenRef gen,
       }
     }
   }
-  lib.mj_normalizeQuat(&model, data->qpos);
-  lib.mj_fwdPosition(&model, data);
+  mj_normalizeQuat(&model, data->qpos);
+  mj_fwdPosition(&model, data);
 }
 
 // Deterministic call that ensures qpos is in collision.
-void SetQposInCollision(const MjLib& lib, const mjModel& model, mjData* data) {
+void SetQposInCollision(const mjModel& model, mjData* data) {
   absl::MockingBitGen gen;
   ON_CALL(absl::MockUniform<double>(), Call(absl::IntervalClosed, gen, _, _))
       .WillByDefault([](absl::IntervalClosedClosedTag, double low,
                         double high) { return 0.1 * high + 0.9 * low; });
-  SetRandomQpos(lib, model, gen, data);
+  SetRandomQpos(model, gen, data);
   ASSERT_NE(data->ncon, 0);
 }
 
@@ -211,20 +210,17 @@ TEST_F(UtilsTest, JointIdsToDofIdsReturnsCorrectDofIds) {
 TEST_F(UtilsTest, ComputeMaximumNumberOfContactsReturnsCorrectNumber) {
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
 
-  const int floor_id =
-      mjlib_->mj_name2id(model_.get(), mjOBJ_GEOM, kFloorGeomName);
+  const int floor_id = mj_name2id(model_.get(), mjOBJ_GEOM, kFloorGeomName);
   const int right_hand_id =
-      mjlib_->mj_name2id(model_.get(), mjOBJ_GEOM, kRightHandGeomName);
+      mj_name2id(model_.get(), mjOBJ_GEOM, kRightHandGeomName);
   const int left_hand_id =
-      mjlib_->mj_name2id(model_.get(), mjOBJ_GEOM, kLeftHandGeomName);
+      mj_name2id(model_.get(), mjOBJ_GEOM, kLeftHandGeomName);
   const int right_foot_id =
-      mjlib_->mj_name2id(model_.get(), mjOBJ_GEOM, kRightFootGeomName);
+      mj_name2id(model_.get(), mjOBJ_GEOM, kRightFootGeomName);
   const int left_foot_id =
-      mjlib_->mj_name2id(model_.get(), mjOBJ_GEOM, kLeftFootGeomName);
-  const int lwaist_id =
-      mjlib_->mj_name2id(model_.get(), mjOBJ_GEOM, kLWaistGeomName);
-  const int uwaist_id =
-      mjlib_->mj_name2id(model_.get(), mjOBJ_GEOM, kUWaistGeomName);
+      mj_name2id(model_.get(), mjOBJ_GEOM, kLeftFootGeomName);
+  const int lwaist_id = mj_name2id(model_.get(), mjOBJ_GEOM, kLWaistGeomName);
+  const int uwaist_id = mj_name2id(model_.get(), mjOBJ_GEOM, kUWaistGeomName);
   auto right_hand_left_hand = std::make_pair(right_hand_id, left_hand_id);
   auto right_hand_left_foot = std::make_pair(right_hand_id, left_foot_id);
   auto right_foot_left_hand = std::make_pair(right_foot_id, left_hand_id);
@@ -275,17 +271,15 @@ TEST_F(UtilsTest, CollisionPairsToGeomIdPairsReturnsCorrectIds) {
       CollisionPairsToGeomIdPairs(*model_, pairs, true, true);
 
   const int right_hand_id =
-      mjlib_->mj_name2id(model_.get(), mjOBJ_GEOM, kRightHandGeomName);
+      mj_name2id(model_.get(), mjOBJ_GEOM, kRightHandGeomName);
   const int left_hand_id =
-      mjlib_->mj_name2id(model_.get(), mjOBJ_GEOM, kLeftHandGeomName);
+      mj_name2id(model_.get(), mjOBJ_GEOM, kLeftHandGeomName);
   const int right_foot_id =
-      mjlib_->mj_name2id(model_.get(), mjOBJ_GEOM, kRightFootGeomName);
+      mj_name2id(model_.get(), mjOBJ_GEOM, kRightFootGeomName);
   const int left_foot_id =
-      mjlib_->mj_name2id(model_.get(), mjOBJ_GEOM, kLeftFootGeomName);
-  const int lwaist_id =
-      mjlib_->mj_name2id(model_.get(), mjOBJ_GEOM, kLWaistGeomName);
-  const int uwaist_id =
-      mjlib_->mj_name2id(model_.get(), mjOBJ_GEOM, kUWaistGeomName);
+      mj_name2id(model_.get(), mjOBJ_GEOM, kLeftFootGeomName);
+  const int lwaist_id = mj_name2id(model_.get(), mjOBJ_GEOM, kLWaistGeomName);
+  const int uwaist_id = mj_name2id(model_.get(), mjOBJ_GEOM, kUWaistGeomName);
 
   auto right_hand_left_hand = MakeSortedPair(right_hand_id, left_hand_id);
   auto right_hand_left_foot = MakeSortedPair(right_hand_id, left_foot_id);
@@ -310,12 +304,12 @@ TEST_F(UtilsTest, CollisionPairsToGeomIdPairsReturnsCorrectIds) {
 
 TEST_F(UtilsTest, ComputeContactsForGeomPairsDetectsSameContactsAsMujoco) {
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
-  SetQposInCollision(*mjlib_, *model_, data_.get());
+  SetQposInCollision(*model_, data_.get());
 
   // Create a CollisionPair with all geoms.
   GeomGroup all_geoms;
   for (int i = 0; i < model_->ngeom; ++i) {
-    all_geoms.insert(mjlib_->mj_id2name(model_.get(), mjOBJ_GEOM, i));
+    all_geoms.insert(mj_id2name(model_.get(), mjOBJ_GEOM, i));
   }
   absl::btree_set<CollisionPair> collision_pairs{
       std::make_pair(all_geoms, all_geoms)};
@@ -368,8 +362,8 @@ TEST_F(UtilsTest, ComputeContactNormalJacobianIsSameAsMujoco) {
 
   // Create custom data for our purposes and sample Qpos in collision.
   std::unique_ptr<mjData, void (*)(mjData*)> custom_data_(
-      mjlib_->mj_makeData(model_.get()), mjlib_->mj_deleteData);
-  SetQposInCollision(*mjlib_, *model_, custom_data_.get());
+      mj_makeData(model_.get()), mj_deleteData);
+  SetQposInCollision(*model_, custom_data_.get());
 
   // Ensure the computed Jacobian and MuJoCo's contact Jacobian are the same.
   std::vector<double> jacobian_buffer(3 * model_->nv);
@@ -393,12 +387,12 @@ TEST_F(UtilsTest, ComputeContactNormalJacobianIsSameAsMujoco) {
 
 TEST_F(UtilsTest, ComputeContactWithMinimumDistanceFieldsMatchMujoco) {
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
-  SetQposInCollision(*mjlib_, *model_, data_.get());
+  SetQposInCollision(*model_, data_.get());
 
   // Create a CollisionPair with all geoms.
   GeomGroup all_geoms;
   for (int i = 0; i < model_->ngeom; ++i) {
-    all_geoms.insert(mjlib_->mj_id2name(model_.get(), mjOBJ_GEOM, i));
+    all_geoms.insert(mj_id2name(model_.get(), mjOBJ_GEOM, i));
   }
   absl::btree_set<CollisionPair> collision_pairs{
       std::make_pair(all_geoms, all_geoms)};
@@ -443,12 +437,12 @@ TEST_F(UtilsTest, ComputeContactWithMinimumDistanceFieldsMatchMujoco) {
 
 TEST_F(UtilsTest, ComputeMinimumContactDistanceReturnValueIsCorrect) {
   LoadModelFromXmlPath(kDmControlSuiteHumanoidXmlPath);
-  SetQposInCollision(*mjlib_, *model_, data_.get());
+  SetQposInCollision(*model_, data_.get());
 
   // Create a CollisionPair with all geoms.
   GeomGroup all_geoms;
   for (int i = 0; i < model_->ngeom; ++i) {
-    all_geoms.insert(mjlib_->mj_id2name(model_.get(), mjOBJ_GEOM, i));
+    all_geoms.insert(mj_id2name(model_.get(), mjOBJ_GEOM, i));
   }
   absl::btree_set<CollisionPair> collision_pairs{
       std::make_pair(all_geoms, all_geoms)};

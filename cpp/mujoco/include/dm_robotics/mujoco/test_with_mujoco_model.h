@@ -19,19 +19,18 @@
 
 #include "gtest/gtest.h"
 #include "absl/strings/string_view.h"
-#include "dm_robotics/mujoco/mjlib.h"
-#include "dm_robotics/mujoco/test_with_mjlib.h"
+#include <mujoco/mujoco.h>  //NOLINT
 
 namespace dm_robotics::testing {
 
 // Fixture for MuJoCo tests with an mjModel and mjData object.
-class TestWithMujocoModel : public TestWithMjLib {
+class TestWithMujocoModel : public ::testing::Test {
  private:
   struct MjModelDeleter {
-    void operator()(mjModel* p) const { mjlib_->mj_deleteModel(p); }
+    void operator()(mjModel* p) const { mj_deleteModel(p); }
   };
   struct MjDataDeleter {
-    void operator()(mjData* p) const { mjlib_->mj_deleteData(p); }
+    void operator()(mjData* p) const { mj_deleteData(p); }
   };
 
  protected:

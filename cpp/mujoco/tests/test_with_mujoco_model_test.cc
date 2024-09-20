@@ -25,8 +25,7 @@ namespace {
 using ::testing::IsNull;
 using ::testing::NotNull;
 
-TEST_F(TestWithMujocoModel, MjLibModelAndDataNotNull) {
-  EXPECT_THAT(mjlib_, NotNull());
+TEST_F(TestWithMujocoModel, MjModelAndDataNotNull) {
   EXPECT_THAT(model_, IsNull());
   EXPECT_THAT(data_, IsNull());
 

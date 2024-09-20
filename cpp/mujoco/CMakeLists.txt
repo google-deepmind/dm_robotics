@@ -74,10 +74,8 @@ if(DM_ROBOTICS_BUILD_TESTS)
   add_library(dmr_mujoco_testing)
   target_sources(dmr_mujoco_testing
     PUBLIC
-      ${CMAKE_CURRENT_SOURCE_DIR}/include/dm_robotics/mujoco/test_with_mjlib.h
       ${CMAKE_CURRENT_SOURCE_DIR}/include/dm_robotics/mujoco/test_with_mujoco_model.h
     PRIVATE
-      ${CMAKE_CURRENT_SOURCE_DIR}/src/test_with_mjlib.cc
       ${CMAKE_CURRENT_SOURCE_DIR}/src/test_with_mujoco_model.cc
   )
   target_include_directories(dmr_mujoco_testing
@@ -105,20 +103,6 @@ if(DM_ROBOTICS_BUILD_TESTS)
     dmr_mujoco_testing
   )
   gtest_discover_tests(dmr_mujoco_mjlib_test)
-
-  # test_with_mjlib_test
-  add_executable(dmr_mujoco_test_with_mjlib_test
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_with_mjlib_test.cc
-  )
-  target_link_libraries(dmr_mujoco_test_with_mjlib_test
-    gtest
-    gmock
-    gtest_main
-    dmr_support
-    dmr_mujoco
-    dmr_mujoco_testing
-  )
-  gtest_discover_tests(dmr_mujoco_test_with_mjlib_test)
 
   # test_with_mujoco_model_test
   add_executable(dmr_mujoco_test_with_mujoco_model_test
