@@ -16,7 +16,7 @@
 #define DM_ROBOTICS_PY_CONTROLLERS_PYBIND_UTILS_H_
 
 #include "absl/strings/string_view.h"
-#include "dm_robotics/mujoco/mjlib.h"
+#include "mujoco/mujoco.h"
 #include "pybind11/pytypes.h"  // pybind
 
 namespace dm_robotics::internal {

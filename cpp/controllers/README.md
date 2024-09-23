@@ -32,7 +32,7 @@ information.
 #include "absl/container/btree_set.h"
 #include "absl/types/span.h"
 #include "dm_robotics/controllers/lsqp/cartesian_6d_to_joint_velocity_mapper.h"
-#include "dm_robotics/mujoco/mjlib.h"
+#include "third_party/mujoco/include/mujoco.h"
 #include "dm_robotics/mujoco/types.h"
 
 namespace dmr = ::dm_robotics;
@@ -41,7 +41,6 @@ int main(int argc, char** argv) {
   // Initialize MuJoCo simulation. Assumes velocity controlled robot.
   // data->ctrl is an array of size 7 that corresponds to the commanded
   // velocities of the joints with IDs 7, 8, 9, 10, 12, 13, 14.
-  dmr::MjLib mjlib = GetMujocoLib();
   std::unique_ptr<mjModel, void (*)(mjModel*)> model = GetModel();
   std::unique_ptr<mjData, void (*)(mjData*)> data = GetData();
 
@@ -49,7 +48,6 @@ int main(int argc, char** argv) {
   dmr::Cartesian6dToJointVelocityMapper::Parameters params;
   //
   // Set model parameters.
-  params.lib = mjlib;
   params.model = model.get();
   params.joint_ids = absl::btree_set<int>{7, 8, 9, 10, 12, 13, 14};
   params.object_type = mjtObj::mjOBJ_SITE;
@@ -117,7 +115,7 @@ int main(int argc, char** argv) {
     absl::Span<const double> solution,
             mapper.ComputeJointVelocities(*data, target_velocity, nullspace_bias).value();
     std::copy(solution.begin(), solution.end(), data->ctrl);
-    mjlib.mj_step(model.get(), data.get());
+    mj_step(model.get(), data.get());
   }
 }
 ```

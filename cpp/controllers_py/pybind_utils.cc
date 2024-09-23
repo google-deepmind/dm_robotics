@@ -23,7 +23,7 @@
 
 #include "dm_robotics/support/logging.h"
 #include "absl/strings/substitute.h"
-#include "dm_robotics/mujoco/mjlib.h"
+#include "mujoco/mujoco.h"
 #include "pybind11/pybind11.h"  // pybind
 
 namespace dm_robotics::internal {

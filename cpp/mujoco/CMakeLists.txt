@@ -36,11 +36,9 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/defs.h.in
 
 # Library
 set(SRCS
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/mjlib.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cc
 )
 set(HDRS
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/dm_robotics/mujoco/mjlib.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/dm_robotics/mujoco/types.h
   ${CMAKE_CURRENT_SOURCE_DIR}/include/dm_robotics/mujoco/utils.h
   ${CMAKE_CURRENT_BINARY_DIR}/include/dm_robotics/mujoco/defs.h
@@ -89,20 +87,6 @@ if(DM_ROBOTICS_BUILD_TESTS)
       dmr_support
       dmr_mujoco
   )
-
-  # mjlib_test
-  add_executable(dmr_mujoco_mjlib_test
-    ${CMAKE_CURRENT_SOURCE_DIR}/tests/mjlib_test.cc
-  )
-  target_link_libraries(dmr_mujoco_mjlib_test
-    gtest
-    gmock
-    gtest_main
-    dmr_support
-    dmr_mujoco
-    dmr_mujoco_testing
-  )
-  gtest_discover_tests(dmr_mujoco_mjlib_test)
 
   # test_with_mujoco_model_test
   add_executable(dmr_mujoco_test_with_mujoco_model_test
