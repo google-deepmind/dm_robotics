@@ -113,7 +113,7 @@ setuptools.setup(
             _add_file_path(other_model_folders, "*.xml")
         )
     },
-    version="0.8.2",
+    version="0.9.0",
     license="Apache 2.0",
     author="DeepMind",
     description="Tools for authoring robotic manipulation tasks.",

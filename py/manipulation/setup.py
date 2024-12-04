@@ -89,7 +89,7 @@ setuptools.setup(
             _add_file_path(rgb_basket_folders, "*")
         )
     },
-    version="0.8.2",
+    version="0.9.0",
     license="Apache 2.0",
     author="DeepMind",
     description="Parametrically defined mesh objects",
