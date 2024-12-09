@@ -78,6 +78,9 @@ class MomaOption(af.DelegateOption):
       # charge of controlling individual effectors.
       return
 
+    if self._action_spec is None:
+      raise ValueError('self._action_spec is None.')
+
     spec_utils.validate(self._action_spec, command)
 
     for ef in self._effectors:
