@@ -178,23 +178,23 @@ if (DM_ROBOTICS_BUILD_dmr_lsqp
   )
 endif()
 
-# MuJoco 3.1.6
+# MuJoco 3.3.3
 if (DM_ROBOTICS_MUJOCO_TAR)
   message(STATUS "dm_robotics: MuJoCo TAR file specified at `${DM_ROBOTICS_MUJOCO_TAR}`.")
 else()
   message(STATUS "dm_robotics: MuJoCo TAR file not specified. Downloading MuJoCo....")
-  file(DOWNLOAD https://github.com/google-deepmind/mujoco/releases/download/3.1.6/mujoco-3.1.6-linux-x86_64.tar.gz mujoco.tar.gz)
+  file(DOWNLOAD https://github.com/google-deepmind/mujoco/releases/download/3.3.3/mujoco-3.3.3-linux-x86_64.tar.gz mujoco.tar.gz)
   set(DM_ROBOTICS_MUJOCO_TAR mujoco.tar.gz)
 endif()
 file(ARCHIVE_EXTRACT INPUT ${DM_ROBOTICS_MUJOCO_TAR} DESTINATION mujoco_bin)
-message("Checking headers in ${CMAKE_CURRENT_BINARY_DIR}/mujoco_bin/mujoco-3.1.6/include/mujoco")
-file(GLOB_RECURSE MUJOCO_HEADERS RELATIVE "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/mujoco_bin/mujoco-3.1.6/include/mujoco/*.h")
+message("Checking headers in ${CMAKE_CURRENT_BINARY_DIR}/mujoco_bin/mujoco-3.3.3/include/mujoco")
+file(GLOB_RECURSE MUJOCO_HEADERS RELATIVE "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/mujoco_bin/mujoco-3.3.3/include/mujoco/*.h")
 message("Mujoco headers: ${MUJOCO_HEADERS}")
 add_library(mujoco SHARED IMPORTED)
 set_target_properties(mujoco PROPERTIES
-             IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/mujoco_bin/mujoco-3.1.6/lib/libmujoco.so)
+             IMPORTED_LOCATION ${CMAKE_CURRENT_BINARY_DIR}/mujoco_bin/mujoco-3.3.3/lib/libmujoco.so)
 set_target_properties(mujoco PROPERTIES PUBLIC_HEADER "${MUJOCO_HEADERS}"
- INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/mujoco_bin/mujoco-3.1.6/include"
+ INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_BINARY_DIR}/mujoco_bin/mujoco-3.3.3/include"
 )
 
 # osqp-cpp

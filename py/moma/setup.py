@@ -113,14 +113,14 @@ setuptools.setup(
             _add_file_path(other_model_folders, "*.xml")
         )
     },
-    version="0.9.0",
+    version="0.10.0",
     license="Apache 2.0",
     author="DeepMind",
     description="Tools for authoring robotic manipulation tasks.",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/deepmind/dm_robotics/tree/main/py/moma",
-    python_requires=">=3.7, <3.13",
+    python_requires=">=3.9, <3.13",
     setup_requires=["wheel >= 0.31.0"],
     install_requires=(_get_requirements("requirements.txt") +
                       _get_requirements("requirements_external.txt")),

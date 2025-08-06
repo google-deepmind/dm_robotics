@@ -41,7 +41,7 @@ setuptools.setup(
         "dm_robotics.transformations",
         "dm_robotics.transformations.jax_transformations",
     ],
-    version="0.9.0",
+    version="0.10.0",
     license="Apache 2.0",
     author="DeepMind",
     description="A library for Rigid Body Transformations",
@@ -50,7 +50,7 @@ setuptools.setup(
     url="https://github.com/deepmind/dm_robotics/tree/main/py/transformations",
     setup_requires=["wheel >= 0.31.0"],
     install_requires=_get_requirements("requirements.txt"),
-    extras_require={"quaternion": "numpy-quaternion == 2021.11.4.15.26.3"},
+    extras_require={"quaternion": "numpy-quaternion == v2024.0.10"},
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Programming Language :: Python :: 3",

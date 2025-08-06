@@ -46,6 +46,8 @@ python_version=${PYTHON_VERSION:-$python_version}
 python_version=${python_version:-3.10}
 echo "Using python version '$python_version'"
 
+$python_binary -m pip install "setuptools"
+
 # Install tox, which we use to build the packages.
 # The packages themselves do not depend on tox.
 if ! [[ -x $tox_binary ]]; then
@@ -57,10 +59,6 @@ fi
 echo "Recreating $root/cpp/build directory"
 rm -rf "$root/cpp/build"
 mkdir "$root/cpp/build"
-
-# echo "Running cmake in $root/cpp/build"
-# $cmake_binary .. "-DDMR_PYTHON_VERSION=$python_version"
-# make -j 4
 
 # Build the dm_robotics.controllers package wheel.
 echo "Building controllers package (setup.py) from $root/cpp"

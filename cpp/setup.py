@@ -23,7 +23,7 @@ from setuptools import setup
 from setuptools.command.build_ext import build_ext
 
 
-PRE_DOWNLOADED_MUJOCO_TAR = "/deps/mujoco-3.1.6-linux-x86_64.tar.gz"
+PRE_DOWNLOADED_MUJOCO_TAR = "/deps/mujoco-3.3.3-linux-x86_64.tar.gz"
 
 PRE_DOWNLOADED_SOURCE_DIRS = {
     "abseil-cpp": "/deps/abseil-cpp_c2435f8342c2d0ed8101cb43adfd605fdc52dca2",
@@ -61,6 +61,7 @@ class CMakeBuild(build_ext):
     build_type = "Debug" if self.debug else "Release"
 
     cmake_args = [
+        "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
         "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={}".format(output_directory),
         "-DPYTHON_EXECUTABLE={}".format(sys.executable),
         "-DDMR_PYTHON_VERSION={}.{}".format(
@@ -127,14 +128,14 @@ setup(
     name="dm_robotics-controllers",
     package_dir={"dm_robotics.controllers": ""},
     packages=["dm_robotics.controllers"],
-    version="0.9.0",
+    version="0.10.0",
     license="Apache 2.0",
     author="DeepMind",
     description="Python bindings for dm_robotics/cpp/controllers",
     long_description=open("controllers_py/README.md").read(),
     long_description_content_type="text/markdown",
     url="https://github.com/deepmind/dm_robotics/tree/main/cpp/controllers_py",
-    python_requires=">=3.7, <3.13",
+    python_requires=">=3.9, <3.13",
     setup_requires=["wheel >= 0.31.0"],
     classifiers=[
         "Development Status :: 5 - Production/Stable",
