@@ -34,16 +34,27 @@ class TaskEntitiesInitializer(base_initializer.Initializer):
   initializers: Iterable[composer.Initializer]
 
   def __call__(self, physics: mjcf.Physics,
-               random_state: np.random.RandomState) -> bool:
-    """Runs initializers sequentially, until all done or one fails."""
+               random_state: np.random.RandomState, **kwargs) -> bool:
+    """Runs initializers sequentially, until all done or one fails.
+
+    Args:
+      physics: The MuJoCo physics instance.
+      random_state: The random state for reproducibility.
+      **kwargs: Additional keyword arguments to pass to initializers that
+          accept them.
+
+    Returns:
+      True if all initializers succeeded, False if any failed.
+    """
     for initializer in self.initializers:
       # pylint: disable=singleton-comparison,g-explicit-bool-comparison
       # Explicitly check for false because an initializer returning `None`
       # should be counted as success.
-      if initializer(physics, random_state) == False:
+      if initializer(physics, random_state, **kwargs) == False:
         return False
       # pylint: enable=singleton-comparison,g-explicit-bool-comparison
     return True
+
 
 
 NO_INIT = TaskEntitiesInitializer(initializers=tuple())
